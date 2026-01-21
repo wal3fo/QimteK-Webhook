@@ -10,10 +10,23 @@ class SupabaseDatabase implements DatabaseAdapter {
 
   constructor() {
     const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+    // Prefer SERVICE_ROLE_KEY over ANON_KEY for server-side operations
+    // SERVICE_ROLE_KEY bypasses RLS and is required for serverless functions
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Supabase credentials not found. Set SUPABASE_URL and SUPABASE_ANON_KEY environment variables.');
+      throw new Error(
+        'Supabase credentials not found. ' +
+        'Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_ANON_KEY) environment variables.'
+      );
+    }
+
+    // Warn if using ANON_KEY instead of SERVICE_ROLE_KEY in production
+    if ((process.env.VERCEL === '1' || process.env.NODE_ENV === 'production') && !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.warn(
+        '⚠️  WARNING: Using SUPABASE_ANON_KEY instead of SUPABASE_SERVICE_ROLE_KEY. ' +
+        'SERVICE_ROLE_KEY is recommended for serverless functions to bypass RLS.'
+      );
     }
 
     // Create Supabase client with explicit schema configuration

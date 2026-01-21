@@ -2,9 +2,11 @@
  * Universal Database Adapter
  * 
  * This adapter provides a unified interface for database operations that works with:
- * - Supabase PostgreSQL (production/Vercel)
- * - SQLite (local development)
- * - JSON file storage (fallback)
+ * - Supabase PostgreSQL (production/Vercel) - REQUIRED
+ * - SQLite (local development only)
+ * - JSON file storage (local development fallback only)
+ * 
+ * IMPORTANT: In production/Vercel, Supabase is REQUIRED. JSON database will NOT work.
  * 
  * All database operations go through this adapter, making it easy to switch
  * between storage backends without changing application code.
@@ -38,19 +40,28 @@ export async function initDb(): Promise<void> {
   }
 
   initPromise = (async () => {
-    // Check if we're in production (Vercel) and have Supabase credentials
+    // Check if we're in production (Vercel)
     const isProduction = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production';
-    const hasSupabase = process.env.SUPABASE_URL && (process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY);
+    const hasSupabase = process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY);
 
-    // Priority 1: Use Supabase in production if credentials are available
-    if (isProduction && hasSupabase) {
+    // Priority 1: Use Supabase in production - REQUIRED, no fallback
+    if (isProduction) {
+      if (!hasSupabase) {
+        throw new Error(
+          'Supabase credentials are REQUIRED in production. ' +
+          'Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_ANON_KEY) environment variables.'
+        );
+      }
       try {
         db = getSupabaseDb();
         console.log('✅ Using Supabase PostgreSQL database (production)');
         return;
       } catch (error) {
-        console.error('❌ Failed to initialize Supabase, falling back to local storage:', error);
-        // Continue to try local storage
+        console.error('❌ Failed to initialize Supabase:', error);
+        throw new Error(
+          `Supabase initialization failed in production: ${error instanceof Error ? error.message : String(error)}. ` +
+          'JSON database cannot be used in production/Vercel.'
+        );
       }
     }
 
@@ -75,10 +86,19 @@ export async function initDb(): Promise<void> {
       }
     }
 
-    // Priority 3: Fallback to JSON database
-    db = jsonDb;
-    console.log('✅ Using JSON database fallback (local development)');
-    await createSchema(db);
+    // Priority 3: Fallback to JSON database (local development only)
+    // This will throw an error if called in production
+    try {
+      db = jsonDb;
+      console.log('✅ Using JSON database fallback (local development)');
+      await createSchema(db);
+    } catch (error) {
+      // If JSON database fails (e.g., in production), throw error
+      throw new Error(
+        `Database initialization failed: ${error instanceof Error ? error.message : String(error)}. ` +
+        'In production, Supabase is required. In local development, ensure Supabase credentials are set or SQLite/JSON fallback is available.'
+      );
+    }
   })();
 
   return initPromise;
