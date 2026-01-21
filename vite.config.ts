@@ -32,6 +32,9 @@ export default defineConfig({
           });
         },
       }
-    }
+    },
+    allowedHosts: [
+      'devserver-main--illustrious-treacle-7a2835.netlify.app'
+    ]
   }
 })
