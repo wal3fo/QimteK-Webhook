@@ -46,13 +46,16 @@ router.all('/:token', async (req: Request, res: Response): Promise<void> => {
     // Parse body - handle different content types
     let body = null;
     const contentType = req.headers['content-type'] || '';
-    let rawBody: string | Buffer | null = null;
+    let rawBody: string | null = null;
     
-    // Get raw body (from express.raw() middleware)
+    // Get raw body (from express.raw() middleware) and convert to string
     if (Buffer.isBuffer(req.body)) {
       rawBody = req.body.toString('utf8');
     } else if (typeof req.body === 'string') {
       rawBody = req.body;
+    } else if (req.body) {
+      // Fallback: convert to string if it's something else
+      rawBody = String(req.body);
     }
     
     if (rawBody && rawBody.length > 0) {
