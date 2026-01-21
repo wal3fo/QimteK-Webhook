@@ -3,16 +3,7 @@
  * Works seamlessly with Vercel serverless functions
  */
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-
-interface DatabaseAdapter {
-  prepare(sql: string): {
-    run: (...params: any[]) => { changes: number } | Promise<{ changes: number }>;
-    get: (...params: any[]) => any | Promise<any>;
-    all: (...params: any[]) => any[] | Promise<any[]>;
-  };
-  exec(sql: string): any;
-  pragma(setting: string): any;
-}
+import type { DatabaseAdapter } from './db-adapter.js';
 
 class SupabaseDatabase implements DatabaseAdapter {
   private client: SupabaseClient;

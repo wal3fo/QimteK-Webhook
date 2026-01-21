@@ -60,7 +60,8 @@ export async function initDb(): Promise<void> {
       const dbPath = process.env.DB_PATH || path.join(process.cwd(), 'webhook.db');
       const sqliteDb = new Database(dbPath);
       sqliteDb.pragma('foreign_keys = ON');
-      db = sqliteDb;
+      // Cast to DatabaseAdapter since SQLite Database implements the interface
+      db = sqliteDb as unknown as DatabaseAdapter;
       console.log('✅ Using better-sqlite3 database (local development)');
       
       // Create schema for SQLite
