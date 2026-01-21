@@ -54,21 +54,25 @@ export async function initDb(): Promise<void> {
       }
     }
 
-    // Priority 2: Try better-sqlite3 for local development
-    try {
-      const Database = (await import('better-sqlite3')).default;
-      const dbPath = process.env.DB_PATH || path.join(process.cwd(), 'webhook.db');
-      const sqliteDb = new Database(dbPath);
-      sqliteDb.pragma('foreign_keys = ON');
-      // Cast to DatabaseAdapter since SQLite Database implements the interface
-      db = sqliteDb as unknown as DatabaseAdapter;
-      console.log('✅ Using better-sqlite3 database (local development)');
-      
-      // Create schema for SQLite
-      await createSchema(db);
-      return;
-    } catch (error: any) {
-      console.log('⚠️  better-sqlite3 not available, using JSON database fallback');
+    // Priority 2: Try better-sqlite3 for local development (NOT in Vercel)
+    // Skip SQLite in production/Vercel - use Supabase only
+    if (!isProduction) {
+      try {
+        const Database = (await import('better-sqlite3')).default;
+        // Only use DB_PATH in local dev, never in production
+        const dbPath = process.env.DB_PATH || path.join(process.cwd(), 'webhook.db');
+        const sqliteDb = new Database(dbPath);
+        sqliteDb.pragma('foreign_keys = ON');
+        // Cast to DatabaseAdapter since SQLite Database implements the interface
+        db = sqliteDb as unknown as DatabaseAdapter;
+        console.log('✅ Using better-sqlite3 database (local development)');
+        
+        // Create schema for SQLite
+        await createSchema(db);
+        return;
+      } catch (error: any) {
+        console.log('⚠️  better-sqlite3 not available, using JSON database fallback');
+      }
     }
 
     // Priority 3: Fallback to JSON database

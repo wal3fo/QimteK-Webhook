@@ -136,13 +136,14 @@ router.all('/:token', async (req: Request, res: Response): Promise<void> => {
       ip_address: ipAddress,
     };
     
-    // Emit socket event for real-time updates
+    // Emit socket event (only in local dev, not in Vercel serverless)
+    // In Vercel serverless, Socket.io connections are not persistent
+    // Real-time updates should use polling or WebSockets via a separate service
     const io = req.app.get('io');
-    if (io) {
+    if (io && !process.env.VERCEL) {
+      // Only emit in local development (where Socket.io server is running)
       io.to(`webhook:${token}`).emit('new-request', requestData);
       console.log(`[Webhook] Socket event emitted for token: ${token}`);
-    } else {
-      console.warn('[Webhook] Socket.io not available');
     }
     
     // Return success response

@@ -1,5 +1,10 @@
 /**
- * This is a API server
+ * Express application for Vercel serverless functions
+ * 
+ * This app is exported as a handler for Vercel serverless functions.
+ * It does NOT start a server - Vercel handles that automatically.
+ * 
+ * For local development, use api/server.ts which wraps this app.
  */
 
 import express, {
@@ -8,23 +13,23 @@ import express, {
   type NextFunction,
 } from 'express'
 import cors from 'cors'
-import path from 'path'
 import dotenv from 'dotenv'
-import { fileURLToPath } from 'url'
 import authRoutes from './routes/auth.js'
 import webhookRoutes from './routes/webhooks.js'
 import webhookReceiverRoutes from './routes/webhook-receiver.js'
 
-// for esm mode
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-
-// load env
-dotenv.config()
+// Load environment variables (only in local dev, Vercel provides them automatically)
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  dotenv.config()
+}
 
 const app: express.Application = express()
 
-app.use(cors())
+// CORS configuration - allow all origins in production (Vercel handles this)
+app.use(cors({
+  origin: process.env.CLIENT_URL || '*',
+  credentials: true,
+}))
 
 // Webhook receiver needs raw body, so it must be registered before express.json()
 app.use('/api/webhook', webhookReceiverRoutes)
@@ -40,17 +45,21 @@ app.use('/api/auth', authRoutes)
 app.use('/api/webhooks', webhookRoutes)
 
 /**
- * health
+ * Health check endpoint
+ * GET /api/health
+ * 
+ * Used to verify the serverless function is running.
+ * Also useful for keeping functions warm (ping every 5 minutes).
  */
-app.use(
-  '/api/health',
-  (req: Request, res: Response, next: NextFunction): void => {
-    res.status(200).json({
-      success: true,
-      message: 'ok',
-    })
-  },
-)
+app.get('/api/health', (req: Request, res: Response): void => {
+  res.status(200).json({
+    success: true,
+    message: 'ok',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    vercel: !!process.env.VERCEL,
+  })
+})
 
 /**
  * error handler middleware

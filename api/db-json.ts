@@ -29,10 +29,18 @@ interface Database {
   requests: Request[];
 }
 
-const dbPath = process.env.DB_PATH || path.join(process.cwd(), 'webhook-data.json');
+// Only use JSON database in local development, never in production/Vercel
+// In production, Supabase is used instead
+function getDbPath(): string {
+  if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+    throw new Error('JSON database cannot be used in production/Vercel. Use Supabase instead.');
+  }
+  return process.env.DB_PATH || path.join(process.cwd(), 'webhook-data.json');
+}
 
 // Initialize database file if it doesn't exist
 function ensureDbFile(): void {
+  const dbPath = getDbPath();
   if (!fs.existsSync(dbPath)) {
     const initialData: Database = {
       webhooks: [],
@@ -46,6 +54,7 @@ function ensureDbFile(): void {
 function readDb(): Database {
   ensureDbFile();
   try {
+    const dbPath = getDbPath();
     const data = fs.readFileSync(dbPath, 'utf8');
     return JSON.parse(data);
   } catch (error) {
@@ -57,6 +66,7 @@ function readDb(): Database {
 // Write database
 function writeDb(data: Database): void {
   try {
+    const dbPath = getDbPath();
     fs.writeFileSync(dbPath, JSON.stringify(data, null, 2), 'utf8');
   } catch (error) {
     console.error('Error writing database:', error);
