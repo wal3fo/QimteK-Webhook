@@ -16,7 +16,17 @@ class SupabaseDatabase implements DatabaseAdapter {
       throw new Error('Supabase credentials not found. Set SUPABASE_URL and SUPABASE_ANON_KEY environment variables.');
     }
 
-    this.client = createClient(supabaseUrl, supabaseKey);
+    // Create Supabase client with explicit schema configuration
+    this.client = createClient(supabaseUrl, supabaseKey, {
+      db: {
+        schema: 'public', // Explicitly set schema to 'public'
+      },
+      auth: {
+        persistSession: false, // Not needed for serverless
+      },
+    });
+
+    console.log('Supabase client initialized with URL:', supabaseUrl.replace(/\/\/.*@/, '//***@'));
   }
 
   prepare(sql: string) {
@@ -30,18 +40,29 @@ class SupabaseDatabase implements DatabaseAdapter {
           const expiresAt = params[1];
           const isActive = params[2] !== undefined ? params[2] : true;
 
-          const { error } = await this.client
+          // Ensure expiresAt is a valid ISO string
+          const expiresAtISO = expiresAt instanceof Date 
+            ? expiresAt.toISOString() 
+            : typeof expiresAt === 'string' 
+              ? expiresAt 
+              : new Date(expiresAt).toISOString();
+
+          const { data, error } = await this.client
             .from('webhooks')
             .insert({
               token,
               created_at: new Date().toISOString(),
-              expires_at: expiresAt,
+              expires_at: expiresAtISO,
               is_active: isActive,
-            });
+            })
+            .select()
+            .single();
 
           if (error) {
             console.error('Supabase insert webhook error:', error);
-            throw error;
+            console.error('Error details:', JSON.stringify(error, null, 2));
+            console.error('Attempted insert:', { token, expires_at: expiresAtISO, is_active: isActive });
+            throw new Error(`Failed to insert webhook: ${error.message} (code: ${error.code})`);
           }
           changes = 1;
         }
