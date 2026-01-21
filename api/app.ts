@@ -12,9 +12,6 @@
  * 
  * This app is exported as a handler for Vercel serverless functions.
  * It does NOT start a server - Vercel handles that automatically.
- * 
- * Real-time updates are handled by Supabase Realtime (not Socket.IO),
- * which works seamlessly with serverless functions.
  */
 
 import express, {

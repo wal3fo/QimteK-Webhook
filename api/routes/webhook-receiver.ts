@@ -123,10 +123,6 @@ router.all('/:token', async (req: Request, res: Response): Promise<void> => {
       // Continue anyway - we'll still return success
     }
     
-    // Real-time updates are handled by Supabase Realtime
-    // When a new row is inserted into the requests table, Supabase Realtime
-    // automatically broadcasts the change to subscribed clients
-    // No manual socket emission needed - Supabase handles it!
     console.log(`[Webhook] Request saved to database: ${method} ${url} (ID: ${requestId})`);
     
     // Return success response

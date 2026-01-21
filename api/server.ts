@@ -3,8 +3,6 @@
  * 
  * NOTE: This file is ONLY for local development.
  * In Vercel production, use api/index.ts (serverless handler).
- * 
- * Socket.IO has been removed - real-time updates use Supabase Realtime instead.
  */
 import { createServer } from 'http';
 import app from './app.js';
@@ -26,9 +24,6 @@ startCleanupJob(60);
 
 /**
  * Create HTTP server
- * 
- * Note: Socket.IO has been removed. Real-time updates are handled by
- * Supabase Realtime, which works in both local development and Vercel production.
  */
 const server = createServer(app);
 

@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useSupabaseRealtime, useWebhookRequestSubscription } from './useSupabaseRealtime';
 import { format } from 'date-fns';
 
 export interface WebhookRequest {
@@ -29,21 +28,7 @@ export function useWebhook() {
   const [requests, setRequests] = useState<WebhookRequest[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  // Use Supabase Realtime instead of Socket.IO
-  const { isConnected, connectionError } = useSupabaseRealtime(webhook?.token || null);
-  
-  // Subscribe to new webhook requests via Supabase Realtime
-  useWebhookRequestSubscription(webhook?.token || null, (newRequest) => {
-    // Add new request to the list (prepend to show newest first)
-    setRequests((prev) => {
-      // Avoid duplicates
-      if (prev.some(r => r.id === newRequest.id)) {
-        return prev;
-      }
-      return [newRequest, ...prev];
-    });
-  });
+  const [isConnected, setIsConnected] = useState(false);
 
   // Load webhook from localStorage on mount
   useEffect(() => {
@@ -63,7 +48,6 @@ export function useWebhook() {
                 url: session.url,
                 expiresAt: session.expiresAt,
               });
-              // Supabase Realtime subscription is handled automatically by useSupabaseRealtime
               // Load all requests
               const requestsResponse = await fetch(`${API_URL}/webhooks/${session.token}/requests`);
               if (requestsResponse.ok) {
@@ -133,7 +117,6 @@ export function useWebhook() {
         // Save to localStorage
         localStorage.setItem(STORAGE_KEY, JSON.stringify(newWebhook));
         
-        // Supabase Realtime subscription is handled automatically by useSupabaseRealtime
         // Load initial requests
         await fetchRequests(data.token);
       }
@@ -161,9 +144,6 @@ export function useWebhook() {
     }
   }, []);
 
-  // Real-time updates are handled by useWebhookRequestSubscription hook
-  // No manual cleanup needed - Supabase Realtime handles it automatically
-
   const deleteWebhook = useCallback(async () => {
     if (!webhook) return;
     
@@ -173,7 +153,6 @@ export function useWebhook() {
       });
 
       if (response.ok) {
-        // Supabase Realtime subscription cleanup is handled automatically
         setWebhook(null);
         setRequests([]);
         localStorage.removeItem(STORAGE_KEY);
@@ -183,20 +162,25 @@ export function useWebhook() {
     }
   }, [webhook]);
 
-  // Poll for new requests periodically (fallback if Supabase Realtime fails)
-  // This ensures requests are still shown even if Realtime subscription has issues
+  // Poll for new requests periodically
   useEffect(() => {
-    if (!webhook) return;
-    
-    // Only poll if not connected (fallback mechanism)
-    if (!isConnected) {
-      const pollInterval = setInterval(() => {
-        fetchRequests(webhook.token);
-      }, 5000); // Poll every 5 seconds as fallback
-
-      return () => clearInterval(pollInterval);
+    if (!webhook) {
+      setIsConnected(false);
+      return;
     }
-  }, [webhook, fetchRequests, isConnected]);
+    
+    // Set connected status when polling starts
+    setIsConnected(true);
+    
+    const pollInterval = setInterval(() => {
+      fetchRequests(webhook.token);
+    }, 5000); // Poll every 5 seconds
+
+    return () => {
+      clearInterval(pollInterval);
+      setIsConnected(false);
+    };
+  }, [webhook, fetchRequests]);
 
   return {
     webhook,

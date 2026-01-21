@@ -5,7 +5,7 @@ A real-time webhook inspection tool similar to webhook.site. Generate temporary 
 ## Features
 
 - 🚀 **Generate Webhook URLs**: Create unique, temporary webhook endpoints with one click
-- 📊 **Real-time Dashboard**: View incoming requests in real-time with Socket.io
+- 📊 **Real-time Dashboard**: View incoming requests in real-time with polling
 - 🔍 **Request Inspector**: Detailed view of headers, body, query parameters, and metadata
 - 🎨 **Modern UI**: Beautiful, responsive interface with dark mode support
 - 📤 **Export Data**: Export requests as JSON for further analysis
@@ -16,9 +16,8 @@ A real-time webhook inspection tool similar to webhook.site. Generate temporary 
 ## Tech Stack
 
 - **Frontend**: React 18 + TypeScript + Vite + Tailwind CSS
-- **Backend**: Express.js + Socket.io
-- **Database**: SQLite3 (better-sqlite3)
-- **Real-time**: Socket.io for bidirectional communication
+- **Backend**: Express.js
+- **Database**: SQLite3 (better-sqlite3) or JSON file storage
 
 ## Getting Started
 
@@ -51,7 +50,6 @@ PORT=3001
 BASE_URL=http://localhost:3001
 CLIENT_URL=http://localhost:5173
 VITE_API_URL=http://localhost:3001/api
-VITE_SOCKET_URL=http://localhost:3001
 ```
 
 ### Development
@@ -138,18 +136,14 @@ PORT=3001
 BASE_URL=http://localhost:3001
 CLIENT_URL=http://localhost:5173
 VITE_API_URL=http://localhost:3001/api
-VITE_SOCKET_URL=http://localhost:3001
 ```
 
 **Vercel Production:**
 ```env
 NODE_ENV=production
-SUPABASE_URL=https://xxxxx.supabase.co
-SUPABASE_ANON_KEY=your-anon-key
 BASE_URL=https://your-app.vercel.app
 CLIENT_URL=https://your-app.vercel.app
 VITE_API_URL=/api
-VITE_SOCKET_URL=https://your-app.vercel.app
 ```
 
 ### All Variables
@@ -157,15 +151,11 @@ VITE_SOCKET_URL=https://your-app.vercel.app
 | Variable | Description | Default | Required (Prod) |
 |----------|-------------|---------|-----------------|
 | `NODE_ENV` | Environment mode | `development` | Yes |
-| `SUPABASE_URL` | Supabase project URL | - | Yes |
-| `SUPABASE_ANON_KEY` | Supabase anonymous key | - | Yes |
 | `PORT` | Server port | `3001` | No |
 | `BASE_URL` | Base URL for webhook generation | Auto-detected | No |
-| `CLIENT_URL` | Client URL for CORS/Socket.io | `*` | No |
+| `CLIENT_URL` | Client URL for CORS | `*` | No |
 | `DB_PATH` | Database file path (local only) | `./webhook.db` | No |
 | `VITE_API_URL` | Frontend API URL | `http://localhost:3001/api` | No |
-| `VITE_SOCKET_URL` | Frontend Socket.io URL | `http://localhost:3001` | No |
-| `SUPABASE_SERVICE_ROLE_KEY` | Service role key (optional) | - | No |
 
 ## Database Schema
 
@@ -196,7 +186,7 @@ This project is configured for Vercel deployment. The `vercel.json` file include
 2. Deploy: `vercel`
 3. Set environment variables in Vercel dashboard
 
-**Note**: For Vercel deployment, you may need to use a different database solution (e.g., PostgreSQL) as SQLite files are not persistent on serverless functions.
+**Note**: For Vercel deployment, the JSON database adapter will be used as a fallback since SQLite files are not persistent on serverless functions.
 
 ### Other Platforms
 
@@ -204,7 +194,6 @@ For other platforms, ensure:
 - Node.js 18+ is available
 - Environment variables are set
 - Database file has write permissions (for SQLite)
-- Socket.io is properly configured for your platform
 
 ## Security Considerations
 

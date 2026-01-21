@@ -4,9 +4,8 @@
  * This adapter provides a unified interface for database operations that works with:
  * - SQLite (preferred for local development)
  * - JSON file storage (fallback when SQLite not available)
- * - Supabase PostgreSQL (optional, only if credentials provided)
  * 
- * Priority: SQLite → JSON → Supabase (if credentials available)
+ * Priority: SQLite → JSON
  * 
  * All database operations go through this adapter, making it easy to switch
  * between storage backends without changing application code.
@@ -14,7 +13,6 @@
 
 import path from 'path';
 import jsonDb from './db-json.js';
-import { getSupabaseDb } from './db-supabase.js';
 
 export interface DatabaseAdapter {
   prepare(sql: string): {
@@ -40,8 +38,6 @@ export async function initDb(): Promise<void> {
   }
 
   initPromise = (async () => {
-    const hasSupabase = process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY);
-
     // Priority 1: Try better-sqlite3 (works everywhere, preferred for local dev)
     try {
       const Database = (await import('better-sqlite3')).default;
@@ -67,26 +63,13 @@ export async function initDb(): Promise<void> {
       return;
     } catch (error) {
       console.error('⚠️  JSON database failed:', error);
-      // Continue to try Supabase if available
-    }
-
-    // Priority 3: Optional Supabase (only if credentials provided)
-    if (hasSupabase) {
-      try {
-        db = getSupabaseDb();
-        console.log('✅ Using Supabase PostgreSQL database (optional)');
-        return;
-      } catch (error) {
-        console.error('❌ Failed to initialize Supabase:', error);
-        // Fall through to throw error
-      }
+      // Fall through to throw error
     }
 
     // If all databases failed, throw error
     throw new Error(
       'Failed to initialize any database. ' +
-      'Please ensure SQLite (better-sqlite3) is available, or JSON database can be created, ' +
-      'or Supabase credentials are configured.'
+      'Please ensure SQLite (better-sqlite3) is available, or JSON database can be created.'
     );
   })();
 
@@ -149,7 +132,7 @@ export async function ensureDb(): Promise<DatabaseAdapter> {
 
 /**
  * Helper function to safely execute database operations
- * Handles both sync (SQLite) and async (Supabase) operations
+ * Handles both sync (SQLite) and async operations
  */
 export async function dbRun(sql: string, ...params: any[]): Promise<{ changes: number }> {
   const database = await ensureDb();
