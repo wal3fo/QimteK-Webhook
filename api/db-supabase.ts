@@ -6,12 +6,12 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 interface DatabaseAdapter {
   prepare(sql: string): {
-    run: (...params: any[]) => { changes: number };
-    get: (...params: any[]) => any;
-    all: (...params: any[]) => any[];
+    run: (...params: any[]) => { changes: number } | Promise<{ changes: number }>;
+    get: (...params: any[]) => any | Promise<any>;
+    all: (...params: any[]) => any[] | Promise<any[]>;
   };
-  exec(sql: string): void;
-  pragma(setting: string): void;
+  exec(sql: string): any;
+  pragma(setting: string): any;
 }
 
 class SupabaseDatabase implements DatabaseAdapter {

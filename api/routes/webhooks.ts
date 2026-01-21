@@ -268,9 +268,9 @@ router.delete('/:token', async (req: Request, res: Response): Promise<void> => {
     const database = await ensureDb();
     const stmt = database.prepare('DELETE FROM webhooks WHERE token = ?');
     const result = stmt.run(token);
-    await (result instanceof Promise ? result : Promise.resolve(result));
+    const finalResult = await (result instanceof Promise ? result : result);
     
-    if (result.changes === 0) {
+    if (finalResult.changes === 0) {
       res.status(404).json({
         success: false,
         error: 'Webhook not found',

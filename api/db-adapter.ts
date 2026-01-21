@@ -20,8 +20,8 @@ export interface DatabaseAdapter {
     get: (...params: any[]) => any | Promise<any>;
     all: (...params: any[]) => any[] | Promise<any[]>;
   };
-  exec(sql: string): void | Promise<void>;
-  pragma(setting: string): void;
+  exec(sql: string): any;
+  pragma(setting: string): any;
 }
 
 let db: DatabaseAdapter | null = null;
