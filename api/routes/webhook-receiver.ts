@@ -123,28 +123,11 @@ router.all('/:token', async (req: Request, res: Response): Promise<void> => {
       // Continue anyway - we'll still return success
     }
     
-    // Prepare request object for socket emission
-    const requestData = {
-      id: requestId,
-      webhook_token: token,
-      method,
-      url,
-      headers,
-      body,
-      query,
-      timestamp,
-      ip_address: ipAddress,
-    };
-    
-    // Emit socket event (only in local dev, not in Vercel serverless)
-    // In Vercel serverless, Socket.io connections are not persistent
-    // Real-time updates should use polling or WebSockets via a separate service
-    const io = req.app.get('io');
-    if (io && !process.env.VERCEL) {
-      // Only emit in local development (where Socket.io server is running)
-      io.to(`webhook:${token}`).emit('new-request', requestData);
-      console.log(`[Webhook] Socket event emitted for token: ${token}`);
-    }
+    // Real-time updates are handled by Supabase Realtime
+    // When a new row is inserted into the requests table, Supabase Realtime
+    // automatically broadcasts the change to subscribed clients
+    // No manual socket emission needed - Supabase handles it!
+    console.log(`[Webhook] Request saved to database: ${method} ${url} (ID: ${requestId})`);
     
     // Return success response
     res.status(200).json({

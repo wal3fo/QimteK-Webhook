@@ -81,7 +81,7 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Connection Status */}
+        {/* Connection Status - Supabase Realtime */}
         <div className="mb-6">
           <div className={cn(
             'inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm border',
@@ -93,7 +93,11 @@ export default function Home() {
               'w-2 h-2 rounded-full',
               isConnected ? 'bg-green-400' : 'bg-red-400'
             )} />
-            {isConnected ? 'Connected' : 'Disconnected'}
+            {isConnected 
+              ? 'Connected (Supabase Realtime)' 
+              : webhook 
+                ? 'Disconnected (Realtime subscription failed)' 
+                : 'Not connected (No active webhook)'}
           </div>
         </div>
 

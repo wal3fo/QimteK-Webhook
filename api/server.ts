@@ -1,8 +1,12 @@
 /**
- * local server entry file, for local development
+ * Local development server entry file
+ * 
+ * NOTE: This file is ONLY for local development.
+ * In Vercel production, use api/index.ts (serverless handler).
+ * 
+ * Socket.IO has been removed - real-time updates use Supabase Realtime instead.
  */
 import { createServer } from 'http';
-import { Server } from 'socket.io';
 import app from './app.js';
 import { initDb } from './db.js';
 import { startCleanupJob } from './utils/cleanup.js';
@@ -22,42 +26,11 @@ startCleanupJob(60);
 
 /**
  * Create HTTP server
+ * 
+ * Note: Socket.IO has been removed. Real-time updates are handled by
+ * Supabase Realtime, which works in both local development and Vercel production.
  */
 const server = createServer(app);
-
-/**
- * Initialize Socket.io
- */
-const io = new Server(server, {
-  cors: {
-    origin: process.env.CLIENT_URL || '*',
-    methods: ['GET', 'POST'],
-  },
-});
-
-// Store io instance in app for use in routes
-app.set('io', io);
-
-// Socket.io connection handling
-io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
-
-  // Join webhook room
-  socket.on('join-webhook', (token: string) => {
-    socket.join(`webhook:${token}`);
-    console.log(`Client ${socket.id} joined webhook:${token}`);
-  });
-
-  // Leave webhook room
-  socket.on('leave-webhook', (token: string) => {
-    socket.leave(`webhook:${token}`);
-    console.log(`Client ${socket.id} left webhook:${token}`);
-  });
-
-  socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
-  });
-});
 
 /**
  * start server with port

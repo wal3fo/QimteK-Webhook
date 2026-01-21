@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useSocket } from './useSocket';
+import { useSupabaseRealtime, useWebhookRequestSubscription } from './useSupabaseRealtime';
 import { format } from 'date-fns';
 
 export interface WebhookRequest {
@@ -29,7 +29,21 @@ export function useWebhook() {
   const [requests, setRequests] = useState<WebhookRequest[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { socket, isConnected, joinWebhook, leaveWebhook } = useSocket();
+  
+  // Use Supabase Realtime instead of Socket.IO
+  const { isConnected, connectionError } = useSupabaseRealtime(webhook?.token || null);
+  
+  // Subscribe to new webhook requests via Supabase Realtime
+  useWebhookRequestSubscription(webhook?.token || null, (newRequest) => {
+    // Add new request to the list (prepend to show newest first)
+    setRequests((prev) => {
+      // Avoid duplicates
+      if (prev.some(r => r.id === newRequest.id)) {
+        return prev;
+      }
+      return [newRequest, ...prev];
+    });
+  });
 
   // Load webhook from localStorage on mount
   useEffect(() => {
@@ -49,7 +63,7 @@ export function useWebhook() {
                 url: session.url,
                 expiresAt: session.expiresAt,
               });
-              joinWebhook(session.token);
+              // Supabase Realtime subscription is handled automatically by useSupabaseRealtime
               // Load all requests
               const requestsResponse = await fetch(`${API_URL}/webhooks/${session.token}/requests`);
               if (requestsResponse.ok) {
@@ -119,9 +133,7 @@ export function useWebhook() {
         // Save to localStorage
         localStorage.setItem(STORAGE_KEY, JSON.stringify(newWebhook));
         
-        // Join socket room for this webhook
-        joinWebhook(data.token);
-        
+        // Supabase Realtime subscription is handled automatically by useSupabaseRealtime
         // Load initial requests
         await fetchRequests(data.token);
       }
@@ -130,7 +142,7 @@ export function useWebhook() {
     } finally {
       setLoading(false);
     }
-  }, [joinWebhook]);
+  }, []);
 
   // Fetch requests for a webhook
   const fetchRequests = useCallback(async (token: string) => {
@@ -149,31 +161,8 @@ export function useWebhook() {
     }
   }, []);
 
-  // Listen for new requests via socket
-  useEffect(() => {
-    if (!socket || !webhook) return;
-
-    const handleNewRequest = (request: WebhookRequest) => {
-      if (request.webhook_token === webhook.token) {
-        setRequests((prev) => [request, ...prev]);
-      }
-    };
-
-    socket.on('new-request', handleNewRequest);
-
-    return () => {
-      socket.off('new-request', handleNewRequest);
-    };
-  }, [socket, webhook]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (webhook) {
-        leaveWebhook(webhook.token);
-      }
-    };
-  }, [webhook, leaveWebhook]);
+  // Real-time updates are handled by useWebhookRequestSubscription hook
+  // No manual cleanup needed - Supabase Realtime handles it automatically
 
   const deleteWebhook = useCallback(async () => {
     if (!webhook) return;
@@ -184,7 +173,7 @@ export function useWebhook() {
       });
 
       if (response.ok) {
-        leaveWebhook(webhook.token);
+        // Supabase Realtime subscription cleanup is handled automatically
         setWebhook(null);
         setRequests([]);
         localStorage.removeItem(STORAGE_KEY);
@@ -192,18 +181,22 @@ export function useWebhook() {
     } catch (err) {
       console.error('Error deleting webhook:', err);
     }
-  }, [webhook, leaveWebhook]);
+  }, [webhook]);
 
-  // Poll for new requests periodically (fallback if socket fails)
+  // Poll for new requests periodically (fallback if Supabase Realtime fails)
+  // This ensures requests are still shown even if Realtime subscription has issues
   useEffect(() => {
     if (!webhook) return;
+    
+    // Only poll if not connected (fallback mechanism)
+    if (!isConnected) {
+      const pollInterval = setInterval(() => {
+        fetchRequests(webhook.token);
+      }, 5000); // Poll every 5 seconds as fallback
 
-    const pollInterval = setInterval(() => {
-      fetchRequests(webhook.token);
-    }, 3000); // Poll every 3 seconds
-
-    return () => clearInterval(pollInterval);
-  }, [webhook, fetchRequests]);
+      return () => clearInterval(pollInterval);
+    }
+  }, [webhook, fetchRequests, isConnected]);
 
   return {
     webhook,
