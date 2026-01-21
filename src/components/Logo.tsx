@@ -7,15 +7,16 @@ interface LogoProps {
 
 export default function Logo({ className, size = 'md' }: LogoProps) {
   const sizeClasses = {
-    sm: 'text-xl',
-    md: 'text-2xl',
-    lg: 'text-4xl',
+    sm: 'h-6',
+    md: 'h-8',
+    lg: 'h-12',
   };
 
   return (
-    <div className={cn('font-semibold tracking-tight', sizeClasses[size], className)}>
-      <span className="text-white">Qim</span>
-      <span className="text-[#82c91e]">tek</span>
-    </div>
+    <img
+      src="/QimteKw.png"
+      alt="QimteK Logo"
+      className={cn('object-contain', sizeClasses[size], className)}
+    />
   );
 }

@@ -98,10 +98,7 @@ export default function RequestDetails() {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <Logo size="md" />
-              <h1 className="text-2xl font-bold text-qimtek-text">
-                Hooks
-              </h1>
+              <Logo size="lg" />
             </div>
             <button
               onClick={() => navigate('/')}

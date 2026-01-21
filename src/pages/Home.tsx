@@ -75,9 +75,6 @@ export default function Home() {
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
             <Logo size="lg" />
-            <h1 className="text-4xl font-bold text-qimtek-text">
-              Hooks
-            </h1>
           </div>
           <p className="text-qimtek-text-secondary">
             Generate temporary webhook URLs to capture and inspect HTTP requests
