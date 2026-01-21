@@ -3,7 +3,7 @@
  */
 import { Router, type Request, type Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import db from '../db.js';
+import db, { ensureDb } from '../db.js';
 
 const router = Router();
 
@@ -14,6 +14,9 @@ const router = Router();
 router.post('/generate', async (req: Request, res: Response): Promise<void> => {
   try {
     const { expiresIn = 60 } = req.body; // Default 60 minutes
+    
+    // Ensure database is initialized
+    const database = await ensureDb();
     
     // Generate unique token
     const token = uuidv4().replace(/-/g, '');
@@ -27,7 +30,7 @@ router.post('/generate', async (req: Request, res: Response): Promise<void> => {
     const webhookUrl = `${baseUrl}/api/webhook/${token}`;
     
     // Insert into database
-    const stmt = db.prepare(`
+    const stmt = database.prepare(`
       INSERT INTO webhooks (token, expires_at, is_active)
       VALUES (?, ?, 1)
     `);
@@ -59,7 +62,8 @@ router.get('/requests/:id', async (req: Request, res: Response): Promise<void> =
   try {
     const { id } = req.params;
     
-    const requestResult = db.prepare(`
+    const database = await ensureDb();
+    const requestResult = database.prepare(`
       SELECT * FROM requests WHERE id = ?
     `).get(id);
     const request = await (requestResult instanceof Promise ? requestResult : Promise.resolve(requestResult)) as {
@@ -129,8 +133,10 @@ router.get('/:token/requests', async (req: Request, res: Response): Promise<void
     const { token } = req.params;
     const { limit = 100, offset = 0 } = req.query;
     
+    const database = await ensureDb();
+    
     // Verify webhook exists and is active
-    const webhookResult = db.prepare(`
+    const webhookResult = database.prepare(`
       SELECT * FROM webhooks 
       WHERE token = ? AND is_active = 1 AND expires_at > datetime('now')
     `).get(token);
@@ -145,7 +151,7 @@ router.get('/:token/requests', async (req: Request, res: Response): Promise<void
     }
     
     // Get requests
-    const requestsResult = db.prepare(`
+    const requestsResult = database.prepare(`
       SELECT * FROM requests 
       WHERE webhook_token = ? 
       ORDER BY timestamp DESC 
@@ -164,7 +170,7 @@ router.get('/:token/requests', async (req: Request, res: Response): Promise<void
     }>;
     
     // Get total count
-    const totalResult = db.prepare(`
+    const totalResult = database.prepare(`
       SELECT COUNT(*) as count FROM requests WHERE webhook_token = ?
     `).get(token);
     const total = await (totalResult instanceof Promise ? totalResult : Promise.resolve(totalResult)) as { count: number };
@@ -217,7 +223,8 @@ router.get('/:token', async (req: Request, res: Response): Promise<void> => {
   try {
     const { token } = req.params;
     
-    const webhookResult = db.prepare(`
+    const database = await ensureDb();
+    const webhookResult = database.prepare(`
       SELECT * FROM webhooks 
       WHERE token = ? AND is_active = 1 AND expires_at > datetime('now')
     `).get(token);
@@ -258,7 +265,8 @@ router.delete('/:token', async (req: Request, res: Response): Promise<void> => {
   try {
     const { token } = req.params;
     
-    const stmt = db.prepare('DELETE FROM webhooks WHERE token = ?');
+    const database = await ensureDb();
+    const stmt = database.prepare('DELETE FROM webhooks WHERE token = ?');
     const result = stmt.run(token);
     await (result instanceof Promise ? result : Promise.resolve(result));
     

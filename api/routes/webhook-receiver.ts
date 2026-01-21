@@ -4,7 +4,7 @@
 import { Router, type Request, type Response } from 'express';
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import db from '../db.js';
+import db, { ensureDb } from '../db.js';
 
 const router = Router();
 
@@ -20,8 +20,11 @@ router.all('/:token', async (req: Request, res: Response): Promise<void> => {
   try {
     const { token } = req.params;
     
+    // Ensure database is initialized
+    const database = await ensureDb();
+    
     // Verify webhook exists and is active
-    const webhookResult = db.prepare(`
+    const webhookResult = database.prepare(`
       SELECT * FROM webhooks 
       WHERE token = ? AND is_active = 1 AND expires_at > datetime('now')
     `).get(token);
@@ -95,7 +98,7 @@ router.all('/:token', async (req: Request, res: Response): Promise<void> => {
     
     // Store request in database
     const timestamp = new Date().toISOString();
-    const stmt = db.prepare(`
+    const stmt = database.prepare(`
       INSERT INTO requests (id, webhook_token, method, url, headers, body, query, ip_address, timestamp)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);

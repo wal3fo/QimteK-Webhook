@@ -1,17 +1,14 @@
 /**
  * Cleanup utility for expired webhooks
  */
-import db from '../db.js';
+import { ensureDb } from '../db.js';
 
 /**
  * Delete expired webhooks and their associated requests
  */
 export async function cleanupExpiredWebhooks(): Promise<void> {
   try {
-    if (!db) {
-      console.warn('Database not initialized, skipping cleanup');
-      return;
-    }
+    const db = await ensureDb();
     
     const stmt = db.prepare(`
       DELETE FROM webhooks 

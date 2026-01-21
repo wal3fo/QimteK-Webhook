@@ -127,15 +127,45 @@ Response: { success: true, message: string, requestId: string }
 
 ## Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PORT` | Server port | `3001` |
-| `BASE_URL` | Base URL for webhook generation | `http://localhost:3001` |
-| `CLIENT_URL` | Client URL for CORS/Socket.io | `http://localhost:5173` |
-| `DB_PATH` | Database file path | `./webhook.db` |
-| `NODE_ENV` | Environment mode | `development` |
-| `VITE_API_URL` | Frontend API URL | `http://localhost:3001/api` |
-| `VITE_SOCKET_URL` | Frontend Socket.io URL | `http://localhost:3001` |
+See [ENV_CONFIG.md](./ENV_CONFIG.md) for complete environment variable documentation.
+
+### Quick Reference
+
+**Local Development:**
+```env
+NODE_ENV=development
+PORT=3001
+BASE_URL=http://localhost:3001
+CLIENT_URL=http://localhost:5173
+VITE_API_URL=http://localhost:3001/api
+VITE_SOCKET_URL=http://localhost:3001
+```
+
+**Vercel Production:**
+```env
+NODE_ENV=production
+SUPABASE_URL=https://xxxxx.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+BASE_URL=https://your-app.vercel.app
+CLIENT_URL=https://your-app.vercel.app
+VITE_API_URL=/api
+VITE_SOCKET_URL=https://your-app.vercel.app
+```
+
+### All Variables
+
+| Variable | Description | Default | Required (Prod) |
+|----------|-------------|---------|-----------------|
+| `NODE_ENV` | Environment mode | `development` | Yes |
+| `SUPABASE_URL` | Supabase project URL | - | Yes |
+| `SUPABASE_ANON_KEY` | Supabase anonymous key | - | Yes |
+| `PORT` | Server port | `3001` | No |
+| `BASE_URL` | Base URL for webhook generation | Auto-detected | No |
+| `CLIENT_URL` | Client URL for CORS/Socket.io | `*` | No |
+| `DB_PATH` | Database file path (local only) | `./webhook.db` | No |
+| `VITE_API_URL` | Frontend API URL | `http://localhost:3001/api` | No |
+| `VITE_SOCKET_URL` | Frontend Socket.io URL | `http://localhost:3001` | No |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key (optional) | - | No |
 
 ## Database Schema
 
