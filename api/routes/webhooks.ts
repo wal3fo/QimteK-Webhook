@@ -32,7 +32,8 @@ router.post('/generate', async (req: Request, res: Response): Promise<void> => {
       VALUES (?, ?, 1)
     `);
     
-    stmt.run(token, expiresAt.toISOString());
+    const result = stmt.run(token, expiresAt.toISOString());
+    await (result instanceof Promise ? result : Promise.resolve(result));
     
     res.status(201).json({
       success: true,
@@ -58,9 +59,10 @@ router.get('/requests/:id', async (req: Request, res: Response): Promise<void> =
   try {
     const { id } = req.params;
     
-    const request = db.prepare(`
+    const requestResult = db.prepare(`
       SELECT * FROM requests WHERE id = ?
-    `).get(id) as {
+    `).get(id);
+    const request = await (requestResult instanceof Promise ? requestResult : Promise.resolve(requestResult)) as {
       id: string;
       webhook_token: string;
       method: string;
@@ -128,10 +130,11 @@ router.get('/:token/requests', async (req: Request, res: Response): Promise<void
     const { limit = 100, offset = 0 } = req.query;
     
     // Verify webhook exists and is active
-    const webhook = db.prepare(`
+    const webhookResult = db.prepare(`
       SELECT * FROM webhooks 
       WHERE token = ? AND is_active = 1 AND expires_at > datetime('now')
-    `).get(token) as { token: string; expires_at: string; is_active: number } | undefined;
+    `).get(token);
+    const webhook = await (webhookResult instanceof Promise ? webhookResult : Promise.resolve(webhookResult)) as { token: string; expires_at: string; is_active: number } | undefined;
     
     if (!webhook) {
       res.status(404).json({
@@ -142,12 +145,13 @@ router.get('/:token/requests', async (req: Request, res: Response): Promise<void
     }
     
     // Get requests
-    const requests = db.prepare(`
+    const requestsResult = db.prepare(`
       SELECT * FROM requests 
       WHERE webhook_token = ? 
       ORDER BY timestamp DESC 
       LIMIT ? OFFSET ?
-    `).all(token, limit, offset) as Array<{
+    `).all(token, limit, offset);
+    const requests = await (requestsResult instanceof Promise ? requestsResult : Promise.resolve(requestsResult)) as Array<{
       id: string;
       webhook_token: string;
       method: string;
@@ -160,9 +164,10 @@ router.get('/:token/requests', async (req: Request, res: Response): Promise<void
     }>;
     
     // Get total count
-    const total = db.prepare(`
+    const totalResult = db.prepare(`
       SELECT COUNT(*) as count FROM requests WHERE webhook_token = ?
-    `).get(token) as { count: number };
+    `).get(token);
+    const total = await (totalResult instanceof Promise ? totalResult : Promise.resolve(totalResult)) as { count: number };
     
     // Parse JSON fields - handle both string and object formats
     const parseJsonField = (field: string | object | null): any => {
@@ -212,10 +217,11 @@ router.get('/:token', async (req: Request, res: Response): Promise<void> => {
   try {
     const { token } = req.params;
     
-    const webhook = db.prepare(`
+    const webhookResult = db.prepare(`
       SELECT * FROM webhooks 
       WHERE token = ? AND is_active = 1 AND expires_at > datetime('now')
-    `).get(token) as { token: string; created_at: string; expires_at: string; is_active: number } | undefined;
+    `).get(token);
+    const webhook = await (webhookResult instanceof Promise ? webhookResult : Promise.resolve(webhookResult)) as { token: string; created_at: string; expires_at: string; is_active: number } | undefined;
     
     if (!webhook) {
       res.status(404).json({
@@ -254,6 +260,7 @@ router.delete('/:token', async (req: Request, res: Response): Promise<void> => {
     
     const stmt = db.prepare('DELETE FROM webhooks WHERE token = ?');
     const result = stmt.run(token);
+    await (result instanceof Promise ? result : Promise.resolve(result));
     
     if (result.changes === 0) {
       res.status(404).json({

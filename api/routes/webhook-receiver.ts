@@ -21,10 +21,11 @@ router.all('/:token', async (req: Request, res: Response): Promise<void> => {
     const { token } = req.params;
     
     // Verify webhook exists and is active
-    const webhook = db.prepare(`
+    const webhookResult = db.prepare(`
       SELECT * FROM webhooks 
       WHERE token = ? AND is_active = 1 AND expires_at > datetime('now')
-    `).get(token) as { token: string; expires_at: string; is_active: number } | undefined;
+    `).get(token);
+    const webhook = await (webhookResult instanceof Promise ? webhookResult : Promise.resolve(webhookResult)) as { token: string; expires_at: string; is_active: number } | undefined;
     
     if (!webhook) {
       res.status(404).json({
@@ -100,7 +101,7 @@ router.all('/:token', async (req: Request, res: Response): Promise<void> => {
     `);
     
     try {
-      stmt.run(
+      const runResult = stmt.run(
         requestId,
         token,
         method,
@@ -111,6 +112,7 @@ router.all('/:token', async (req: Request, res: Response): Promise<void> => {
         ipAddress,
         timestamp
       );
+      await (runResult instanceof Promise ? runResult : Promise.resolve(runResult));
       
       console.log(`[Webhook] Request saved: ${method} ${url} (ID: ${requestId})`);
     } catch (dbError) {

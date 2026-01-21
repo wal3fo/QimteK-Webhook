@@ -6,15 +6,21 @@ import db from '../db.js';
 /**
  * Delete expired webhooks and their associated requests
  */
-export function cleanupExpiredWebhooks(): void {
+export async function cleanupExpiredWebhooks(): Promise<void> {
   try {
+    if (!db) {
+      console.warn('Database not initialized, skipping cleanup');
+      return;
+    }
+    
     const stmt = db.prepare(`
       DELETE FROM webhooks 
       WHERE expires_at < datetime('now') OR is_active = 0
     `);
     
     const result = stmt.run();
-    console.log(`Cleaned up ${result.changes} expired webhook(s)`);
+    const finalResult = await (result instanceof Promise ? result : Promise.resolve(result));
+    console.log(`Cleaned up ${finalResult.changes} expired webhook(s)`);
   } catch (error) {
     console.error('Error cleaning up expired webhooks:', error);
   }
@@ -25,11 +31,11 @@ export function cleanupExpiredWebhooks(): void {
  */
 export function startCleanupJob(intervalMinutes: number = 60): void {
   // Run cleanup immediately
-  cleanupExpiredWebhooks();
+  cleanupExpiredWebhooks().catch(console.error);
   
   // Then run periodically
   setInterval(() => {
-    cleanupExpiredWebhooks();
+    cleanupExpiredWebhooks().catch(console.error);
   }, intervalMinutes * 60 * 1000);
   
   console.log(`Cleanup job started (runs every ${intervalMinutes} minutes)`);
