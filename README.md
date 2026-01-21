@@ -1,4 +1,4 @@
-# Webhook Inspector
+# QimteK Hooks
 
 A real-time webhook inspection tool similar to webhook.site. Generate temporary webhook URLs to capture and inspect HTTP requests for debugging and testing purposes.
 

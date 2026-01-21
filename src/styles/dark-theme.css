@@ -44,18 +44,18 @@
   --QimteK-dark-mode-border-dark-color: #3d444d;
   --QimteK-dark-border-subtle: #929dab;
 
-  /* Primary Colors */
-  --QimteK-primary: #0066cc;
-  --QimteK-primary-rgb: 0, 102, 204;
-  --QimteK-primary-darken: #004c95;
+  /* Primary Colors - Using QimteK Lime Green */
+  --QimteK-primary: #82c91e;
+  --QimteK-primary-rgb: 130, 201, 30;
+  --QimteK-primary-darken: #6ba017;
   --QimteK-lime: #82c91e;
   --QimteK-lime-rgb: 130, 201, 30;
 
-  /* Link Colors */
-  --QimteK-link-color: #4dabf7;
-  --QimteK-link-color-rgb: 77, 171, 247;
-  --QimteK-link-hover-color: #66d9ef;
-  --QimteK-link-hover-color-rgb: 102, 217, 239;
+  /* Link Colors - Using QimteK Lime */
+  --QimteK-link-color: #82c91e;
+  --QimteK-link-color-rgb: 130, 201, 30;
+  --QimteK-link-hover-color: #6ba017;
+  --QimteK-link-hover-color-rgb: 107, 160, 23;
 
   /* Text Emphasis */
   --QimteK-dark-text-emphasis: #3a4859;

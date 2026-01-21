@@ -156,7 +156,21 @@ class JsonDatabase {
         // Handle SELECT FROM requests WHERE id = ?
         if (sql.includes('SELECT') && sql.includes('requests') && sql.includes('id = ?')) {
           const id = params[0];
-          return db.requests.find(r => r.id === id) || undefined;
+          const request = db.requests.find(r => r.id === id);
+          if (!request) return undefined;
+          
+          // Convert to format expected by the code (stringify JSON fields)
+          return {
+            id: request.id,
+            webhook_token: request.webhook_token,
+            method: request.method,
+            url: request.url,
+            headers: typeof request.headers === 'string' ? request.headers : JSON.stringify(request.headers),
+            body: request.body ? (typeof request.body === 'string' ? request.body : JSON.stringify(request.body)) : null,
+            query: request.query ? (typeof request.query === 'string' ? request.query : JSON.stringify(request.query)) : null,
+            timestamp: request.timestamp,
+            ip_address: request.ip_address,
+          };
         }
         
         return undefined;

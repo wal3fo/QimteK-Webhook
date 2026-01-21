@@ -4,6 +4,7 @@ import { Copy, Check, Trash2, ExternalLink, Filter, Search, Download } from 'luc
 import { useWebhook } from '@/hooks/useWebhook';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import Logo from '@/components/Logo';
 
 const METHOD_COLORS: Record<string, string> = {
   GET: 'bg-blue-900/30 text-blue-300 border border-blue-700/50',
@@ -72,9 +73,12 @@ export default function Home() {
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-qimtek-text mb-2">
-            Webhook Inspector
-          </h1>
+          <div className="flex items-center gap-4 mb-4">
+            <Logo size="lg" />
+            <h1 className="text-4xl font-bold text-qimtek-text">
+              Hooks
+            </h1>
+          </div>
           <p className="text-qimtek-text-secondary">
             Generate temporary webhook URLs to capture and inspect HTTP requests
           </p>
@@ -110,9 +114,9 @@ export default function Home() {
                 onClick={handleGenerate}
                 disabled={loading}
                 className={cn(
-                  'px-6 py-3 bg-qimtek-primary text-white rounded-lg font-medium',
-                  'hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed',
-                  'transition-opacity'
+                  'px-6 py-3 bg-[#82c91e] text-black rounded-lg font-medium',
+                  'hover:bg-[#6ba017] disabled:opacity-50 disabled:cursor-not-allowed',
+                  'transition-colors font-semibold'
                 )}
               >
                 {loading ? 'Generating...' : 'Generate Webhook URL'}
@@ -180,7 +184,7 @@ export default function Home() {
                 <h2 className="text-2xl font-semibold text-qimtek-text">
                   Requests
                   {requests.length > 0 && (
-                    <span className="ml-2 px-2 py-1 bg-qimtek-primary/20 text-qimtek-primary rounded text-sm border border-qimtek-primary/30">
+                    <span className="ml-2 px-2 py-1 bg-[#82c91e]/20 text-[#82c91e] rounded text-sm border border-[#82c91e]/30">
                       {requests.length}
                     </span>
                   )}
@@ -280,7 +284,7 @@ export default function Home() {
                               e.stopPropagation();
                               navigate(`/request/${request.id}`);
                             }}
-                            className="text-qimtek-primary hover:text-qimtek-link-hover-color transition-colors"
+                            className="text-[#82c91e] hover:text-[#6ba017] transition-colors font-medium"
                           >
                             View Details
                           </button>

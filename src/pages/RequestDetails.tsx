@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import Logo from '@/components/Logo';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -81,7 +82,7 @@ export default function RequestDetails() {
           <p className="text-red-400 mb-4">{error || 'Request not found'}</p>
           <button
             onClick={() => navigate('/')}
-            className="px-4 py-2 bg-qimtek-primary text-white rounded hover:opacity-90 transition-opacity"
+            className="px-4 py-2 bg-[#82c91e] text-black rounded hover:bg-[#6ba017] transition-colors font-semibold"
           >
             Back to Home
           </button>
@@ -95,16 +96,24 @@ export default function RequestDetails() {
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Header */}
         <div className="mb-6">
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center gap-2 text-qimtek-text-secondary hover:text-qimtek-text mb-4 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
-          </button>
-          <h1 className="text-3xl font-bold text-qimtek-text">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <Logo size="md" />
+              <h1 className="text-2xl font-bold text-qimtek-text">
+                Hooks
+              </h1>
+            </div>
+            <button
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2 text-qimtek-text-secondary hover:text-qimtek-text transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Dashboard
+            </button>
+          </div>
+          <h2 className="text-3xl font-bold text-qimtek-text">
             Request Details
-          </h1>
+          </h2>
         </div>
 
         {/* Request Info Card */}

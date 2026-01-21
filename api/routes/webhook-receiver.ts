@@ -8,8 +8,9 @@ import db from '../db.js';
 
 const router = Router();
 
-// Use raw body parser for webhook receiver only
-router.use(express.text({ type: '*/*', limit: '10mb' }));
+// Middleware to capture raw body
+// This needs to run before express.json() processes the body
+router.use(express.raw({ type: '*/*', limit: '10mb' }));
 
 /**
  * Capture webhook request
@@ -45,30 +46,39 @@ router.all('/:token', async (req: Request, res: Response): Promise<void> => {
     // Parse body - handle different content types
     let body = null;
     const contentType = req.headers['content-type'] || '';
+    let rawBody: string | Buffer | null = null;
     
-    if (req.body) {
-      if (typeof req.body === 'string' && req.body.length > 0) {
-        // Try to parse as JSON if content-type suggests it
-        if (contentType.includes('application/json')) {
-          try {
-            body = JSON.parse(req.body);
-          } catch {
-            // If JSON parsing fails, store as string
-            body = req.body;
-          }
-        } else if (contentType.includes('application/x-www-form-urlencoded')) {
-          // Form data is already parsed by express.urlencoded
-          body = req.body;
-        } else {
-          // Store raw body as string
-          body = req.body;
+    // Get raw body (from express.raw() middleware)
+    if (Buffer.isBuffer(req.body)) {
+      rawBody = req.body.toString('utf8');
+    } else if (typeof req.body === 'string') {
+      rawBody = req.body;
+    }
+    
+    if (rawBody && rawBody.length > 0) {
+      // Try to parse as JSON if content-type suggests it
+      if (contentType.includes('application/json')) {
+        try {
+          body = JSON.parse(rawBody);
+        } catch {
+          // If JSON parsing fails, store as string
+          body = rawBody;
         }
-      } else if (typeof req.body === 'object' && !Array.isArray(req.body) && Object.keys(req.body).length > 0) {
-        // Already parsed object (from express.json or express.urlencoded)
-        body = req.body;
-      } else if (Buffer.isBuffer(req.body)) {
-        // Buffer - convert to string
-        body = req.body.toString('utf8');
+      } else if (contentType.includes('application/x-www-form-urlencoded')) {
+        // Try to parse form data
+        try {
+          const params = new URLSearchParams(rawBody);
+          const formData: Record<string, string> = {};
+          params.forEach((value, key) => {
+            formData[key] = value;
+          });
+          body = Object.keys(formData).length > 0 ? formData : rawBody;
+        } catch {
+          body = rawBody;
+        }
+      } else {
+        // Store raw body as string
+        body = rawBody;
       }
     }
     
@@ -80,36 +90,51 @@ router.all('/:token', async (req: Request, res: Response): Promise<void> => {
       'unknown';
     
     // Store request in database
+    const timestamp = new Date().toISOString();
     const stmt = db.prepare(`
-      INSERT INTO requests (id, webhook_token, method, url, headers, body, query, ip_address)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO requests (id, webhook_token, method, url, headers, body, query, ip_address, timestamp)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
-    stmt.run(
-      requestId,
-      token,
+    try {
+      stmt.run(
+        requestId,
+        token,
+        method,
+        url,
+        JSON.stringify(headers),
+        body ? JSON.stringify(body) : null,
+        Object.keys(query).length > 0 ? JSON.stringify(query) : null,
+        ipAddress,
+        timestamp
+      );
+      
+      console.log(`[Webhook] Request saved: ${method} ${url} (ID: ${requestId})`);
+    } catch (dbError) {
+      console.error('Database error saving request:', dbError);
+      // Continue anyway - we'll still return success
+    }
+    
+    // Prepare request object for socket emission
+    const requestData = {
+      id: requestId,
+      webhook_token: token,
       method,
       url,
-      JSON.stringify(headers),
-      body ? JSON.stringify(body) : null,
-      Object.keys(query).length > 0 ? JSON.stringify(query) : null,
-      ipAddress
-    );
+      headers,
+      body,
+      query,
+      timestamp,
+      ip_address: ipAddress,
+    };
     
     // Emit socket event for real-time updates
     const io = req.app.get('io');
     if (io) {
-      io.to(`webhook:${token}`).emit('new-request', {
-        id: requestId,
-        webhook_token: token,
-        method,
-        url,
-        headers,
-        body,
-        query,
-        timestamp: new Date().toISOString(),
-        ip_address: ipAddress,
-      });
+      io.to(`webhook:${token}`).emit('new-request', requestData);
+      console.log(`[Webhook] Socket event emitted for token: ${token}`);
+    } else {
+      console.warn('[Webhook] Socket.io not available');
     }
     
     // Return success response
@@ -117,6 +142,7 @@ router.all('/:token', async (req: Request, res: Response): Promise<void> => {
       success: true,
       message: 'Webhook received',
       requestId,
+      timestamp,
     });
   } catch (error) {
     console.error('Error processing webhook:', error);

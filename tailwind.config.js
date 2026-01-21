@@ -19,7 +19,7 @@ export default {
           'text-tertiary': 'var(--QimteK-tertiary-color, rgba(232, 232, 232, 0.5))',
           'border': 'var(--QimteK-border-color, #2b282b)',
           'border-active': 'var(--QimteK-dark-mode-border-color-active, #2c415d)',
-          'primary': 'var(--QimteK-primary, #0066cc)',
+          'primary': 'var(--QimteK-primary, #82c91e)',
           'lime': 'var(--QimteK-lime, #82c91e)',
         },
       },

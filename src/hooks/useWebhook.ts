@@ -22,12 +22,73 @@ export interface Webhook {
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
+const STORAGE_KEY = 'webhook_session';
+
 export function useWebhook() {
   const [webhook, setWebhook] = useState<Webhook | null>(null);
   const [requests, setRequests] = useState<WebhookRequest[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { socket, isConnected, joinWebhook, leaveWebhook } = useSocket();
+
+  // Load webhook from localStorage on mount
+  useEffect(() => {
+    const loadSession = async () => {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const session = JSON.parse(saved);
+          // Verify webhook still exists and is valid
+          const response = await fetch(`${API_URL}/webhooks/${session.token}/requests?limit=1`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+              // Webhook is still valid, restore it
+              setWebhook({
+                token: session.token,
+                url: session.url,
+                expiresAt: session.expiresAt,
+              });
+              joinWebhook(session.token);
+              // Load all requests
+              const requestsResponse = await fetch(`${API_URL}/webhooks/${session.token}/requests`);
+              if (requestsResponse.ok) {
+                const requestsData = await requestsResponse.json();
+                if (requestsData.success) {
+                  setRequests(requestsData.requests || []);
+                }
+              }
+            } else {
+              // Webhook expired or invalid, clear storage
+              localStorage.removeItem(STORAGE_KEY);
+            }
+          } else {
+            // Webhook not found, clear storage
+            localStorage.removeItem(STORAGE_KEY);
+          }
+        }
+      } catch (err) {
+        console.error('Error loading session:', err);
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    };
+
+    loadSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
+
+  // Save webhook to localStorage whenever it changes
+  useEffect(() => {
+    if (webhook) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        token: webhook.token,
+        url: webhook.url,
+        expiresAt: webhook.expiresAt,
+      }));
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, [webhook]);
 
   // Generate new webhook
   const generateWebhook = useCallback(async (expiresIn: number = 60) => {
@@ -48,11 +109,15 @@ export function useWebhook() {
 
       const data = await response.json();
       if (data.success) {
-        setWebhook({
+        const newWebhook = {
           token: data.token,
           url: data.url,
           expiresAt: data.expiresAt,
-        });
+        };
+        setWebhook(newWebhook);
+        
+        // Save to localStorage
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(newWebhook));
         
         // Join socket room for this webhook
         joinWebhook(data.token);
@@ -122,11 +187,23 @@ export function useWebhook() {
         leaveWebhook(webhook.token);
         setWebhook(null);
         setRequests([]);
+        localStorage.removeItem(STORAGE_KEY);
       }
     } catch (err) {
       console.error('Error deleting webhook:', err);
     }
   }, [webhook, leaveWebhook]);
+
+  // Poll for new requests periodically (fallback if socket fails)
+  useEffect(() => {
+    if (!webhook) return;
+
+    const pollInterval = setInterval(() => {
+      fetchRequests(webhook.token);
+    }, 3000); // Poll every 3 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [webhook, fetchRequests]);
 
   return {
     webhook,

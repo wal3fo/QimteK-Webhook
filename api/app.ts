@@ -25,6 +25,11 @@ dotenv.config()
 const app: express.Application = express()
 
 app.use(cors())
+
+// Webhook receiver needs raw body, so it must be registered before express.json()
+app.use('/api/webhook', webhookReceiverRoutes)
+
+// JSON and URL-encoded body parsers for other routes
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 
@@ -33,7 +38,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }))
  */
 app.use('/api/auth', authRoutes)
 app.use('/api/webhooks', webhookRoutes)
-app.use('/api/webhook', webhookReceiverRoutes)
 
 /**
  * health

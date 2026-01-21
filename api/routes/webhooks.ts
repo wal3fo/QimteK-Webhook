@@ -50,8 +50,77 @@ router.post('/generate', async (req: Request, res: Response): Promise<void> => {
 });
 
 /**
+ * Get a single request by ID
+ * GET /api/webhooks/requests/:id
+ * Must come before /:token to avoid route conflicts
+ */
+router.get('/requests/:id', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    
+    const request = db.prepare(`
+      SELECT * FROM requests WHERE id = ?
+    `).get(id) as {
+      id: string;
+      webhook_token: string;
+      method: string;
+      url: string;
+      headers: string;
+      body: string | null;
+      query: string | null;
+      timestamp: string;
+      ip_address: string | null;
+    } | undefined;
+    
+    if (!request) {
+      res.status(404).json({
+        success: false,
+        error: 'Request not found',
+      });
+      return;
+    }
+    
+    // Parse JSON fields - handle both string and object formats
+    const parseJsonField = (field: string | object | null): any => {
+      if (!field) return null;
+      if (typeof field === 'object') return field;
+      if (typeof field === 'string') {
+        try {
+          return JSON.parse(field);
+        } catch {
+          return field;
+        }
+      }
+      return field;
+    };
+
+    res.json({
+      success: true,
+      request: {
+        id: request.id,
+        webhook_token: request.webhook_token,
+        method: request.method,
+        url: request.url,
+        headers: parseJsonField(request.headers),
+        body: parseJsonField(request.body),
+        query: parseJsonField(request.query),
+        timestamp: request.timestamp,
+        ip_address: request.ip_address,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching request:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch request',
+    });
+  }
+});
+
+/**
  * Get requests for a specific webhook token
  * GET /api/webhooks/:token/requests
+ * This route must come before /:token to avoid route conflicts
  */
 router.get('/:token/requests', async (req: Request, res: Response): Promise<void> => {
   try {
@@ -95,15 +164,28 @@ router.get('/:token/requests', async (req: Request, res: Response): Promise<void
       SELECT COUNT(*) as count FROM requests WHERE webhook_token = ?
     `).get(token) as { count: number };
     
-    // Parse JSON fields
+    // Parse JSON fields - handle both string and object formats
+    const parseJsonField = (field: string | object | null): any => {
+      if (!field) return null;
+      if (typeof field === 'object') return field;
+      if (typeof field === 'string') {
+        try {
+          return JSON.parse(field);
+        } catch {
+          return field;
+        }
+      }
+      return field;
+    };
+
     const parsedRequests = requests.map(req => ({
       id: req.id,
       webhook_token: req.webhook_token,
       method: req.method,
       url: req.url,
-      headers: JSON.parse(req.headers),
-      body: req.body ? JSON.parse(req.body) : null,
-      query: req.query ? JSON.parse(req.query) : null,
+      headers: parseJsonField(req.headers),
+      body: parseJsonField(req.body),
+      query: parseJsonField(req.query),
       timestamp: req.timestamp,
       ip_address: req.ip_address,
     }));
@@ -123,57 +205,44 @@ router.get('/:token/requests', async (req: Request, res: Response): Promise<void
 });
 
 /**
- * Get a single request by ID
- * GET /api/webhooks/requests/:id
+ * Get webhook info
+ * GET /api/webhooks/:token
  */
-router.get('/requests/:id', async (req: Request, res: Response): Promise<void> => {
+router.get('/:token', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params;
+    const { token } = req.params;
     
-    const request = db.prepare(`
-      SELECT * FROM requests WHERE id = ?
-    `).get(id) as {
-      id: string;
-      webhook_token: string;
-      method: string;
-      url: string;
-      headers: string;
-      body: string | null;
-      query: string | null;
-      timestamp: string;
-      ip_address: string | null;
-    } | undefined;
+    const webhook = db.prepare(`
+      SELECT * FROM webhooks 
+      WHERE token = ? AND is_active = 1 AND expires_at > datetime('now')
+    `).get(token) as { token: string; created_at: string; expires_at: string; is_active: number } | undefined;
     
-    if (!request) {
+    if (!webhook) {
       res.status(404).json({
         success: false,
-        error: 'Request not found',
+        error: 'Webhook not found or expired',
       });
       return;
     }
     
     res.json({
       success: true,
-      request: {
-        id: request.id,
-        webhook_token: request.webhook_token,
-        method: request.method,
-        url: request.url,
-        headers: JSON.parse(request.headers),
-        body: request.body ? JSON.parse(request.body) : null,
-        query: request.query ? JSON.parse(request.query) : null,
-        timestamp: request.timestamp,
-        ip_address: request.ip_address,
+      webhook: {
+        token: webhook.token,
+        created_at: webhook.created_at,
+        expires_at: webhook.expires_at,
+        is_active: webhook.is_active === 1,
       },
     });
   } catch (error) {
-    console.error('Error fetching request:', error);
+    console.error('Error fetching webhook:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch request',
+      error: 'Failed to fetch webhook',
     });
   }
 });
+
 
 /**
  * Delete a webhook and all its requests
