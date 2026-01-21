@@ -22,3 +22,77 @@ body,
   background-color: var(--QimteK-body-bg, #1a1a1a);
   color: var(--QimteK-body-color, #e8e8e8);
 }
+
+/* Smooth transitions and animations */
+* {
+  transition-property: color, background-color, border-color, opacity, transform, box-shadow;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Page transitions */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Apply animations */
+.page-enter {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.card-enter {
+  animation: scaleIn 0.2s ease-out;
+}
+
+.slide-enter {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Smooth hover transitions */
+button, a {
+  transition: all 0.2s ease-in-out;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+/* Loading spinner */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}

@@ -24,7 +24,6 @@ import express, {
 } from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
-import authRoutes from './routes/auth.js'
 import webhookRoutes from './routes/webhooks.js'
 import webhookReceiverRoutes from './routes/webhook-receiver.js'
 
@@ -51,7 +50,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 /**
  * API Routes
  */
-app.use('/api/auth', authRoutes)
 app.use('/api/webhooks', webhookRoutes)
 
 /**

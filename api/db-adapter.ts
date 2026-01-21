@@ -2,11 +2,11 @@
  * Universal Database Adapter
  * 
  * This adapter provides a unified interface for database operations that works with:
- * - Supabase PostgreSQL (production/Vercel) - REQUIRED
- * - SQLite (local development only)
- * - JSON file storage (local development fallback only)
+ * - SQLite (preferred for local development)
+ * - JSON file storage (fallback when SQLite not available)
+ * - Supabase PostgreSQL (optional, only if credentials provided)
  * 
- * IMPORTANT: In production/Vercel, Supabase is REQUIRED. JSON database will NOT work.
+ * Priority: SQLite → JSON → Supabase (if credentials available)
  * 
  * All database operations go through this adapter, making it easy to switch
  * between storage backends without changing application code.
@@ -40,65 +40,54 @@ export async function initDb(): Promise<void> {
   }
 
   initPromise = (async () => {
-    // Check if we're in production (Vercel)
-    const isProduction = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production';
     const hasSupabase = process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY);
 
-    // Priority 1: Use Supabase in production - REQUIRED, no fallback
-    if (isProduction) {
-      if (!hasSupabase) {
-        throw new Error(
-          'Supabase credentials are REQUIRED in production. ' +
-          'Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_ANON_KEY) environment variables.'
-        );
-      }
+    // Priority 1: Try better-sqlite3 (works everywhere, preferred for local dev)
+    try {
+      const Database = (await import('better-sqlite3')).default;
+      const dbPath = process.env.DB_PATH || path.join(process.cwd(), 'webhook.db');
+      const sqliteDb = new Database(dbPath);
+      sqliteDb.pragma('foreign_keys = ON');
+      // Cast to DatabaseAdapter since SQLite Database implements the interface
+      db = sqliteDb as unknown as DatabaseAdapter;
+      console.log('✅ Using better-sqlite3 database');
+      
+      // Create schema for SQLite
+      await createSchema(db);
+      return;
+    } catch (error: any) {
+      console.log('⚠️  better-sqlite3 not available, trying JSON database fallback');
+    }
+
+    // Priority 2: Fallback to JSON database (works everywhere)
+    try {
+      db = jsonDb;
+      console.log('✅ Using JSON database');
+      await createSchema(db);
+      return;
+    } catch (error) {
+      console.error('⚠️  JSON database failed:', error);
+      // Continue to try Supabase if available
+    }
+
+    // Priority 3: Optional Supabase (only if credentials provided)
+    if (hasSupabase) {
       try {
         db = getSupabaseDb();
-        console.log('✅ Using Supabase PostgreSQL database (production)');
+        console.log('✅ Using Supabase PostgreSQL database (optional)');
         return;
       } catch (error) {
         console.error('❌ Failed to initialize Supabase:', error);
-        throw new Error(
-          `Supabase initialization failed in production: ${error instanceof Error ? error.message : String(error)}. ` +
-          'JSON database cannot be used in production/Vercel.'
-        );
+        // Fall through to throw error
       }
     }
 
-    // Priority 2: Try better-sqlite3 for local development (NOT in Vercel)
-    // Skip SQLite in production/Vercel - use Supabase only
-    if (!isProduction) {
-      try {
-        const Database = (await import('better-sqlite3')).default;
-        // Only use DB_PATH in local dev, never in production
-        const dbPath = process.env.DB_PATH || path.join(process.cwd(), 'webhook.db');
-        const sqliteDb = new Database(dbPath);
-        sqliteDb.pragma('foreign_keys = ON');
-        // Cast to DatabaseAdapter since SQLite Database implements the interface
-        db = sqliteDb as unknown as DatabaseAdapter;
-        console.log('✅ Using better-sqlite3 database (local development)');
-        
-        // Create schema for SQLite
-        await createSchema(db);
-        return;
-      } catch (error: any) {
-        console.log('⚠️  better-sqlite3 not available, using JSON database fallback');
-      }
-    }
-
-    // Priority 3: Fallback to JSON database (local development only)
-    // This will throw an error if called in production
-    try {
-      db = jsonDb;
-      console.log('✅ Using JSON database fallback (local development)');
-      await createSchema(db);
-    } catch (error) {
-      // If JSON database fails (e.g., in production), throw error
-      throw new Error(
-        `Database initialization failed: ${error instanceof Error ? error.message : String(error)}. ` +
-        'In production, Supabase is required. In local development, ensure Supabase credentials are set or SQLite/JSON fallback is available.'
-      );
-    }
+    // If all databases failed, throw error
+    throw new Error(
+      'Failed to initialize any database. ' +
+      'Please ensure SQLite (better-sqlite3) is available, or JSON database can be created, ' +
+      'or Supabase credentials are configured.'
+    );
   })();
 
   return initPromise;

@@ -29,12 +29,8 @@ interface Database {
   requests: Request[];
 }
 
-// Only use JSON database in local development, never in production/Vercel
-// In production, Supabase is used instead
+// JSON database works in all environments
 function getDbPath(): string {
-  if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
-    throw new Error('JSON database cannot be used in production/Vercel. Use Supabase instead.');
-  }
   return process.env.DB_PATH || path.join(process.cwd(), 'webhook-data.json');
 }
 

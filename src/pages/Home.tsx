@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Copy, Check, Trash2, ExternalLink, Filter, Search, Download } from 'lucide-react';
 import { useWebhook } from '@/hooks/useWebhook';
@@ -14,6 +14,46 @@ const METHOD_COLORS: Record<string, string> = {
   DELETE: 'bg-red-900/30 text-red-300 border border-red-700/50',
 };
 
+const METHODS = ['ALL', 'GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
+
+// Memoized request row component
+const RequestRow = memo(({ request, onNavigate }: { request: any; onNavigate: (id: string) => void }) => (
+  <tr
+    className="hover:bg-qimtek-bg-secondary transition-all duration-200 cursor-pointer"
+    onClick={() => onNavigate(request.id)}
+  >
+    <td className="px-6 py-4 whitespace-nowrap">
+      <span
+        className={cn(
+          'px-2 py-1 rounded text-xs font-medium transition-colors',
+          METHOD_COLORS[request.method] || 'bg-qimtek-bg-secondary text-qimtek-text border border-qimtek-border'
+        )}
+      >
+        {request.method}
+      </span>
+    </td>
+    <td className="px-6 py-4 whitespace-nowrap text-sm text-qimtek-text">
+      {format(new Date(request.timestamp), 'PPpp')}
+    </td>
+    <td className="px-6 py-4 whitespace-nowrap text-sm text-qimtek-text-secondary">
+      {request.ip_address || 'N/A'}
+    </td>
+    <td className="px-6 py-4 whitespace-nowrap text-sm">
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onNavigate(request.id);
+        }}
+        className="text-[#82c91e] hover:text-[#6ba017] transition-colors font-medium"
+      >
+        View Details
+      </button>
+    </td>
+  </tr>
+));
+
+RequestRow.displayName = 'RequestRow';
+
 export default function Home() {
   const navigate = useNavigate();
   const { webhook, requests, loading, error, isConnected, generateWebhook, deleteWebhook } = useWebhook();
@@ -21,11 +61,12 @@ export default function Home() {
   const [methodFilter, setMethodFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const handleGenerate = async () => {
+  // Memoized handlers
+  const handleGenerate = useCallback(async () => {
     await generateWebhook(60);
-  };
+  }, [generateWebhook]);
 
-  const handleCopy = async () => {
+  const handleCopy = useCallback(async () => {
     if (!webhook) return;
     try {
       await navigator.clipboard.writeText(webhook.url);
@@ -34,28 +75,35 @@ export default function Home() {
     } catch (err) {
       console.error('Failed to copy:', err);
     }
-  };
+  }, [webhook]);
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (confirm('Are you sure you want to delete this webhook? All requests will be lost.')) {
       await deleteWebhook();
     }
-  };
+  }, [deleteWebhook]);
 
-  const filteredRequests = requests.filter((req) => {
-    if (methodFilter !== 'ALL' && req.method !== methodFilter) {
-      return false;
-    }
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const bodyStr = JSON.stringify(req.body || {}).toLowerCase();
-      const headersStr = JSON.stringify(req.headers || {}).toLowerCase();
-      return bodyStr.includes(query) || headersStr.includes(query);
-    }
-    return true;
-  });
+  const handleNavigate = useCallback((id: string) => {
+    navigate(`/request/${id}`);
+  }, [navigate]);
 
-  const exportRequests = () => {
+  // Memoized filtered requests
+  const filteredRequests = useMemo(() => {
+    return requests.filter((req) => {
+      if (methodFilter !== 'ALL' && req.method !== methodFilter) {
+        return false;
+      }
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const bodyStr = JSON.stringify(req.body || {}).toLowerCase();
+        const headersStr = JSON.stringify(req.headers || {}).toLowerCase();
+        return bodyStr.includes(query) || headersStr.includes(query);
+      }
+      return true;
+    });
+  }, [requests, methodFilter, searchQuery]);
+
+  const exportRequests = useCallback(() => {
     const dataStr = JSON.stringify(filteredRequests, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
@@ -64,15 +112,13 @@ export default function Home() {
     link.download = `webhook-requests-${Date.now()}.json`;
     link.click();
     URL.revokeObjectURL(url);
-  };
-
-  const methods = ['ALL', 'GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
+  }, [filteredRequests]);
 
   return (
-    <div className="min-h-screen bg-qimtek-bg">
+    <div className="min-h-screen bg-qimtek-bg page-enter">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-8 slide-enter">
           <div className="flex items-center gap-4 mb-4">
             <Logo size="lg" />
           </div>
@@ -81,29 +127,33 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Connection Status - Supabase Realtime */}
-        <div className="mb-6">
+        {/* Connection Status */}
+        <div className="mb-6 slide-enter" style={{ animationDelay: '0.1s' }}>
           <div className={cn(
-            'inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm border',
-            isConnected
-              ? 'bg-green-900/30 text-green-300 border-green-700/50'
-              : 'bg-red-900/30 text-red-300 border-red-700/50'
+            'inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm border transition-all duration-300',
+            webhook
+              ? isConnected
+                ? 'bg-green-900/30 text-green-300 border-green-700/50'
+                : 'bg-yellow-900/30 text-yellow-300 border-yellow-700/50'
+              : 'bg-gray-900/30 text-gray-400 border-gray-700/50'
           )}>
             <div className={cn(
-              'w-2 h-2 rounded-full',
-              isConnected ? 'bg-green-400' : 'bg-red-400'
+              'w-2 h-2 rounded-full transition-all duration-300',
+              webhook 
+                ? (isConnected ? 'bg-green-400 animate-pulse' : 'bg-yellow-400')
+                : 'bg-gray-500'
             )} />
-            {isConnected 
-              ? 'Connected (Supabase Realtime)' 
-              : webhook 
-                ? 'Disconnected (Realtime subscription failed)' 
-                : 'Not connected (No active webhook)'}
+            {webhook 
+              ? (isConnected 
+                  ? 'Connected (Real-time active)' 
+                  : 'Active (Polling for updates)')
+              : 'No active webhook - Click "Generate Webhook URL" to start'}
           </div>
         </div>
 
         {/* Webhook Generator */}
         {!webhook ? (
-          <div className="bg-qimtek-bg-surface rounded-lg shadow-md p-8 mb-8 border border-qimtek-border">
+          <div className="bg-qimtek-bg-surface rounded-lg shadow-md p-8 mb-8 border border-qimtek-border card-enter">
             <div className="text-center">
               <h2 className="text-2xl font-semibold text-qimtek-text mb-4">
                 Generate Webhook URL
@@ -117,31 +167,31 @@ export default function Home() {
                 className={cn(
                   'px-6 py-3 bg-[#82c91e] text-black rounded-lg font-medium',
                   'hover:bg-[#6ba017] disabled:opacity-50 disabled:cursor-not-allowed',
-                  'transition-colors font-semibold'
+                  'transition-all duration-200 font-semibold hover:scale-105 active:scale-95'
                 )}
               >
                 {loading ? 'Generating...' : 'Generate Webhook URL'}
               </button>
               {error && (
-                <p className="mt-4 text-red-400">{error}</p>
+                <p className="mt-4 text-red-400 animate-pulse">{error}</p>
               )}
             </div>
           </div>
         ) : (
-          <div className="bg-qimtek-bg-surface rounded-lg shadow-md p-6 mb-8 border border-qimtek-border">
+          <div className="bg-qimtek-bg-surface rounded-lg shadow-md p-6 mb-8 border border-qimtek-border card-enter">
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
                 <h2 className="text-lg font-semibold text-qimtek-text mb-2">
                   Your Webhook URL
                 </h2>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 px-4 py-2 bg-qimtek-bg-secondary rounded text-sm break-all text-qimtek-text border border-qimtek-border">
+                  <code className="flex-1 px-4 py-2 bg-qimtek-bg-secondary rounded text-sm break-all text-qimtek-text border border-qimtek-border transition-all">
                     {webhook.url}
                   </code>
                   <button
                     onClick={handleCopy}
                     className={cn(
-                      'p-2 rounded hover:bg-qimtek-bg-secondary transition-colors border border-qimtek-border',
+                      'p-2 rounded hover:bg-qimtek-bg-secondary transition-all duration-200 border border-qimtek-border hover:scale-110 active:scale-95',
                       copied && 'bg-green-900/30 border-green-700'
                     )}
                     title="Copy URL"
@@ -156,7 +206,7 @@ export default function Home() {
                     href={webhook.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-2 rounded hover:bg-qimtek-bg-secondary transition-colors border border-qimtek-border"
+                    className="p-2 rounded hover:bg-qimtek-bg-secondary transition-all duration-200 border border-qimtek-border hover:scale-110 active:scale-95"
                     title="Open in new tab"
                   >
                     <ExternalLink className="w-5 h-5 text-qimtek-text-secondary" />
@@ -168,7 +218,7 @@ export default function Home() {
               </div>
               <button
                 onClick={handleDelete}
-                className="p-2 text-red-400 hover:bg-red-900/20 rounded transition-colors border border-transparent hover:border-red-800"
+                className="p-2 text-red-400 hover:bg-red-900/20 rounded transition-all duration-200 border border-transparent hover:border-red-800 hover:scale-110 active:scale-95"
                 title="Delete webhook"
               >
                 <Trash2 className="w-5 h-5" />
@@ -179,13 +229,13 @@ export default function Home() {
 
         {/* Requests Dashboard */}
         {webhook && (
-          <div className="bg-qimtek-bg-surface rounded-lg shadow-md border border-qimtek-border">
+          <div className="bg-qimtek-bg-surface rounded-lg shadow-md border border-qimtek-border card-enter" style={{ animationDelay: '0.2s' }}>
             <div className="p-6 border-b border-qimtek-border">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-semibold text-qimtek-text">
                   Requests
                   {requests.length > 0 && (
-                    <span className="ml-2 px-2 py-1 bg-[#82c91e]/20 text-[#82c91e] rounded text-sm border border-[#82c91e]/30">
+                    <span className="ml-2 px-2 py-1 bg-[#82c91e]/20 text-[#82c91e] rounded text-sm border border-[#82c91e]/30 transition-all">
                       {requests.length}
                     </span>
                   )}
@@ -193,7 +243,7 @@ export default function Home() {
                 {filteredRequests.length > 0 && (
                   <button
                     onClick={exportRequests}
-                    className="flex items-center gap-2 px-4 py-2 bg-qimtek-bg-secondary rounded hover:bg-qimtek-tertiary-bg transition-colors border border-qimtek-border text-qimtek-text"
+                    className="flex items-center gap-2 px-4 py-2 bg-qimtek-bg-secondary rounded hover:bg-qimtek-tertiary-bg transition-all duration-200 border border-qimtek-border text-qimtek-text hover:scale-105 active:scale-95"
                   >
                     <Download className="w-4 h-4" />
                     Export
@@ -208,9 +258,9 @@ export default function Home() {
                   <select
                     value={methodFilter}
                     onChange={(e) => setMethodFilter(e.target.value)}
-                    className="px-3 py-1 border border-qimtek-border rounded bg-qimtek-bg-secondary text-qimtek-text"
+                    className="px-3 py-1 border border-qimtek-border rounded bg-qimtek-bg-secondary text-qimtek-text transition-all"
                   >
-                    {methods.map((method) => (
+                    {METHODS.map((method) => (
                       <option key={method} value={method}>
                         {method}
                       </option>
@@ -224,7 +274,7 @@ export default function Home() {
                     placeholder="Search in body/headers..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="flex-1 px-3 py-1 border border-qimtek-border rounded bg-qimtek-bg-secondary text-qimtek-text placeholder:text-qimtek-text-tertiary"
+                    className="flex-1 px-3 py-1 border border-qimtek-border rounded bg-qimtek-bg-secondary text-qimtek-text placeholder:text-qimtek-text-tertiary transition-all focus:outline-none focus:ring-2 focus:ring-[#82c91e]/50"
                   />
                 </div>
               </div>
@@ -258,39 +308,7 @@ export default function Home() {
                   </thead>
                   <tbody className="bg-qimtek-bg-surface divide-y divide-qimtek-border">
                     {filteredRequests.map((request) => (
-                      <tr
-                        key={request.id}
-                        className="hover:bg-qimtek-bg-secondary transition-colors cursor-pointer"
-                        onClick={() => navigate(`/request/${request.id}`)}
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={cn(
-                              'px-2 py-1 rounded text-xs font-medium',
-                              METHOD_COLORS[request.method] || 'bg-qimtek-bg-secondary text-qimtek-text border border-qimtek-border'
-                            )}
-                          >
-                            {request.method}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-qimtek-text">
-                          {format(new Date(request.timestamp), 'PPpp')}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-qimtek-text-secondary">
-                          {request.ip_address || 'N/A'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/request/${request.id}`);
-                            }}
-                            className="text-[#82c91e] hover:text-[#6ba017] transition-colors font-medium"
-                          >
-                            View Details
-                          </button>
-                        </td>
-                      </tr>
+                      <RequestRow key={request.id} request={request} onNavigate={handleNavigate} />
                     ))}
                   </tbody>
                 </table>
