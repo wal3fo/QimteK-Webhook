@@ -27,8 +27,13 @@ const __dirname = path.dirname(__filename)
 
 const app: express.Application = express()
 
-// Static files for frontend
-app.use(express.static(path.join(__dirname, '../dist')))
+// Static files for frontend - try current dir first, then parent
+const distPath = path.join(__dirname, 'dist');
+const distPathParent = path.join(__dirname, '../dist');
+
+// Serve static files from wherever dist exists
+app.use(express.static(distPath));
+app.use(express.static(distPathParent));
 
 // CORS configuration - allow all origins in production (Vercel handles this)
 app.use(cors({
@@ -87,7 +92,16 @@ app.use('/api', (req: Request, res: Response) => {
 
 // Serve frontend for all other routes
 app.get('*', (req: Request, res: Response) => {
-  res.sendFile(path.join(__dirname, '../dist/index.html'))
+  const indexPath = path.join(__dirname, 'dist/index.html');
+  const indexPathParent = path.join(__dirname, '../dist/index.html');
+  
+  if (require('fs').existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else if (require('fs').existsSync(indexPathParent)) {
+    res.sendFile(indexPathParent);
+  } else {
+    res.status(404).json({ success: false, error: 'Frontend not found' });
+  }
 })
 
 export default app
