@@ -43,6 +43,10 @@ router.all('/:token', async (req: Request, res: Response): Promise<void> => {
     
     // Extract request data
     const method = req.method;
+    
+    // Debug log for incoming request method
+    console.log(`[Webhook Debug] Received ${method} request to ${req.originalUrl}`);
+
     const url = req.originalUrl;
     const headers = req.headers;
     const query = req.query;

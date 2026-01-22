@@ -18,10 +18,10 @@ const RequestCard = memo(({ request, onNavigate }: { request: any; onNavigate: (
       <span
         className={cn(
           'px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
-          METHOD_COLORS[request.method] || 'bg-qimtek-bg text-qimtek-text border border-qimtek-border'
+          METHOD_COLORS[request.method?.toUpperCase()] || 'bg-qimtek-bg text-qimtek-text border border-qimtek-border'
         )}
       >
-        {request.method}
+        {request.method?.toUpperCase()}
       </span>
       <button
         onClick={(e) => {
@@ -61,10 +61,10 @@ const RequestRow = memo(({ request, onNavigate }: { request: any; onNavigate: (i
       <span
         className={cn(
           'px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
-          METHOD_COLORS[request.method] || 'bg-qimtek-bg-secondary text-qimtek-text border border-qimtek-border'
+          METHOD_COLORS[request.method?.toUpperCase()] || 'bg-qimtek-bg-secondary text-qimtek-text border border-qimtek-border'
         )}
       >
-        {request.method}
+        {request.method?.toUpperCase()}
       </span>
     </td>
     <td className="px-6 py-4 whitespace-nowrap text-sm text-qimtek-text">

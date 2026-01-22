@@ -182,10 +182,10 @@ export default function RequestDetails() {
               <span
                 className={cn(
                   'px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors inline-block',
-                  METHOD_COLORS[request.method] || 'bg-qimtek-bg text-qimtek-text border border-qimtek-border'
+                  METHOD_COLORS[request.method?.toUpperCase()] || 'bg-qimtek-bg text-qimtek-text border border-qimtek-border'
                 )}
               >
-                {request.method}
+                {request.method?.toUpperCase()}
               </span>
             </div>
             <div>
