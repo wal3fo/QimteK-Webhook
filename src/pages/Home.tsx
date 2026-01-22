@@ -5,6 +5,7 @@ import { useWebhook } from '@/hooks/useWebhook';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import Logo from '@/components/Logo';
+import Footer from '@/components/Footer';
 
 const METHOD_COLORS: Record<string, string> = {
   GET: 'bg-blue-900/30 text-blue-300 border border-blue-700/50',
@@ -176,9 +177,9 @@ export default function Home() {
   }, [filteredRequests]);
 
   return (
-    <div className="min-h-screen bg-qimtek-bg page-enter">
+    <div className="min-h-screen bg-qimtek-bg page-enter flex flex-col">
       <div className={cn(
-        "container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-7xl",
+        "container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-7xl flex-1",
         isSearchFocused && isMobile && "pb-2"
       )}>
         {/* Header */}
@@ -454,6 +455,7 @@ export default function Home() {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { ArrowLeft, Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import Logo from '@/components/Logo';
+import Footer from '@/components/Footer';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -318,6 +319,7 @@ export default function RequestDetails() {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 }
