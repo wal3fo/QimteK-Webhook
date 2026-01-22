@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Copy, Check, Trash2, ExternalLink, Filter, Search, Download } from 'lucide-react';
+import { Copy, Check, Trash2, ExternalLink, Filter, Search, Download, Clock, Globe } from 'lucide-react';
 import { useWebhook } from '@/hooks/useWebhook';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -16,16 +16,58 @@ const METHOD_COLORS: Record<string, string> = {
 
 const METHODS = ['ALL', 'GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 
-// Memoized request row component
+// Mobile Request Card Component
+const RequestCard = memo(({ request, onNavigate }: { request: any; onNavigate: (id: string) => void }) => (
+  <div
+    onClick={() => onNavigate(request.id)}
+    className="bg-qimtek-bg-secondary rounded-xl p-4 border border-qimtek-border hover:border-[#82c91e]/50 transition-all duration-300 cursor-pointer active:scale-[0.98] hover:shadow-lg hover:shadow-[#82c91e]/10"
+  >
+    <div className="flex items-start justify-between gap-3 mb-3">
+      <span
+        className={cn(
+          'px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
+          METHOD_COLORS[request.method] || 'bg-qimtek-bg text-qimtek-text border border-qimtek-border'
+        )}
+      >
+        {request.method}
+      </span>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onNavigate(request.id);
+        }}
+        className="text-[#82c91e] hover:text-[#6ba017] transition-colors font-medium text-sm px-3 py-1 rounded-lg hover:bg-[#82c91e]/10"
+      >
+        View →
+      </button>
+    </div>
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 text-sm text-qimtek-text-secondary">
+        <Clock className="w-4 h-4" />
+        <span className="text-xs">{format(new Date(request.timestamp), 'PPp')}</span>
+      </div>
+      {request.ip_address && (
+        <div className="flex items-center gap-2 text-sm text-qimtek-text-secondary">
+          <Globe className="w-4 h-4" />
+          <span className="text-xs font-mono">{request.ip_address}</span>
+        </div>
+      )}
+    </div>
+  </div>
+));
+
+RequestCard.displayName = 'RequestCard';
+
+// Desktop Request Row Component
 const RequestRow = memo(({ request, onNavigate }: { request: any; onNavigate: (id: string) => void }) => (
   <tr
-    className="hover:bg-qimtek-bg-secondary transition-all duration-200 cursor-pointer"
+    className="hover:bg-qimtek-bg-secondary transition-all duration-200 cursor-pointer group"
     onClick={() => onNavigate(request.id)}
   >
     <td className="px-6 py-4 whitespace-nowrap">
       <span
         className={cn(
-          'px-2 py-1 rounded text-xs font-medium transition-colors',
+          'px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
           METHOD_COLORS[request.method] || 'bg-qimtek-bg-secondary text-qimtek-text border border-qimtek-border'
         )}
       >
@@ -33,9 +75,9 @@ const RequestRow = memo(({ request, onNavigate }: { request: any; onNavigate: (i
       </span>
     </td>
     <td className="px-6 py-4 whitespace-nowrap text-sm text-qimtek-text">
-      {format(new Date(request.timestamp), 'PPpp')}
+      {format(new Date(request.timestamp), 'PPp')}
     </td>
-    <td className="px-6 py-4 whitespace-nowrap text-sm text-qimtek-text-secondary">
+    <td className="px-6 py-4 whitespace-nowrap text-sm text-qimtek-text-secondary font-mono">
       {request.ip_address || 'N/A'}
     </td>
     <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -44,7 +86,7 @@ const RequestRow = memo(({ request, onNavigate }: { request: any; onNavigate: (i
           e.stopPropagation();
           onNavigate(request.id);
         }}
-        className="text-[#82c91e] hover:text-[#6ba017] transition-colors font-medium"
+        className="text-[#82c91e] hover:text-[#6ba017] transition-colors font-medium group-hover:underline"
       >
         View Details
       </button>
@@ -116,16 +158,16 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-qimtek-bg page-enter">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-7xl">
         {/* Header */}
-        <div className="mb-8 slide-enter">
-          <div className="flex items-center justify-between gap-4 mb-4">
+        <div className="mb-6 sm:mb-8 slide-enter">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
             <Logo size="lg" />
             <a
               href="https://www.paypal.com/paypalme/drgineer/5?currencyCode=USD"
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative flex items-center gap-2.5 px-5 py-2.5 bg-gradient-to-r from-[#0070ba] via-[#009cde] to-[#0070ba] text-white rounded-xl font-semibold transition-all duration-300 hover:scale-110 active:scale-95 shadow-lg hover:shadow-2xl hover:shadow-[#0070ba]/50 overflow-hidden"
+              className="group relative flex items-center gap-2.5 px-4 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-[#0070ba] via-[#009cde] to-[#0070ba] text-white rounded-xl font-semibold transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg hover:shadow-2xl hover:shadow-[#0070ba]/50 overflow-hidden text-sm sm:text-base"
               title="Support this project with a donation"
             >
               {/* Animated gradient overlay */}
@@ -133,7 +175,7 @@ export default function Home() {
               
               {/* PayPal Icon */}
               <svg 
-                className="w-6 h-6 relative z-10 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3" 
+                className="w-5 h-5 sm:w-6 sm:h-6 relative z-10 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3" 
                 viewBox="0 0 24 24" 
                 fill="currentColor"
               >
@@ -141,7 +183,7 @@ export default function Home() {
               </svg>
               
               {/* Text with glow effect */}
-              <span className="relative z-10 text-sm tracking-wide group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all duration-300">
+              <span className="relative z-10 tracking-wide group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all duration-300">
                 Donate $5
               </span>
               
@@ -149,7 +191,7 @@ export default function Home() {
               <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-white rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
             </a>
           </div>
-          <p className="text-qimtek-text-secondary">
+          <p className="text-qimtek-text-secondary text-sm sm:text-base">
             Generate temporary webhook URLs to capture and inspect HTTP requests
           </p>
         </div>
@@ -157,7 +199,7 @@ export default function Home() {
         {/* Connection Status */}
         <div className="mb-6 slide-enter" style={{ animationDelay: '0.1s' }}>
           <div className={cn(
-            'inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm border transition-all duration-300',
+            'inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm border transition-all duration-300',
             webhook
               ? isConnected
                 ? 'bg-green-900/30 text-green-300 border-green-700/50'
@@ -170,99 +212,113 @@ export default function Home() {
                 ? (isConnected ? 'bg-green-400 animate-pulse' : 'bg-yellow-400')
                 : 'bg-gray-500'
             )} />
-            {webhook 
-              ? (isConnected 
-                  ? 'Connected (Real-time active)' 
-                  : 'Active (Polling for updates)')
-              : 'No active webhook - Click "Generate Webhook URL" to start'}
+            <span className="hidden sm:inline">
+              {webhook 
+                ? (isConnected 
+                    ? 'Connected (Real-time active)' 
+                    : 'Active (Polling for updates)')
+                : 'No active webhook - Click "Generate Webhook URL" to start'}
+            </span>
+            <span className="sm:hidden">
+              {webhook 
+                ? (isConnected 
+                    ? 'Connected' 
+                    : 'Active')
+                : 'No webhook'}
+            </span>
           </div>
         </div>
 
         {/* Webhook Generator */}
         {!webhook ? (
-          <div className="bg-qimtek-bg-surface rounded-lg shadow-md p-8 mb-8 border border-qimtek-border card-enter">
+          <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-6 sm:p-8 mb-6 sm:mb-8 border border-qimtek-border card-enter">
             <div className="text-center">
-              <h2 className="text-2xl font-semibold text-qimtek-text mb-4">
+              <h2 className="text-xl sm:text-2xl font-bold text-qimtek-text mb-3 sm:mb-4">
                 Generate Webhook URL
               </h2>
-              <p className="text-qimtek-text-secondary mb-6">
+              <p className="text-sm sm:text-base text-qimtek-text-secondary mb-6">
                 Create a temporary webhook endpoint to receive and inspect HTTP requests
               </p>
               <button
                 onClick={handleGenerate}
                 disabled={loading}
                 className={cn(
-                  'px-6 py-3 bg-[#82c91e] text-black rounded-lg font-medium',
+                  'px-6 sm:px-8 py-3 sm:py-3.5 bg-[#82c91e] text-black rounded-xl font-semibold',
                   'hover:bg-[#6ba017] disabled:opacity-50 disabled:cursor-not-allowed',
-                  'transition-all duration-200 font-semibold hover:scale-105 active:scale-95'
+                  'transition-all duration-200 hover:scale-105 active:scale-95',
+                  'shadow-lg hover:shadow-xl hover:shadow-[#82c91e]/30',
+                  'text-sm sm:text-base'
                 )}
               >
                 {loading ? 'Generating...' : 'Generate Webhook URL'}
               </button>
               {error && (
-                <p className="mt-4 text-red-400 animate-pulse">{error}</p>
+                <p className="mt-4 text-red-400 animate-pulse text-sm">{error}</p>
               )}
             </div>
           </div>
         ) : (
-          <div className="bg-qimtek-bg-surface rounded-lg shadow-md p-6 mb-8 border border-qimtek-border card-enter">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1">
-                <h2 className="text-lg font-semibold text-qimtek-text mb-2">
+          <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8 border border-qimtek-border card-enter">
+            <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-4 mb-4">
+              <div className="flex-1 w-full sm:w-auto">
+                <h2 className="text-base sm:text-lg font-semibold text-qimtek-text mb-2">
                   Your Webhook URL
                 </h2>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 px-4 py-2 bg-qimtek-bg-secondary rounded text-sm break-all text-qimtek-text border border-qimtek-border transition-all">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <code className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 bg-qimtek-bg-secondary rounded-lg text-xs sm:text-sm break-all text-qimtek-text border border-qimtek-border transition-all font-mono">
                     {webhook.url}
                   </code>
-                  <button
-                    onClick={handleCopy}
-                    className={cn(
-                      'p-2 rounded hover:bg-qimtek-bg-secondary transition-all duration-200 border border-qimtek-border hover:scale-110 active:scale-95',
-                      copied && 'bg-green-900/30 border-green-700'
-                    )}
-                    title="Copy URL"
-                  >
-                    {copied ? (
-                      <Check className="w-5 h-5 text-green-400" />
-                    ) : (
-                      <Copy className="w-5 h-5 text-qimtek-text-secondary" />
-                    )}
-                  </button>
-                  <a
-                    href={webhook.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2 rounded hover:bg-qimtek-bg-secondary transition-all duration-200 border border-qimtek-border hover:scale-110 active:scale-95"
-                    title="Open in new tab"
-                  >
-                    <ExternalLink className="w-5 h-5 text-qimtek-text-secondary" />
-                  </a>
+                  <div className="flex items-center gap-2 sm:flex-shrink-0">
+                    <button
+                      onClick={handleCopy}
+                      className={cn(
+                        'p-2.5 sm:p-3 rounded-lg hover:bg-qimtek-bg-secondary transition-all duration-200 border border-qimtek-border hover:scale-110 active:scale-95',
+                        'flex-shrink-0',
+                        copied && 'bg-green-900/30 border-green-700'
+                      )}
+                      title="Copy URL"
+                    >
+                      {copied ? (
+                        <Check className="w-5 h-5 text-green-400" />
+                      ) : (
+                        <Copy className="w-5 h-5 text-qimtek-text-secondary" />
+                      )}
+                    </button>
+                    <a
+                      href={webhook.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2.5 sm:p-3 rounded-lg hover:bg-qimtek-bg-secondary transition-all duration-200 border border-qimtek-border hover:scale-110 active:scale-95 flex-shrink-0"
+                      title="Open in new tab"
+                    >
+                      <ExternalLink className="w-5 h-5 text-qimtek-text-secondary" />
+                    </a>
+                    <button
+                      onClick={handleDelete}
+                      className="p-2.5 sm:p-3 text-red-400 hover:bg-red-900/20 rounded-lg transition-all duration-200 border border-transparent hover:border-red-800 hover:scale-110 active:scale-95 flex-shrink-0"
+                      title="Delete webhook"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
-                <p className="mt-2 text-sm text-qimtek-text-tertiary">
-                  Expires: {format(new Date(webhook.expiresAt), 'PPpp')}
+                <p className="mt-2 text-xs sm:text-sm text-qimtek-text-tertiary">
+                  Expires: {format(new Date(webhook.expiresAt), 'PPp')}
                 </p>
               </div>
-              <button
-                onClick={handleDelete}
-                className="p-2 text-red-400 hover:bg-red-900/20 rounded transition-all duration-200 border border-transparent hover:border-red-800 hover:scale-110 active:scale-95"
-                title="Delete webhook"
-              >
-                <Trash2 className="w-5 h-5" />
-              </button>
             </div>
           </div>
         )}
 
         {/* Requests Dashboard */}
         {webhook && (
-          <div className="bg-qimtek-bg-surface rounded-lg shadow-md border border-qimtek-border card-enter" style={{ animationDelay: '0.2s' }}>
-            <div className="p-6 border-b border-qimtek-border">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-semibold text-qimtek-text">
+          <div className="bg-qimtek-bg-surface rounded-xl shadow-lg border border-qimtek-border card-enter" style={{ animationDelay: '0.2s' }}>
+            <div className="p-4 sm:p-6 border-b border-qimtek-border">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+                <h2 className="text-xl sm:text-2xl font-bold text-qimtek-text flex items-center gap-2">
                   Requests
                   {requests.length > 0 && (
-                    <span className="ml-2 px-2 py-1 bg-[#82c91e]/20 text-[#82c91e] rounded text-sm border border-[#82c91e]/30 transition-all">
+                    <span className="px-2.5 py-1 bg-[#82c91e]/20 text-[#82c91e] rounded-lg text-xs sm:text-sm font-semibold border border-[#82c91e]/30">
                       {requests.length}
                     </span>
                   )}
@@ -270,22 +326,22 @@ export default function Home() {
                 {filteredRequests.length > 0 && (
                   <button
                     onClick={exportRequests}
-                    className="flex items-center gap-2 px-4 py-2 bg-qimtek-bg-secondary rounded hover:bg-qimtek-tertiary-bg transition-all duration-200 border border-qimtek-border text-qimtek-text hover:scale-105 active:scale-95"
+                    className="flex items-center gap-2 px-4 py-2 bg-qimtek-bg-secondary rounded-lg hover:bg-qimtek-tertiary-bg transition-all duration-200 border border-qimtek-border text-qimtek-text hover:scale-105 active:scale-95 text-sm sm:text-base"
                   >
                     <Download className="w-4 h-4" />
-                    Export
+                    <span className="hidden sm:inline">Export</span>
                   </button>
                 )}
               </div>
 
               {/* Filters */}
-              <div className="flex flex-wrap gap-4">
-                <div className="flex items-center gap-2">
-                  <Filter className="w-4 h-4 text-qimtek-text-secondary" />
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Filter className="w-4 h-4 text-qimtek-text-secondary flex-shrink-0" />
                   <select
                     value={methodFilter}
                     onChange={(e) => setMethodFilter(e.target.value)}
-                    className="px-3 py-1 border border-qimtek-border rounded bg-qimtek-bg-secondary text-qimtek-text transition-all"
+                    className="px-3 py-2 border border-qimtek-border rounded-lg bg-qimtek-bg-secondary text-qimtek-text transition-all focus:outline-none focus:ring-2 focus:ring-[#82c91e]/50 text-sm sm:text-base"
                   >
                     {METHODS.map((method) => (
                       <option key={method} value={method}>
@@ -294,53 +350,65 @@ export default function Home() {
                     ))}
                   </select>
                 </div>
-                <div className="flex-1 flex items-center gap-2 max-w-md">
-                  <Search className="w-4 h-4 text-qimtek-text-secondary" />
+                <div className="flex-1 flex items-center gap-2">
+                  <Search className="w-4 h-4 text-qimtek-text-secondary flex-shrink-0" />
                   <input
                     type="text"
                     placeholder="Search in body/headers..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="flex-1 px-3 py-1 border border-qimtek-border rounded bg-qimtek-bg-secondary text-qimtek-text placeholder:text-qimtek-text-tertiary transition-all focus:outline-none focus:ring-2 focus:ring-[#82c91e]/50"
+                    className="flex-1 px-3 py-2 border border-qimtek-border rounded-lg bg-qimtek-bg-secondary text-qimtek-text placeholder:text-qimtek-text-tertiary transition-all focus:outline-none focus:ring-2 focus:ring-[#82c91e]/50 text-sm sm:text-base"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Requests Table */}
-            <div className="overflow-x-auto">
-              {filteredRequests.length === 0 ? (
-                <div className="p-12 text-center text-qimtek-text-secondary">
+            {/* Requests - Mobile Cards / Desktop Table */}
+            {filteredRequests.length === 0 ? (
+              <div className="p-8 sm:p-12 text-center text-qimtek-text-secondary">
+                <p className="text-sm sm:text-base">
                   {requests.length === 0
                     ? 'No requests received yet. Send a request to your webhook URL to see it here.'
                     : 'No requests match your filters.'}
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Mobile Card View */}
+                <div className="p-4 sm:p-6 space-y-3 sm:hidden">
+                  {filteredRequests.map((request) => (
+                    <RequestCard key={request.id} request={request} onNavigate={handleNavigate} />
+                  ))}
                 </div>
-              ) : (
-                <table className="w-full">
-                  <thead className="bg-qimtek-bg">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-qimtek-text-secondary uppercase tracking-wider">
-                        Method
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-qimtek-text-secondary uppercase tracking-wider">
-                        Time
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-qimtek-text-secondary uppercase tracking-wider">
-                        IP Address
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-qimtek-text-secondary uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-qimtek-bg-surface divide-y divide-qimtek-border">
-                    {filteredRequests.map((request) => (
-                      <RequestRow key={request.id} request={request} onNavigate={handleNavigate} />
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-qimtek-bg">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">
+                          Method
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">
+                          Time
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">
+                          IP Address
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-qimtek-bg-surface divide-y divide-qimtek-border">
+                      {filteredRequests.map((request) => (
+                        <RequestRow key={request.id} request={request} onNavigate={handleNavigate} />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

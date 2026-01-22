@@ -73,7 +73,7 @@ export default function RequestDetails() {
 
   // Memoized formatted timestamp
   const formattedTimestamp = useMemo(() => {
-    return request ? format(new Date(request.timestamp), 'PPpp') : '';
+    return request ? format(new Date(request.timestamp), 'PPp') : '';
   }, [request]);
 
   // Memoized body content
@@ -99,7 +99,7 @@ export default function RequestDetails() {
       <div className="min-h-screen bg-qimtek-bg flex items-center justify-center page-enter">
         <div className="text-qimtek-text-secondary flex items-center gap-3">
           <div className="spinner w-5 h-5 border-2 border-[#82c91e] border-t-transparent rounded-full"></div>
-          Loading...
+          <span className="text-sm sm:text-base">Loading...</span>
         </div>
       </div>
     );
@@ -107,12 +107,12 @@ export default function RequestDetails() {
 
   if (error || !request) {
     return (
-      <div className="min-h-screen bg-qimtek-bg flex items-center justify-center page-enter">
-        <div className="text-center card-enter">
-          <p className="text-red-400 mb-4">{error || 'Request not found'}</p>
+      <div className="min-h-screen bg-qimtek-bg flex items-center justify-center page-enter px-4">
+        <div className="text-center card-enter max-w-md w-full">
+          <p className="text-red-400 mb-4 text-sm sm:text-base">{error || 'Request not found'}</p>
           <button
             onClick={handleBack}
-            className="px-4 py-2 bg-[#82c91e] text-black rounded hover:bg-[#6ba017] transition-all duration-200 font-semibold hover:scale-105 active:scale-95"
+            className="px-4 sm:px-6 py-2 sm:py-3 bg-[#82c91e] text-black rounded-lg sm:rounded-xl hover:bg-[#6ba017] transition-all duration-200 font-semibold hover:scale-105 active:scale-95 text-sm sm:text-base"
           >
             Back to Home
           </button>
@@ -123,17 +123,17 @@ export default function RequestDetails() {
 
   return (
     <div className="min-h-screen bg-qimtek-bg page-enter">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-6xl">
         {/* Header */}
         <div className="mb-6 slide-enter">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+            <div className="flex items-center gap-3 flex-wrap">
               <Logo size="lg" />
               <a
                 href="https://www.paypal.com/paypalme/drgineer/5?currencyCode=USD"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group relative flex items-center gap-2.5 px-5 py-2.5 bg-gradient-to-r from-[#0070ba] via-[#009cde] to-[#0070ba] text-white rounded-xl font-semibold transition-all duration-300 hover:scale-110 active:scale-95 shadow-lg hover:shadow-2xl hover:shadow-[#0070ba]/50 overflow-hidden"
+                className="group relative flex items-center gap-2.5 px-4 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-[#0070ba] via-[#009cde] to-[#0070ba] text-white rounded-xl font-semibold transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg hover:shadow-2xl hover:shadow-[#0070ba]/50 overflow-hidden text-sm sm:text-base"
                 title="Support this project with a donation"
               >
                 {/* Animated gradient overlay */}
@@ -141,7 +141,7 @@ export default function RequestDetails() {
                 
                 {/* PayPal Icon */}
                 <svg 
-                  className="w-6 h-6 relative z-10 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3" 
+                  className="w-5 h-5 sm:w-6 sm:h-6 relative z-10 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3" 
                   viewBox="0 0 24 24" 
                   fill="currentColor"
                 >
@@ -149,7 +149,7 @@ export default function RequestDetails() {
                 </svg>
                 
                 {/* Text with glow effect */}
-                <span className="relative z-10 text-sm tracking-wide group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all duration-300">
+                <span className="relative z-10 tracking-wide group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all duration-300">
                   Donate $5
                 </span>
                 
@@ -159,57 +159,59 @@ export default function RequestDetails() {
             </div>
             <button
               onClick={handleBack}
-              className="flex items-center gap-2 text-qimtek-text-secondary hover:text-qimtek-text transition-all duration-200 hover:translate-x-[-4px]"
+              className="flex items-center gap-2 text-qimtek-text-secondary hover:text-qimtek-text transition-all duration-200 hover:translate-x-[-4px] text-sm sm:text-base px-3 py-2 rounded-lg hover:bg-qimtek-bg-secondary"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back to Dashboard
+              <span className="hidden sm:inline">Back to Dashboard</span>
+              <span className="sm:hidden">Back</span>
             </button>
           </div>
-          <h2 className="text-3xl font-bold text-qimtek-text">
+          <h2 className="text-2xl sm:text-3xl font-bold text-qimtek-text">
             Request Details
           </h2>
         </div>
 
         {/* Request Info Card */}
-        <div className="bg-qimtek-bg-surface rounded-lg shadow-md p-6 mb-6 border border-qimtek-border card-enter" style={{ animationDelay: '0.1s' }}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-4 sm:p-6 mb-6 border border-qimtek-border card-enter" style={{ animationDelay: '0.1s' }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             <div>
-              <label className="text-sm font-medium text-qimtek-text-secondary">Method</label>
-              <p className="mt-1 text-lg font-semibold text-qimtek-text">{request.method}</p>
+              <label className="text-xs sm:text-sm font-medium text-qimtek-text-secondary">Method</label>
+              <p className="mt-1 text-base sm:text-lg font-semibold text-qimtek-text">{request.method}</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-qimtek-text-secondary">Timestamp</label>
-              <p className="mt-1 text-qimtek-text">
+              <label className="text-xs sm:text-sm font-medium text-qimtek-text-secondary">Timestamp</label>
+              <p className="mt-1 text-sm sm:text-base text-qimtek-text">
                 {formattedTimestamp}
               </p>
             </div>
             <div>
-              <label className="text-sm font-medium text-qimtek-text-secondary">IP Address</label>
-              <p className="mt-1 text-qimtek-text">{request.ip_address || 'N/A'}</p>
+              <label className="text-xs sm:text-sm font-medium text-qimtek-text-secondary">IP Address</label>
+              <p className="mt-1 text-sm sm:text-base text-qimtek-text font-mono">{request.ip_address || 'N/A'}</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-qimtek-text-secondary">Request ID</label>
-              <p className="mt-1 font-mono text-sm text-qimtek-text">{request.id}</p>
+              <label className="text-xs sm:text-sm font-medium text-qimtek-text-secondary">Request ID</label>
+              <p className="mt-1 text-xs sm:text-sm font-mono text-qimtek-text break-all">{request.id}</p>
             </div>
           </div>
 
           <div className="mb-6">
-            <label className="text-sm font-medium text-qimtek-text-secondary">URL</label>
-            <div className="mt-1 flex items-center gap-2">
-              <code className="flex-1 px-3 py-2 bg-qimtek-bg-secondary rounded text-sm break-all text-qimtek-text border border-qimtek-border transition-all">
+            <label className="text-xs sm:text-sm font-medium text-qimtek-text-secondary">URL</label>
+            <div className="mt-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <code className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 bg-qimtek-bg-secondary rounded-lg text-xs sm:text-sm break-all text-qimtek-text border border-qimtek-border transition-all font-mono">
                 {request.url}
               </code>
               <button
                 onClick={() => handleCopy(request.url, 'url')}
                 className={cn(
-                  'p-2 rounded hover:bg-qimtek-bg-secondary transition-all duration-200 border border-qimtek-border hover:scale-110 active:scale-95',
+                  'p-2.5 sm:p-3 rounded-lg hover:bg-qimtek-bg-secondary transition-all duration-200 border border-qimtek-border hover:scale-110 active:scale-95 flex-shrink-0',
+                  'flex items-center justify-center',
                   copied === 'url' && 'bg-green-900/30 border-green-700'
                 )}
               >
                 {copied === 'url' ? (
-                  <Check className="w-4 h-4 text-green-400" />
+                  <Check className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
                 ) : (
-                  <Copy className="w-4 h-4 text-qimtek-text-secondary" />
+                  <Copy className="w-4 h-4 sm:w-5 sm:h-5 text-qimtek-text-secondary" />
                 )}
               </button>
             </div>
@@ -217,14 +219,14 @@ export default function RequestDetails() {
         </div>
 
         {/* Headers */}
-        <div className="bg-qimtek-bg-surface rounded-lg shadow-md p-6 mb-6 border border-qimtek-border card-enter" style={{ animationDelay: '0.2s' }}>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-qimtek-text">Headers</h2>
+        <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-4 sm:p-6 mb-6 border border-qimtek-border card-enter" style={{ animationDelay: '0.2s' }}>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
+            <h2 className="text-lg sm:text-xl font-semibold text-qimtek-text">Headers</h2>
             <button
               onClick={() => copyJson(request.headers, 'headers')}
               className={cn(
-                'flex items-center gap-2 px-3 py-1 rounded text-sm border border-qimtek-border',
-                'hover:bg-qimtek-bg-secondary transition-all duration-200 text-qimtek-text hover:scale-105 active:scale-95',
+                'flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm border border-qimtek-border',
+                'hover:bg-qimtek-bg-secondary transition-all duration-200 text-qimtek-text hover:scale-105 active:scale-95 w-full sm:w-auto justify-center',
                 copied === 'headers' && 'bg-green-900/30 border-green-700'
               )}
             >
@@ -241,21 +243,21 @@ export default function RequestDetails() {
               )}
             </button>
           </div>
-          <pre className="bg-qimtek-bg-secondary rounded p-4 overflow-x-auto text-sm text-qimtek-text border border-qimtek-border transition-all">
+          <pre className="bg-qimtek-bg-secondary rounded-lg p-3 sm:p-4 overflow-x-auto text-xs sm:text-sm text-qimtek-text border border-qimtek-border transition-all font-mono">
             {headersJson}
           </pre>
         </div>
 
         {/* Query Parameters */}
         {request.query && Object.keys(request.query).length > 0 && (
-          <div className="bg-qimtek-bg-surface rounded-lg shadow-md p-6 mb-6 border border-qimtek-border card-enter" style={{ animationDelay: '0.3s' }}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-qimtek-text">Query Parameters</h2>
+          <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-4 sm:p-6 mb-6 border border-qimtek-border card-enter" style={{ animationDelay: '0.3s' }}>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
+              <h2 className="text-lg sm:text-xl font-semibold text-qimtek-text">Query Parameters</h2>
               <button
                 onClick={() => copyJson(request.query, 'query')}
                 className={cn(
-                  'flex items-center gap-2 px-3 py-1 rounded text-sm border border-qimtek-border',
-                  'hover:bg-qimtek-bg-secondary transition-all duration-200 text-qimtek-text hover:scale-105 active:scale-95',
+                  'flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm border border-qimtek-border',
+                  'hover:bg-qimtek-bg-secondary transition-all duration-200 text-qimtek-text hover:scale-105 active:scale-95 w-full sm:w-auto justify-center',
                   copied === 'query' && 'bg-green-900/30 border-green-700'
                 )}
               >
@@ -272,7 +274,7 @@ export default function RequestDetails() {
                 )}
               </button>
             </div>
-            <pre className="bg-qimtek-bg-secondary rounded p-4 overflow-x-auto text-sm text-qimtek-text border border-qimtek-border transition-all">
+            <pre className="bg-qimtek-bg-secondary rounded-lg p-3 sm:p-4 overflow-x-auto text-xs sm:text-sm text-qimtek-text border border-qimtek-border transition-all font-mono">
               {queryJson}
             </pre>
           </div>
@@ -280,14 +282,14 @@ export default function RequestDetails() {
 
         {/* Body */}
         {request.body && (
-          <div className="bg-qimtek-bg-surface rounded-lg shadow-md p-6 border border-qimtek-border card-enter" style={{ animationDelay: '0.4s' }}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-qimtek-text">Body</h2>
+          <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-4 sm:p-6 border border-qimtek-border card-enter" style={{ animationDelay: '0.4s' }}>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
+              <h2 className="text-lg sm:text-xl font-semibold text-qimtek-text">Body</h2>
               <button
                 onClick={() => copyJson(request.body, 'body')}
                 className={cn(
-                  'flex items-center gap-2 px-3 py-1 rounded text-sm border border-qimtek-border',
-                  'hover:bg-qimtek-bg-secondary transition-all duration-200 text-qimtek-text hover:scale-105 active:scale-95',
+                  'flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm border border-qimtek-border',
+                  'hover:bg-qimtek-bg-secondary transition-all duration-200 text-qimtek-text hover:scale-105 active:scale-95 w-full sm:w-auto justify-center',
                   copied === 'body' && 'bg-green-900/30 border-green-700'
                 )}
               >
@@ -304,7 +306,7 @@ export default function RequestDetails() {
                 )}
               </button>
             </div>
-            <pre className="bg-qimtek-bg-secondary rounded p-4 overflow-x-auto text-sm text-qimtek-text border border-qimtek-border transition-all">
+            <pre className="bg-qimtek-bg-secondary rounded-lg p-3 sm:p-4 overflow-x-auto text-xs sm:text-sm text-qimtek-text border border-qimtek-border transition-all font-mono">
               {bodyContent}
             </pre>
           </div>
