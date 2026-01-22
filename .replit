@@ -47,4 +47,4 @@ externalPort = 80
 [deployment]
 deploymentTarget = "autoscale"
 run = ["node", "api/dist/server.js"]
-build = ["npm install && npm run build && tsc -p tsconfig.json --outDir api/dist && cp -r api/dist/api/* api/dist/ && rm -rf api/dist/api api/dist/src"]
+build = ["npm install && npm run build && tsc -p tsconfig.json --outDir api/dist && cp -r dist api/dist/dist && cp -r api/dist/api/* api/dist/ && rm -rf api/dist/api api/dist/src"]

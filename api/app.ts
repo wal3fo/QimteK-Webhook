@@ -28,7 +28,7 @@ const __dirname = path.dirname(__filename)
 const app: express.Application = express()
 
 // Static files for frontend
-app.use(express.static(path.join(__dirname, '../../dist')))
+app.use(express.static(path.join(__dirname, '../dist')))
 
 // CORS configuration - allow all origins in production (Vercel handles this)
 app.use(cors({
@@ -87,7 +87,7 @@ app.use('/api', (req: Request, res: Response) => {
 
 // Serve frontend for all other routes
 app.get('*', (req: Request, res: Response) => {
-  res.sendFile(path.join(__dirname, '../../dist/index.html'))
+  res.sendFile(path.join(__dirname, '../dist/index.html'))
 })
 
 export default app
