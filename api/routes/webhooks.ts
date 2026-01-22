@@ -26,7 +26,10 @@ router.post('/generate', async (req: Request, res: Response): Promise<void> => {
     expiresAt.setMinutes(expiresAt.getMinutes() + expiresIn);
     
     // Get base URL from environment or request
-    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+    // Check X-Forwarded-Proto for protocol behind proxy
+    const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol;
+    const host = (req.headers['x-forwarded-host'] as string) || req.get('host');
+    const baseUrl = process.env.BASE_URL || `${protocol}://${host}`;
     const webhookUrl = `${baseUrl}/api/webhook/${token}`;
     
     // Insert into database
