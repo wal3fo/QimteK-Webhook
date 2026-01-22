@@ -61,19 +61,32 @@ export async function initDb(): Promise<void> {
 
     // Priority 2: Fallback to JSON database (works everywhere)
     try {
+      // Import and initialize JSON database
+      const { initDb: initJsonDb } = await import('./db-json.js');
+      await initJsonDb();
       db = jsonDb;
       console.log('✅ Using JSON database');
       await createSchema(db);
       return;
     } catch (error) {
       console.error('⚠️  JSON database failed:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        dbPath: process.env.DB_PATH || (process.env.NETLIFY || process.env.VERCEL ? '/tmp/webhook-data.json' : 'webhook-data.json'),
+      });
       // Fall through to throw error
     }
 
     // If all databases failed, throw error
+    const isServerless = process.env.NETLIFY || process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+    const dbPath = process.env.DB_PATH || (isServerless ? '/tmp/webhook-data.json' : 'webhook-data.json');
     throw new Error(
-      'Failed to initialize any database. ' +
-      'Please ensure SQLite (better-sqlite3) is available, or JSON database can be created.'
+      `Failed to initialize any database. ` +
+      `SQLite (better-sqlite3) is not available in this environment, ` +
+      `and JSON database initialization failed. ` +
+      `Database path: ${dbPath}. ` +
+      `Please check file system permissions and ensure the directory is writable.`
     );
   })();
 

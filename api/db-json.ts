@@ -50,24 +50,37 @@ function getDbPath(): string {
 // Initialize database file if it doesn't exist
 function ensureDbFile(): void {
   const dbPath = getDbPath();
-  if (!fs.existsSync(dbPath)) {
-    const initialData: Database = {
-      webhooks: [],
-      requests: [],
-    };
-    fs.writeFileSync(dbPath, JSON.stringify(initialData, null, 2), 'utf8');
+  try {
+    // Ensure the directory exists (especially for /tmp)
+    const dir = path.dirname(dbPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    
+    if (!fs.existsSync(dbPath)) {
+      const initialData: Database = {
+        webhooks: [],
+        requests: [],
+      };
+      fs.writeFileSync(dbPath, JSON.stringify(initialData, null, 2), 'utf8');
+      console.log(`✅ Created database file at: ${dbPath}`);
+    }
+  } catch (error) {
+    console.error(`❌ Failed to ensure database file at ${dbPath}:`, error);
+    throw new Error(`Cannot create database file at ${dbPath}: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
 // Read database
 function readDb(): Database {
-  ensureDbFile();
   try {
+    ensureDbFile();
     const dbPath = getDbPath();
     const data = fs.readFileSync(dbPath, 'utf8');
     return JSON.parse(data);
   } catch (error) {
     console.error('Error reading database:', error);
+    // Return empty database if read fails
     return { webhooks: [], requests: [] };
   }
 }
@@ -75,11 +88,13 @@ function readDb(): Database {
 // Write database
 function writeDb(data: Database): void {
   try {
+    ensureDbFile(); // Ensure file exists before writing
     const dbPath = getDbPath();
     fs.writeFileSync(dbPath, JSON.stringify(data, null, 2), 'utf8');
   } catch (error) {
     console.error('Error writing database:', error);
-    throw error;
+    console.error('Database path:', getDbPath());
+    throw new Error(`Failed to write database: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -241,9 +256,14 @@ class JsonDatabase {
 
 const db = new JsonDatabase();
 
-export function initDb(): void {
-  ensureDbFile();
-  console.log('JSON database initialized successfully');
+export async function initDb(): Promise<void> {
+  try {
+    ensureDbFile();
+    console.log('JSON database initialized successfully');
+  } catch (error) {
+    console.error('Error initializing JSON database:', error);
+    throw error;
+  }
 }
 
 export default db;

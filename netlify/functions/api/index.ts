@@ -8,11 +8,20 @@ import { initDb } from '../../../api/db.js';
 
 // Initialize database on first request (serverless functions are stateless)
 let dbInitialized = false;
+let dbInitError: Error | null = null;
 const initPromise = initDb().then(() => {
   dbInitialized = true;
-  console.log('Database initialized for Netlify function');
+  console.log('✅ Database initialized for Netlify function');
+  console.log('Database path:', process.env.DB_PATH || '/tmp/webhook-data.json');
 }).catch((err) => {
-  console.error('Failed to initialize database:', err);
+  dbInitError = err instanceof Error ? err : new Error(String(err));
+  console.error('❌ Failed to initialize database:', err);
+  console.error('Error details:', {
+    message: err instanceof Error ? err.message : String(err),
+    stack: err instanceof Error ? err.stack : undefined,
+    dbPath: process.env.DB_PATH || '/tmp/webhook-data.json',
+    isServerless: !!(process.env.NETLIFY || process.env.VERCEL),
+  });
 });
 
 // Wrap Express app with serverless-http
@@ -34,13 +43,34 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
           throw new Error('Database initialization failed');
         }
       } catch (dbError) {
-        console.error('Database initialization error:', dbError);
+        const error = dbError instanceof Error ? dbError : new Error(String(dbError));
+        console.error('Database initialization error:', error);
+        console.error('Error stack:', error.stack);
         return {
           statusCode: 500,
           body: JSON.stringify({
             success: false,
             error: 'Database initialization failed',
-            details: dbError instanceof Error ? dbError.message : String(dbError),
+            details: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+            dbPath: process.env.DB_PATH || '/tmp/webhook-data.json',
+          }),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        };
+      }
+      
+      // Check if there was a previous initialization error
+      if (dbInitError) {
+        return {
+          statusCode: 500,
+          body: JSON.stringify({
+            success: false,
+            error: 'Database initialization failed',
+            details: dbInitError.message,
+            stack: process.env.NODE_ENV === 'development' ? dbInitError.stack : undefined,
+            dbPath: process.env.DB_PATH || '/tmp/webhook-data.json',
           }),
           headers: {
             'Content-Type': 'application/json',
