@@ -34,7 +34,7 @@ export default defineConfig({
       }
     },
     allowedHosts: [
-      'https://qimtekhooks.netlify.app/'
+      'all'
     ]
   }
 })
