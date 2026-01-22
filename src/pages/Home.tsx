@@ -92,7 +92,7 @@ RequestRow.displayName = 'RequestRow';
 
 export default function Home() {
   const navigate = useNavigate();
-  const { webhook, requests, loading, error, isConnected, generateWebhook, deleteWebhook } = useWebhook();
+  const { webhooks, selectedWebhook, requests, loading, error, isConnected, generateWebhook, deleteWebhook, setSelectedWebhook } = useWebhook();
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const [copied, setCopied] = useState(false);
   const [methodFilter, setMethodFilter] = useState<string>('ALL');
@@ -118,24 +118,26 @@ export default function Home() {
   }, [generateWebhook]);
 
   const handleCopy = useCallback(async () => {
-    if (!webhook) return;
+    if (!selectedWebhook) return;
     try {
-      await navigator.clipboard.writeText(webhook.url);
+      await navigator.clipboard.writeText(selectedWebhook.url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error('Failed to copy:', err);
     }
-  }, [webhook]);
+  }, [selectedWebhook]);
 
   const handleDeleteClick = useCallback(() => {
     setShowDeleteModal(true);
   }, []);
 
   const handleDeleteConfirm = useCallback(async () => {
-    await deleteWebhook();
-    setShowDeleteModal(false);
-  }, [deleteWebhook]);
+    if (selectedWebhook) {
+      await deleteWebhook(selectedWebhook.token);
+      setShowDeleteModal(false);
+    }
+  }, [deleteWebhook, selectedWebhook]);
 
   const handleNavigate = useCallback((id: string) => {
     navigate(`/request/${id}`);
@@ -243,6 +245,7 @@ export default function Home() {
               {/* Sparkle effect on hover */}
               <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-white rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
             </a>
+            </div>
           </div>
           <h1 className="sr-only">QimteK Hooks - Webhook Inspection Tool</h1>
           <p className="text-qimtek-text-secondary text-sm sm:text-base">
@@ -252,29 +255,31 @@ export default function Home() {
 
         {/* Connection Status */}
         <div className="mb-4 sm:mb-6 slide-enter" style={{ animationDelay: '0.1s' }}>
-          <div className={cn(
-            'inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm border transition-all duration-300',
-            webhook
-              ? isConnected
-                ? 'bg-green-900/30 text-green-300 border-green-700/50'
-                : 'bg-yellow-900/30 text-yellow-300 border-yellow-700/50'
-              : 'bg-gray-900/30 text-gray-400 border-gray-700/50'
+            <div className={cn(
+              'inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm border transition-all duration-300',
+              selectedWebhook
+                ? isConnected
+                  ? 'bg-green-900/30 text-green-300 border-green-700/50'
+                  : 'bg-yellow-900/30 text-yellow-300 border-yellow-700/50'
+                : 'bg-gray-900/30 text-gray-400 border-gray-700/50'
           )}>
             <div className={cn(
               'w-2 h-2 rounded-full transition-all duration-300 flex-shrink-0',
-              webhook
+              selectedWebhook
                 ? (isConnected ? 'bg-green-400 animate-pulse' : 'bg-yellow-400')
                 : 'bg-gray-500'
             )} />
             <span className="hidden sm:inline">
-              {webhook
+              {selectedWebhook
                 ? (isConnected
-                  ? 'Connected (Real-time active)'
-                  : 'Active (Polling for updates)')
-                : 'No active webhook - Click "Generate Webhook URL" to start'}
+                  ? `Connected (${webhooks.length} webhook${webhooks.length !== 1 ? 's' : ''})`
+                  : `Active (${webhooks.length} webhook${webhooks.length !== 1 ? 's' : ''})`)
+                : isAuthenticated
+                  ? 'No webhooks - Click "Generate Webhook URL" to start'
+                  : 'Please login to generate webhooks'}
             </span>
             <span className="sm:hidden">
-              {webhook
+              {selectedWebhook
                 ? (isConnected
                   ? 'Connected'
                   : 'Active')
@@ -284,7 +289,30 @@ export default function Home() {
         </div>
 
         {/* Webhook Generator */}
-        {!webhook ? (
+        {!isAuthenticated ? (
+          <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-5 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8 border border-qimtek-border card-enter">
+            <div className="text-center">
+              <h2 className="text-xl sm:text-2xl font-bold text-qimtek-text mb-3 sm:mb-4">
+                Login Required
+              </h2>
+              <p className="text-sm sm:text-base text-qimtek-text-secondary mb-6">
+                Please login to generate and manage webhook URLs
+              </p>
+              <Link
+                to="/login"
+                className={cn(
+                  'inline-flex items-center gap-2 px-6 sm:px-8 py-3.5 sm:py-3.5 bg-[#82c91e] text-black rounded-xl font-semibold',
+                  'hover:bg-[#6ba017] transition-all duration-200 hover:scale-105 active:scale-95',
+                  'shadow-lg hover:shadow-xl hover:shadow-[#82c91e]/30',
+                  'text-sm sm:text-base touch-manipulation'
+                )}
+              >
+                <LogIn className="w-5 h-5" />
+                Go to Login
+              </Link>
+            </div>
+          </div>
+        ) : webhooks.length === 0 ? (
           <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-5 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8 border border-qimtek-border card-enter">
             <div className="text-center">
               <h2 className="text-xl sm:text-2xl font-bold text-qimtek-text mb-3 sm:mb-4">
@@ -312,16 +340,42 @@ export default function Home() {
             </div>
           </div>
         ) : (
-          <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6 lg:mb-8 border border-qimtek-border card-enter">
-            <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-4 mb-4">
-              <div className="flex-1 w-full sm:w-auto min-w-0">
-                <h2 className="text-base sm:text-lg font-semibold text-qimtek-text mb-2">
-                  Your Webhook URL
-                </h2>
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                  <code className="flex-1 px-3 sm:px-4 py-2.5 sm:py-2.5 bg-qimtek-bg-secondary rounded-lg text-xs sm:text-sm break-all text-qimtek-text border border-qimtek-border transition-all font-mono overflow-x-auto min-w-0">
-                    {webhook.url}
-                  </code>
+          <div className="space-y-4 mb-4 sm:mb-6 lg:mb-8">
+            {/* Webhook Selector */}
+            {webhooks.length > 1 && (
+              <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-4 border border-qimtek-border">
+                <label className="block text-sm font-medium text-qimtek-text-secondary mb-2">
+                  Select Webhook ({webhooks.length} total)
+                </label>
+                <select
+                  value={selectedWebhook?.token || ''}
+                  onChange={(e) => {
+                    const webhook = webhooks.find(w => w.token === e.target.value);
+                    if (webhook) setSelectedWebhook(webhook);
+                  }}
+                  className="w-full px-4 py-2 bg-qimtek-bg-secondary border border-qimtek-border rounded-lg text-qimtek-text focus:outline-none focus:ring-2 focus:ring-[#82c91e]/50"
+                >
+                  {webhooks.map((wh) => (
+                    <option key={wh.token} value={wh.token}>
+                      {wh.url} - Expires: {format(new Date(wh.expiresAt), 'PPp')}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Selected Webhook Display */}
+            {selectedWebhook && (
+              <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-4 sm:p-6 border border-qimtek-border card-enter">
+                <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-4 mb-4">
+                  <div className="flex-1 w-full sm:w-auto min-w-0">
+                    <h2 className="text-base sm:text-lg font-semibold text-qimtek-text mb-2">
+                      {webhooks.length > 1 ? 'Selected Webhook URL' : 'Your Webhook URL'}
+                    </h2>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <code className="flex-1 px-3 sm:px-4 py-2.5 sm:py-2.5 bg-qimtek-bg-secondary rounded-lg text-xs sm:text-sm break-all text-qimtek-text border border-qimtek-border transition-all font-mono overflow-x-auto min-w-0">
+                        {selectedWebhook.url}
+                      </code>
                   <div className="flex items-center gap-2 sm:flex-shrink-0">
                     <button
                       onClick={handleCopy}
@@ -340,7 +394,7 @@ export default function Home() {
                       )}
                     </button>
                     <a
-                      href={webhook.url}
+                      href={selectedWebhook.url}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-2.5 sm:p-3 rounded-lg hover:bg-qimtek-bg-secondary transition-all duration-200 border border-qimtek-border hover:scale-110 active:scale-95 flex-shrink-0 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
@@ -359,16 +413,25 @@ export default function Home() {
                     </button>
                   </div>
                 </div>
-                <p className="mt-2 text-xs sm:text-sm text-qimtek-text-tertiary">
-                  Expires: {format(new Date(webhook.expiresAt), 'PPp')}
-                </p>
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-xs sm:text-sm text-qimtek-text-tertiary">
+                    Expires: {format(new Date(selectedWebhook.expiresAt), 'PPp')}
+                  </p>
+                  <button
+                    onClick={handleGenerate}
+                    disabled={loading}
+                    className="text-xs sm:text-sm text-[#82c91e] hover:text-[#6ba017] font-medium transition-colors"
+                  >
+                    + Generate Another
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         )}
 
         {/* Requests Dashboard */}
-        {webhook && (
+        {selectedWebhook && (
           <div className="bg-qimtek-bg-surface rounded-xl shadow-lg border border-qimtek-border card-enter" style={{ animationDelay: '0.2s' }}>
             <div className={cn("p-4 sm:p-6 border-b border-qimtek-border", isSearchFocused && isMobile && "pb-3")}>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">

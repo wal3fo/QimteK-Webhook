@@ -123,11 +123,14 @@ async function createSchema(database: DatabaseAdapter): Promise<void> {
 
     CREATE TABLE IF NOT EXISTS webhooks (
       token TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       expires_at DATETIME NOT NULL,
-      is_active BOOLEAN DEFAULT 1
+      is_active BOOLEAN DEFAULT 1,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
+    CREATE INDEX IF NOT EXISTS idx_webhooks_user_id ON webhooks(user_id);
     CREATE INDEX IF NOT EXISTS idx_webhooks_expires_at ON webhooks(expires_at);
     CREATE INDEX IF NOT EXISTS idx_webhooks_active ON webhooks(is_active);
 

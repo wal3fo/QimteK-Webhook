@@ -7,6 +7,7 @@ import path from 'path';
 
 interface Webhook {
   token: string;
+  user_id: string;
   created_at: string;
   expires_at: string;
   is_active: boolean;
@@ -91,6 +92,27 @@ function ensureDbFile(): void {
       console.log(`✅ Created database file at: ${dbPath}`);
     } else {
       console.log(`✅ Database file already exists: ${dbPath}`);
+      // Migrate existing webhooks to have user_id (set to null for old webhooks)
+      try {
+        const data = fs.readFileSync(dbPath, 'utf8');
+        const db = JSON.parse(data);
+        if (db.webhooks && db.webhooks.length > 0) {
+          let migrated = false;
+          db.webhooks = db.webhooks.map((wh: any) => {
+            if (!wh.user_id) {
+              migrated = true;
+              return { ...wh, user_id: null }; // Old webhooks without user_id
+            }
+            return wh;
+          });
+          if (migrated) {
+            fs.writeFileSync(dbPath, JSON.stringify(db, null, 2), 'utf8');
+            console.log('✅ Migrated existing webhooks to include user_id');
+          }
+        }
+      } catch (err) {
+        // Ignore migration errors
+      }
     }
   } catch (error) {
     console.error(`❌ Failed to ensure database file at ${dbPath}:`, error);
@@ -170,11 +192,13 @@ class JsonDatabase {
         // Handle INSERT INTO webhooks
         if (sql.includes('INSERT INTO webhooks')) {
           const token = params[0];
-          const expiresAt = params[1];
-          const isActive = params[2] !== undefined ? params[2] : true;
+          const userId = params[1]; // user_id is now the second parameter
+          const expiresAt = params[2]; // expires_at is now the third parameter
+          const isActive = params[3] !== undefined ? params[3] : true;
           
           const webhook: Webhook = {
             token,
+            user_id: userId,
             created_at: new Date().toISOString(),
             expires_at: expiresAt,
             is_active: isActive,
@@ -243,7 +267,13 @@ class JsonDatabase {
         else if (sql.includes('DELETE FROM webhooks')) {
           const beforeCount = db.webhooks.length;
           
-          if (sql.includes('WHERE token = ?')) {
+          if (sql.includes('WHERE token = ?') && sql.includes('user_id = ?')) {
+            const token = params[0];
+            const userId = params[1];
+            db.webhooks = db.webhooks.filter(w => !(w.token === token && w.user_id === userId));
+            // Also delete associated requests
+            db.requests = db.requests.filter(r => r.webhook_token !== token);
+          } else if (sql.includes('WHERE token = ?')) {
             const token = params[0];
             db.webhooks = db.webhooks.filter(w => w.token !== token);
             // Also delete associated requests
@@ -298,19 +328,80 @@ class JsonDatabase {
           return { count };
         }
         
-        // Handle SELECT FROM webhooks WHERE token = ?
-        if (sql.includes('SELECT') && sql.includes('webhooks') && sql.includes('token = ?')) {
+        // Handle SELECT FROM webhooks WHERE token = ? AND user_id = ?
+        if (sql.includes('SELECT') && sql.includes('webhooks') && sql.includes('token = ?') && sql.includes('user_id = ?')) {
           const token = params[0];
+          const userId = params[1];
           const webhook = db.webhooks.find(w => 
             w.token === token && 
+            w.user_id === userId &&
             w.is_active && 
             new Date(w.expires_at) > new Date()
           );
           return webhook || undefined;
         }
         
-        // Handle SELECT FROM requests WHERE id = ?
-        if (sql.includes('SELECT') && sql.includes('requests') && sql.includes('id = ?')) {
+        // Handle SELECT FROM webhooks WHERE token = ? (for webhook receiver - no auth required)
+        if (sql.includes('SELECT') && sql.includes('webhooks') && sql.includes('token = ?') && !sql.includes('user_id = ?')) {
+          const token = params[0];
+          const webhook = db.webhooks.find(w => 
+            w.token === token && 
+            w.is_active && 
+            new Date(w.expires_at) > new Date()
+          );
+          // Return webhook without user_id for backward compatibility
+          if (webhook) {
+            return {
+              token: webhook.token,
+              expires_at: webhook.expires_at,
+              is_active: webhook.is_active ? 1 : 0,
+            };
+          }
+          return undefined;
+        }
+        
+        // Handle SELECT token, created_at, expires_at, is_active FROM webhooks WHERE user_id = ?
+        if (sql.includes('SELECT') && sql.includes('webhooks') && sql.includes('user_id = ?') && sql.includes('ORDER BY created_at DESC')) {
+          const userId = params[0];
+          const webhooks = db.webhooks
+            .filter(w => w.user_id === userId && w.is_active && new Date(w.expires_at) > new Date())
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .map(w => ({
+              token: w.token,
+              created_at: w.created_at,
+              expires_at: w.expires_at,
+              is_active: w.is_active ? 1 : 0,
+            }));
+          return webhooks;
+        }
+        
+        // Handle SELECT r.* FROM requests r INNER JOIN webhooks w ON r.webhook_token = w.token WHERE r.id = ? AND w.user_id = ?
+        if (sql.includes('SELECT r.*') && sql.includes('INNER JOIN') && sql.includes('requests r') && sql.includes('webhooks w') && sql.includes('id = ?') && sql.includes('user_id = ?')) {
+          const id = params[0];
+          const userId = params[1];
+          const request = db.requests.find(r => r.id === id);
+          if (!request) return undefined;
+          
+          // Verify webhook belongs to user
+          const webhook = db.webhooks.find(w => w.token === request.webhook_token && w.user_id === userId);
+          if (!webhook) return undefined;
+          
+          // Convert to format expected by the code (stringify JSON fields)
+          return {
+            id: request.id,
+            webhook_token: request.webhook_token,
+            method: request.method,
+            url: request.url,
+            headers: typeof request.headers === 'string' ? request.headers : JSON.stringify(request.headers),
+            body: request.body ? (typeof request.body === 'string' ? request.body : JSON.stringify(request.body)) : null,
+            query: request.query ? (typeof request.query === 'string' ? request.query : JSON.stringify(request.query)) : null,
+            timestamp: request.timestamp,
+            ip_address: request.ip_address,
+          };
+        }
+        
+        // Handle SELECT FROM requests WHERE id = ? (backward compatibility)
+        if (sql.includes('SELECT') && sql.includes('requests') && sql.includes('id = ?') && !sql.includes('INNER JOIN')) {
           const id = params[0];
           const request = db.requests.find(r => r.id === id);
           if (!request) return undefined;

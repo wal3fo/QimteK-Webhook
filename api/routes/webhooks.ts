@@ -13,6 +13,7 @@
 import { Router, type Request, type Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { ensureDb } from '../db.js';
+import { authenticate } from '../utils/auth.js';
 
 const router = Router();
 
@@ -22,11 +23,14 @@ const router = Router();
  * 
  * Creates a unique, hard-to-guess webhook endpoint.
  * Each webhook has an expiration time (default: 60 minutes).
+ * Webhooks are linked to the authenticated user.
  * 
+ * Requires: Authentication
  * Returns: { token, url, expiresAt }
  */
-router.post('/generate', async (req: Request, res: Response): Promise<void> => {
+router.post('/generate', authenticate, async (req: Request, res: Response): Promise<void> => {
   try {
+    const user = (req as any).user;
     // Default expiration: 60 minutes
     const { expiresIn = 60 } = req.body;
     
@@ -46,13 +50,13 @@ router.post('/generate', async (req: Request, res: Response): Promise<void> => {
     const baseUrl = process.env.BASE_URL || `${protocol}://${host}`;
     const webhookUrl = `${baseUrl}/api/webhook/${token}`;
     
-    // Store webhook in database
+    // Store webhook in database (linked to user)
     const stmt = database.prepare(`
-      INSERT INTO webhooks (token, expires_at, is_active)
-      VALUES (?, ?, 1)
+      INSERT INTO webhooks (token, user_id, expires_at, is_active)
+      VALUES (?, ?, ?, 1)
     `);
     
-    const result = stmt.run(token, expiresAt.toISOString());
+    const result = stmt.run(token, user.id, expiresAt.toISOString());
     await (result instanceof Promise ? result : Promise.resolve(result));
     
     res.status(201).json({
@@ -71,20 +75,83 @@ router.post('/generate', async (req: Request, res: Response): Promise<void> => {
 });
 
 /**
+ * List all webhooks for the authenticated user
+ * GET /api/webhooks
+ * 
+ * Returns all webhooks belonging to the current user.
+ * 
+ * Requires: Authentication
+ */
+router.get('/', authenticate, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = (req as any).user;
+    const database = await ensureDb();
+    
+    // Get all webhooks for this user
+    const webhooksResult = database.prepare(`
+      SELECT token, created_at, expires_at, is_active
+      FROM webhooks 
+      WHERE user_id = ? AND is_active = 1 AND expires_at > datetime('now')
+      ORDER BY created_at DESC
+    `).all(user.id);
+    
+    const webhooks = await (webhooksResult instanceof Promise 
+      ? webhooksResult 
+      : Promise.resolve(webhooksResult)) as Array<{
+      token: string;
+      created_at: string;
+      expires_at: string;
+      is_active: number;
+    }>;
+    
+    // Build URLs for each webhook
+    const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol;
+    const host = (req.headers['x-forwarded-host'] as string) || req.get('host');
+    const baseUrl = process.env.BASE_URL || `${protocol}://${host}`;
+    
+    const webhooksWithUrls = webhooks.map(wh => ({
+      token: wh.token,
+      url: `${baseUrl}/api/webhook/${wh.token}`,
+      created_at: wh.created_at,
+      expires_at: wh.expires_at,
+      is_active: wh.is_active === 1,
+    }));
+    
+    res.json({
+      success: true,
+      webhooks: webhooksWithUrls,
+    });
+  } catch (error) {
+    console.error('Error fetching webhooks:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch webhooks',
+    });
+  }
+});
+
+/**
  * Get a single request by ID
  * GET /api/webhooks/requests/:id
  * 
  * Returns full request details including headers, body, query params.
  * Used by UI to display request details when user clicks on a request.
+ * Only returns requests for webhooks owned by the authenticated user.
+ * 
+ * Requires: Authentication
  */
-router.get('/requests/:id', async (req: Request, res: Response): Promise<void> => {
+router.get('/requests/:id', authenticate, async (req: Request, res: Response): Promise<void> => {
   try {
+    const user = (req as any).user;
     const { id } = req.params;
     const database = await ensureDb();
     
+    // Get request and verify it belongs to a webhook owned by the user
     const requestResult = database.prepare(`
-      SELECT * FROM requests WHERE id = ?
-    `).get(id);
+      SELECT r.* FROM requests r
+      INNER JOIN webhooks w ON r.webhook_token = w.token
+      WHERE r.id = ? AND w.user_id = ?
+    `).get(id, user.id);
     
     const request = await (requestResult instanceof Promise 
       ? requestResult 
@@ -103,7 +170,7 @@ router.get('/requests/:id', async (req: Request, res: Response): Promise<void> =
     if (!request) {
       res.status(404).json({
         success: false,
-        error: 'Request not found',
+        error: 'Request not found or access denied',
       });
       return;
     }
@@ -176,7 +243,7 @@ router.get('/:token/requests', async (req: Request, res: Response): Promise<void
     if (!webhook) {
       res.status(404).json({
         success: false,
-        error: 'Webhook not found or expired',
+        error: 'Webhook not found, expired, or access denied',
       });
       return;
     }
@@ -256,16 +323,20 @@ router.get('/:token/requests', async (req: Request, res: Response): Promise<void
  * GET /api/webhooks/:token
  * 
  * Returns basic webhook metadata (token, expiration, active status).
+ * Only returns webhooks owned by the authenticated user.
+ * 
+ * Requires: Authentication
  */
-router.get('/:token', async (req: Request, res: Response): Promise<void> => {
+router.get('/:token', authenticate, async (req: Request, res: Response): Promise<void> => {
   try {
+    const user = (req as any).user;
     const { token } = req.params;
     const database = await ensureDb();
     
     const webhookResult = database.prepare(`
       SELECT * FROM webhooks 
-      WHERE token = ? AND is_active = 1 AND expires_at > datetime('now')
-    `).get(token);
+      WHERE token = ? AND user_id = ? AND is_active = 1 AND expires_at > datetime('now')
+    `).get(token, user.id);
     
     const webhook = await (webhookResult instanceof Promise 
       ? webhookResult 
@@ -279,7 +350,7 @@ router.get('/:token', async (req: Request, res: Response): Promise<void> => {
     if (!webhook) {
       res.status(404).json({
         success: false,
-        error: 'Webhook not found or expired',
+        error: 'Webhook not found, expired, or access denied',
       });
       return;
     }
@@ -307,20 +378,25 @@ router.get('/:token', async (req: Request, res: Response): Promise<void> => {
  * DELETE /api/webhooks/:token
  * 
  * Permanently removes the webhook and all associated request data.
+ * Only allows deletion of webhooks owned by the authenticated user.
+ * 
+ * Requires: Authentication
  */
-router.delete('/:token', async (req: Request, res: Response): Promise<void> => {
+router.delete('/:token', authenticate, async (req: Request, res: Response): Promise<void> => {
   try {
+    const user = (req as any).user;
     const { token } = req.params;
     const database = await ensureDb();
     
-    const stmt = database.prepare('DELETE FROM webhooks WHERE token = ?');
-    const result = stmt.run(token);
+    // Only delete if webhook belongs to the user
+    const stmt = database.prepare('DELETE FROM webhooks WHERE token = ? AND user_id = ?');
+    const result = stmt.run(token, user.id);
     const finalResult = await (result instanceof Promise ? result : result);
     
     if (finalResult.changes === 0) {
       res.status(404).json({
         success: false,
-        error: 'Webhook not found',
+        error: 'Webhook not found or access denied',
       });
       return;
     }
