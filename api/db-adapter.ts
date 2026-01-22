@@ -42,10 +42,20 @@ export async function initDb(): Promise<void> {
     try {
       const Database = (await import('better-sqlite3')).default;
       // In serverless environments, use /tmp directory
-      const isServerless = process.env.NETLIFY || process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+      const cwd = process.cwd();
+      const isServerless = 
+        process.env.NETLIFY || 
+        process.env.VERCEL || 
+        process.env.AWS_LAMBDA_FUNCTION_NAME ||
+        process.env.NETLIFY_DEV ||
+        process.env._HANDLER ||
+        (typeof process.env.LAMBDA_TASK_ROOT !== 'undefined') ||
+        cwd.startsWith('/var/task') || // Netlify/AWS Lambda execution directory
+        cwd.startsWith('/tmp'); // Some serverless environments
       const dbPath = process.env.DB_PATH || (isServerless 
         ? '/tmp/webhook.db' 
-        : path.join(process.cwd(), 'webhook.db'));
+        : path.join(cwd, 'webhook.db'));
+      console.log(`SQLite database path: ${dbPath} (serverless: ${isServerless}, cwd: ${cwd})`);
       const sqliteDb = new Database(dbPath);
       sqliteDb.pragma('foreign_keys = ON');
       // Cast to DatabaseAdapter since SQLite Database implements the interface

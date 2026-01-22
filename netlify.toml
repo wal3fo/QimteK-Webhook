@@ -1,11 +1,15 @@
 [build]
   command = "npm run build"
   publish = "dist"
-  environment = { VITE_API_URL = "/api", DB_PATH = "/tmp/webhook-data.json" }
+  environment = { VITE_API_URL = "/api" }
 
 [functions]
   node_bundler = "esbuild"
   external_node_modules = ["better-sqlite3"]
+  # Note: Environment variables in netlify.toml are build-time only.
+  # For runtime environment variables, set them in Netlify UI:
+  # Site settings > Build & deploy > Environment > Environment variables
+  # Add: DB_PATH = /tmp/webhook-data.json (optional - code auto-detects serverless)
 
 [dev]
   command = "npm run dev"

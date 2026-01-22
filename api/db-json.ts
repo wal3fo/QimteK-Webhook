@@ -38,13 +38,28 @@ function getDbPath(): string {
   
   // In serverless environments (Netlify, Vercel, etc.), use /tmp directory
   // which is the only writable directory in serverless functions
-  const isServerless = process.env.NETLIFY || process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+  // Check multiple indicators of serverless environment
+  const cwd = process.cwd();
+  const isServerless = 
+    process.env.NETLIFY || 
+    process.env.VERCEL || 
+    process.env.AWS_LAMBDA_FUNCTION_NAME ||
+    process.env.NETLIFY_DEV || // Netlify Dev
+    process.env._HANDLER || // AWS Lambda
+    (typeof process.env.LAMBDA_TASK_ROOT !== 'undefined') || // AWS Lambda
+    cwd.startsWith('/var/task') || // Netlify/AWS Lambda execution directory
+    cwd.startsWith('/tmp'); // Some serverless environments
+  
   if (isServerless) {
-    return '/tmp/webhook-data.json';
+    const tmpPath = '/tmp/webhook-data.json';
+    console.log(`Using serverless database path: ${tmpPath} (cwd: ${cwd})`);
+    return tmpPath;
   }
   
   // For local development, use current working directory
-  return path.join(process.cwd(), 'webhook-data.json');
+  const localPath = path.join(cwd, 'webhook-data.json');
+  console.log(`Using local database path: ${localPath} (cwd: ${cwd})`);
+  return localPath;
 }
 
 // Initialize database file if it doesn't exist
