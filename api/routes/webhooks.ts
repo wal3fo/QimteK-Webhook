@@ -1,38 +1,52 @@
 /**
- * Webhook routes for generating and managing webhooks
+ * Webhook Management Routes
+ * 
+ * These routes handle webhook lifecycle:
+ * 1. Generate new webhook URLs
+ * 2. Retrieve captured requests for a webhook
+ * 3. Get individual request details
+ * 4. Delete webhooks
+ * 
+ * All webhook data is stored in-memory (JSON) or SQLite database.
  */
+
 import { Router, type Request, type Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import db, { ensureDb } from '../db.js';
+import { ensureDb } from '../db.js';
 
 const router = Router();
 
 /**
  * Generate a new webhook URL
  * POST /api/webhooks/generate
+ * 
+ * Creates a unique, hard-to-guess webhook endpoint.
+ * Each webhook has an expiration time (default: 60 minutes).
+ * 
+ * Returns: { token, url, expiresAt }
  */
 router.post('/generate', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { expiresIn = 60 } = req.body; // Default 60 minutes
+    // Default expiration: 60 minutes
+    const { expiresIn = 60 } = req.body;
     
-    // Ensure database is initialized
     const database = await ensureDb();
     
-    // Generate unique token
+    // Generate unique token (UUID without dashes for shorter URL)
     const token = uuidv4().replace(/-/g, '');
     
     // Calculate expiration time
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + expiresIn);
     
-    // Get base URL from environment or request
-    // Check X-Forwarded-Proto for protocol behind proxy
+    // Build webhook URL
+    // Handles both local development and production (behind proxy)
     const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol;
     const host = (req.headers['x-forwarded-host'] as string) || req.get('host');
     const baseUrl = process.env.BASE_URL || `${protocol}://${host}`;
     const webhookUrl = `${baseUrl}/api/webhook/${token}`;
     
-    // Insert into database
+    // Store webhook in database
     const stmt = database.prepare(`
       INSERT INTO webhooks (token, expires_at, is_active)
       VALUES (?, ?, 1)
@@ -59,17 +73,22 @@ router.post('/generate', async (req: Request, res: Response): Promise<void> => {
 /**
  * Get a single request by ID
  * GET /api/webhooks/requests/:id
- * Must come before /:token to avoid route conflicts
+ * 
+ * Returns full request details including headers, body, query params.
+ * Used by UI to display request details when user clicks on a request.
  */
 router.get('/requests/:id', async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    
     const database = await ensureDb();
+    
     const requestResult = database.prepare(`
       SELECT * FROM requests WHERE id = ?
     `).get(id);
-    const request = await (requestResult instanceof Promise ? requestResult : Promise.resolve(requestResult)) as {
+    
+    const request = await (requestResult instanceof Promise 
+      ? requestResult 
+      : Promise.resolve(requestResult)) as {
       id: string;
       webhook_token: string;
       method: string;
@@ -89,7 +108,7 @@ router.get('/requests/:id', async (req: Request, res: Response): Promise<void> =
       return;
     }
     
-    // Parse JSON fields - handle both string and object formats
+    // Parse JSON fields (headers, body, query are stored as JSON strings)
     const parseJsonField = (field: string | object | null): any => {
       if (!field) return null;
       if (typeof field === 'object') return field;
@@ -127,9 +146,15 @@ router.get('/requests/:id', async (req: Request, res: Response): Promise<void> =
 });
 
 /**
- * Get requests for a specific webhook token
+ * Get all requests for a webhook
  * GET /api/webhooks/:token/requests
- * This route must come before /:token to avoid route conflicts
+ * 
+ * Returns list of captured requests for a webhook, sorted newest first.
+ * Used by UI to display the request list.
+ * 
+ * Query params:
+ * - limit: Max number of requests to return (default: 100)
+ * - offset: Pagination offset (default: 0)
  */
 router.get('/:token/requests', async (req: Request, res: Response): Promise<void> => {
   try {
@@ -143,7 +168,10 @@ router.get('/:token/requests', async (req: Request, res: Response): Promise<void
       SELECT * FROM webhooks 
       WHERE token = ? AND is_active = 1 AND expires_at > datetime('now')
     `).get(token);
-    const webhook = await (webhookResult instanceof Promise ? webhookResult : Promise.resolve(webhookResult)) as { token: string; expires_at: string; is_active: number } | undefined;
+    
+    const webhook = await (webhookResult instanceof Promise 
+      ? webhookResult 
+      : Promise.resolve(webhookResult)) as { token: string; expires_at: string; is_active: number } | undefined;
     
     if (!webhook) {
       res.status(404).json({
@@ -153,14 +181,17 @@ router.get('/:token/requests', async (req: Request, res: Response): Promise<void
       return;
     }
     
-    // Get requests
+    // Get requests, sorted newest first
     const requestsResult = database.prepare(`
       SELECT * FROM requests 
       WHERE webhook_token = ? 
       ORDER BY timestamp DESC 
       LIMIT ? OFFSET ?
     `).all(token, limit, offset);
-    const requests = await (requestsResult instanceof Promise ? requestsResult : Promise.resolve(requestsResult)) as Array<{
+    
+    const requests = await (requestsResult instanceof Promise 
+      ? requestsResult 
+      : Promise.resolve(requestsResult)) as Array<{
       id: string;
       webhook_token: string;
       method: string;
@@ -172,13 +203,15 @@ router.get('/:token/requests', async (req: Request, res: Response): Promise<void
       ip_address: string | null;
     }>;
     
-    // Get total count
+    // Get total count for pagination
     const totalResult = database.prepare(`
       SELECT COUNT(*) as count FROM requests WHERE webhook_token = ?
     `).get(token);
-    const total = await (totalResult instanceof Promise ? totalResult : Promise.resolve(totalResult)) as { count: number };
+    const total = await (totalResult instanceof Promise 
+      ? totalResult 
+      : Promise.resolve(totalResult)) as { count: number };
     
-    // Parse JSON fields - handle both string and object formats
+    // Parse JSON fields
     const parseJsonField = (field: string | object | null): any => {
       if (!field) return null;
       if (typeof field === 'object') return field;
@@ -221,17 +254,27 @@ router.get('/:token/requests', async (req: Request, res: Response): Promise<void
 /**
  * Get webhook info
  * GET /api/webhooks/:token
+ * 
+ * Returns basic webhook metadata (token, expiration, active status).
  */
 router.get('/:token', async (req: Request, res: Response): Promise<void> => {
   try {
     const { token } = req.params;
-    
     const database = await ensureDb();
+    
     const webhookResult = database.prepare(`
       SELECT * FROM webhooks 
       WHERE token = ? AND is_active = 1 AND expires_at > datetime('now')
     `).get(token);
-    const webhook = await (webhookResult instanceof Promise ? webhookResult : Promise.resolve(webhookResult)) as { token: string; created_at: string; expires_at: string; is_active: number } | undefined;
+    
+    const webhook = await (webhookResult instanceof Promise 
+      ? webhookResult 
+      : Promise.resolve(webhookResult)) as { 
+      token: string; 
+      created_at: string; 
+      expires_at: string; 
+      is_active: number 
+    } | undefined;
     
     if (!webhook) {
       res.status(404).json({
@@ -259,16 +302,17 @@ router.get('/:token', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-
 /**
  * Delete a webhook and all its requests
  * DELETE /api/webhooks/:token
+ * 
+ * Permanently removes the webhook and all associated request data.
  */
 router.delete('/:token', async (req: Request, res: Response): Promise<void> => {
   try {
     const { token } = req.params;
-    
     const database = await ensureDb();
+    
     const stmt = database.prepare('DELETE FROM webhooks WHERE token = ?');
     const result = stmt.run(token);
     const finalResult = await (result instanceof Promise ? result : result);

@@ -24,7 +24,16 @@ interface Request {
   ip_address: string | null;
 }
 
+interface User {
+  id: string;
+  email: string;
+  password_hash: string;
+  role: 'admin' | 'user';
+  created_at: string;
+}
+
 interface Database {
+  users: User[];
   webhooks: Webhook[];
   requests: Request[];
 }
@@ -74,6 +83,7 @@ function ensureDbFile(): void {
     if (!fs.existsSync(dbPath)) {
       console.log(`📝 Creating new database file: ${dbPath}`);
       const initialData: Database = {
+        users: [],
         webhooks: [],
         requests: [],
       };
@@ -102,11 +112,19 @@ function readDb(): Database {
     ensureDbFile();
     const dbPath = getDbPath();
     const data = fs.readFileSync(dbPath, 'utf8');
-    return JSON.parse(data);
+    const db = JSON.parse(data);
+    
+    // Backward compatibility: ensure users array exists
+    if (!db.users) {
+      db.users = [];
+      writeDb(db);
+    }
+    
+    return db;
   } catch (error) {
     console.error('Error reading database:', error);
     // Return empty database if read fails
-    return { webhooks: [], requests: [] };
+    return { users: [], webhooks: [], requests: [] };
   }
 }
 
@@ -131,6 +149,24 @@ class JsonDatabase {
         const db = readDb();
         let changes = 0;
 
+        // Handle INSERT INTO users
+        if (sql.includes('INSERT INTO users')) {
+          const id = params[0];
+          const email = params[1];
+          const passwordHash = params[2];
+          const role = params[3] || 'user';
+          
+          const user: User = {
+            id,
+            email,
+            password_hash: passwordHash,
+            role: role as 'admin' | 'user',
+            created_at: new Date().toISOString(),
+          };
+          
+          db.users.push(user);
+          changes = 1;
+        }
         // Handle INSERT INTO webhooks
         if (sql.includes('INSERT INTO webhooks')) {
           const token = params[0];
@@ -163,6 +199,45 @@ class JsonDatabase {
           
           db.requests.push(request);
           changes = 1;
+          
+          // Enforce request limit: keep only last 100 requests per webhook
+          // This is done here to keep the JSON database simple
+          const MAX_REQUESTS = 100;
+          const webhookRequests = db.requests
+            .filter(r => r.webhook_token === params[1])
+            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+          
+          if (webhookRequests.length > MAX_REQUESTS) {
+            const toKeep = webhookRequests.slice(0, MAX_REQUESTS).map(r => r.id);
+            db.requests = db.requests.filter(r => 
+              r.webhook_token !== params[1] || toKeep.includes(r.id)
+            );
+          }
+        }
+        // Handle DELETE FROM requests (for request limit enforcement)
+        // Note: Request limit is now handled in INSERT, so this is mainly for cleanup
+        else if (sql.includes('DELETE FROM requests')) {
+          const beforeCount = db.requests.length;
+          
+          if (sql.includes('webhook_token = ?') && sql.includes('id NOT IN')) {
+            // This query is handled during INSERT, but we'll process it here too for safety
+            const token = params[0];
+            const limit = params[2] || 100;
+            
+            // Get the IDs of requests to keep (last N requests for this webhook)
+            const webhookRequests = db.requests
+              .filter(r => r.webhook_token === token)
+              .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+              .slice(0, limit)
+              .map(r => r.id);
+            
+            // Delete requests not in the keep list
+            db.requests = db.requests.filter(r => 
+              r.webhook_token !== token || webhookRequests.includes(r.id)
+            );
+            
+            changes = beforeCount - db.requests.length;
+          }
         }
         // Handle DELETE FROM webhooks
         else if (sql.includes('DELETE FROM webhooks')) {
@@ -193,6 +268,28 @@ class JsonDatabase {
       },
       get: (...params: any[]) => {
         const db = readDb();
+        
+        // Handle SELECT FROM users WHERE email = ?
+        if (sql.includes('SELECT') && sql.includes('users') && sql.includes('email = ?')) {
+          const email = params[0];
+          const user = db.users.find(u => u.email === email);
+          return user || undefined;
+        }
+        
+        // Handle SELECT FROM users WHERE id = ?
+        if (sql.includes('SELECT') && sql.includes('users') && sql.includes('id = ?')) {
+          const id = params[0];
+          const user = db.users.find(u => u.id === id);
+          if (!user) return undefined;
+          
+          // Return user without password hash
+          return {
+            id: user.id,
+            email: user.email,
+            role: user.role,
+            created_at: user.created_at,
+          };
+        }
         
         // Handle SELECT COUNT(*) FROM requests WHERE webhook_token = ?
         if (sql.includes('SELECT COUNT(*)') && sql.includes('requests') && sql.includes('webhook_token = ?')) {
@@ -271,6 +368,11 @@ class JsonDatabase {
     // Handle CREATE TABLE - just ensure db file exists
     if (sql.includes('CREATE TABLE')) {
       ensureDbFile();
+      // After creating tables, initialize admin account
+      // This is done asynchronously to avoid blocking
+      import('./utils/init-admin.js').then(({ initAdminAccount }) => {
+        initAdminAccount().catch(console.error);
+      }).catch(console.error);
     }
   }
 

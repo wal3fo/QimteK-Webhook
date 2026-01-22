@@ -4,6 +4,7 @@ import { useEffect, lazy, Suspense } from "react";
 // Lazy load pages for code splitting and better performance
 const Home = lazy(() => import("@/pages/Home"));
 const RequestDetails = lazy(() => import("@/pages/RequestDetails"));
+const Login = lazy(() => import("@/pages/Login"));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -35,6 +36,7 @@ export default function App() {
       <Suspense fallback={<LoadingSpinner />}>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/request/:id" element={<RequestDetails />} />
         </Routes>
       </Suspense>

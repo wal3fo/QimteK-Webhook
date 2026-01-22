@@ -1,7 +1,8 @@
 import { useState, useMemo, useCallback, memo, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Copy, Check, Trash2, ExternalLink, Filter, Search, Download, Clock, Globe, X } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Copy, Check, Trash2, ExternalLink, Filter, Search, Download, Clock, Globe, X, LogIn, LogOut, User } from 'lucide-react';
 import { useWebhook } from '@/hooks/useWebhook';
+import { useAuth } from '@/hooks/useAuth';
 import { cn, METHOD_COLORS, METHODS } from '@/lib/utils';
 import { format } from 'date-fns';
 import Logo from '@/components/Logo';
@@ -92,6 +93,7 @@ RequestRow.displayName = 'RequestRow';
 export default function Home() {
   const navigate = useNavigate();
   const { webhook, requests, loading, error, isConnected, generateWebhook, deleteWebhook } = useWebhook();
+  const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const [copied, setCopied] = useState(false);
   const [methodFilter, setMethodFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -181,7 +183,40 @@ export default function Home() {
         <div className="mb-4 sm:mb-6 lg:mb-8 slide-enter">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
             <Logo size="xl" />
-            <a
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Auth Section */}
+              {isAuthenticated ? (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 px-3 py-2 bg-qimtek-bg-secondary rounded-lg border border-qimtek-border">
+                    <User className="w-4 h-4 text-qimtek-text-secondary" />
+                    <span className="text-sm text-qimtek-text-secondary hidden sm:inline">
+                      {user?.email}
+                    </span>
+                    {isAdmin && (
+                      <span className="px-2 py-0.5 bg-[#82c91e]/20 text-[#82c91e] rounded text-xs font-semibold">
+                        Admin
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={logout}
+                    className="flex items-center gap-2 px-3 py-2 bg-qimtek-bg-secondary rounded-lg border border-qimtek-border text-qimtek-text-secondary hover:text-qimtek-text hover:border-[#82c91e]/30 transition-all duration-200"
+                    title="Logout"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span className="hidden sm:inline text-sm">Logout</span>
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  to="/login"
+                  className="flex items-center gap-2 px-4 py-2 bg-qimtek-bg-secondary rounded-lg border border-qimtek-border text-qimtek-text-secondary hover:text-[#82c91e] hover:border-[#82c91e]/30 transition-all duration-200"
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span className="text-sm font-medium">Login</span>
+                </Link>
+              )}
+              <a
               href="https://www.paypal.com/paypalme/drgineer/5?currencyCode=USD"
               target="_blank"
               rel="noopener noreferrer"

@@ -55,6 +55,9 @@ export async function initDb(): Promise<void> {
       db = sqliteDb as unknown as DatabaseAdapter;
       console.log('✅ Using better-sqlite3 database');
       await createSchema(db);
+      // Initialize admin account after schema creation
+      const { initAdminAccount } = await import('./utils/init-admin.js');
+      await initAdminAccount();
       return;
     } catch (error: any) {
       console.log('⚠️  better-sqlite3 failed, trying JSON database fallback:', error.message);
@@ -70,6 +73,9 @@ export async function initDb(): Promise<void> {
       console.log('✅ Using JSON database');
       await createSchema(db);
       console.log('✅ Database schema created successfully');
+      // Initialize admin account after schema creation
+      const { initAdminAccount } = await import('./utils/init-admin.js');
+      await initAdminAccount();
       return;
     } catch (error) {
       console.error('❌ JSON database initialization failed:', error);
@@ -104,6 +110,17 @@ export async function initDb(): Promise<void> {
  */
 async function createSchema(database: DatabaseAdapter): Promise<void> {
   const schema = `
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'user',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+    CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+
     CREATE TABLE IF NOT EXISTS webhooks (
       token TEXT PRIMARY KEY,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
