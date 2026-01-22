@@ -92,7 +92,7 @@ app.use('/api', (req: Request, res: Response) => {
 
 // Serve frontend for all other routes
 app.get('*', (req: Request, res: Response) => {
-  const indexPath = path.join(__dirname, 'dist/index.html');
+  const indexPath = path.join(__dirname, 'index.html');
   const indexPathParent = path.join(__dirname, '../dist/index.html');
   
   if (require('fs').existsSync(indexPath)) {
