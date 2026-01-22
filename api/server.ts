@@ -1,8 +1,5 @@
 /**
  * Local development server entry file
- * 
- * NOTE: This file is ONLY for local development.
- * In Netlify production, use netlify/functions/api/index.ts (serverless handler).
  */
 import { createServer } from 'http';
 import app from './app.js';

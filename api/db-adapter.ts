@@ -39,39 +39,25 @@ export async function initDb(): Promise<void> {
 
   initPromise = (async () => {
     const cwd = process.cwd();
-    // CRITICAL: Check /var/task first - this is the definitive indicator of Netlify Functions
-    const isNetlify = cwd.startsWith('/var/task') || !!process.env.NETLIFY || !!process.env.NETLIFY_DEV;
     
     console.log('🔍 Database initialization starting...', {
       cwd,
-      isNetlify,
-      isVarTask: cwd.startsWith('/var/task'),
-      NETLIFY: process.env.NETLIFY,
-      NETLIFY_DEV: process.env.NETLIFY_DEV,
       DB_PATH: process.env.DB_PATH,
     });
     
     // Priority 1: Try better-sqlite3 (works everywhere, preferred for local dev)
-    // CRITICAL: Skip SQLite in Netlify - it requires native compilation and won't work
-    // Netlify Functions always run in /var/task, so skip SQLite if we're there
-    const isInVarTask = cwd.startsWith('/var/task');
-    if (!isNetlify && !isInVarTask) {
-      try {
-        const Database = (await import('better-sqlite3')).default;
-        const dbPath = process.env.DB_PATH || path.join(cwd, 'webhook.db');
-        console.log(`📦 Trying SQLite at: ${dbPath}`);
-        const sqliteDb = new Database(dbPath);
-        sqliteDb.pragma('foreign_keys = ON');
-        db = sqliteDb as unknown as DatabaseAdapter;
-        console.log('✅ Using better-sqlite3 database');
-        await createSchema(db);
-        return;
-      } catch (error: any) {
-        console.log('⚠️  better-sqlite3 failed, trying JSON database fallback:', error.message);
-      }
-    } else {
-      console.log('⏭️  Skipping SQLite in Netlify (requires native compilation), using JSON database');
-      console.log(`   Detected Netlify: cwd=${cwd}, startsWith('/var/task')=${cwd.startsWith('/var/task')}`);
+    try {
+      const Database = (await import('better-sqlite3')).default;
+      const dbPath = process.env.DB_PATH || path.join(cwd, 'webhook.db');
+      console.log(`📦 Trying SQLite at: ${dbPath}`);
+      const sqliteDb = new Database(dbPath);
+      sqliteDb.pragma('foreign_keys = ON');
+      db = sqliteDb as unknown as DatabaseAdapter;
+      console.log('✅ Using better-sqlite3 database');
+      await createSchema(db);
+      return;
+    } catch (error: any) {
+      console.log('⚠️  better-sqlite3 failed, trying JSON database fallback:', error.message);
     }
 
     // Priority 2: Fallback to JSON database (works everywhere)
@@ -91,22 +77,20 @@ export async function initDb(): Promise<void> {
         message: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
         cwd,
-        isNetlify: cwd.startsWith('/var/task') || !!process.env.NETLIFY,
-        dbPath: process.env.DB_PATH || (cwd.startsWith('/var/task') ? '/tmp/webhook-data.json' : 'webhook-data.json'),
+        dbPath: process.env.DB_PATH || 'webhook-data.json',
       };
       console.error('Error details:', errorDetails);
       // Fall through to throw error
     }
 
     // If all databases failed, throw error
-    // Reuse cwd and isNetlify variables already declared at the top of the function
-    const dbPath = process.env.DB_PATH || (isNetlify ? '/tmp/webhook-data.json' : 'webhook-data.json');
+    const dbPath = process.env.DB_PATH || 'webhook-data.json';
     
     const errorMsg = `Failed to initialize any database. ` +
-      `SQLite (better-sqlite3) ${isNetlify ? 'is skipped in Netlify' : 'is not available'}, ` +
+      `SQLite (better-sqlite3) is not available, ` +
       `and JSON database initialization failed. ` +
-      `Database path: ${dbPath} (Netlify: ${isNetlify}, cwd: ${cwd}). ` +
-      `Please check file system permissions and ensure /tmp directory is writable.`;
+      `Database path: ${dbPath} (cwd: ${cwd}). ` +
+      `Please check file system permissions.`;
     
     console.error('❌', errorMsg);
     throw new Error(errorMsg);

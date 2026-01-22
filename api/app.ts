@@ -1,8 +1,5 @@
 /**
- * Express application for serverless functions (Netlify)
- * 
- * This app is exported as a handler for Netlify serverless functions.
- * It does NOT start a server - Netlify handles that automatically.
+ * Express application
  * 
  * For local development, use api/server.ts which wraps this app.
  */
@@ -17,8 +14,8 @@ import dotenv from 'dotenv'
 import webhookRoutes from './routes/webhooks.js'
 import webhookReceiverRoutes from './routes/webhook-receiver.js'
 
-// Load environment variables (only in local dev, Netlify provides them automatically)
-if (process.env.NODE_ENV !== 'production' || !process.env.NETLIFY) {
+// Load environment variables
+if (process.env.NODE_ENV !== 'production') {
   dotenv.config()
 }
 
@@ -55,7 +52,6 @@ app.get('/api/health', (req: Request, res: Response): void => {
     message: 'ok',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
-    netlify: !!process.env.NETLIFY,
   })
 })
 
