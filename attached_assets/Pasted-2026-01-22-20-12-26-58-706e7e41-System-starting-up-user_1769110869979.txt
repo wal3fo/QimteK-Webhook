@@ -1,0 +1,112 @@
+2026-01-22 20:12:26.58
+706e7e41
+System
+starting up user application
+2026-01-22 20:12:26.58
+706e7e41
+System
+forwarding local port 5000 to external port 80 (mapped as 1104)
+2026-01-22 20:12:26.87
+706e7e41
+User
+at Module._load (node:internal/modules/cjs/loader:1038:27)
+2026-01-22 20:12:26.87
+706e7e41
+User
+at node:internal/main/run_main_module:28:49 {
+2026-01-22 20:12:26.87
+706e7e41
+User
+}
+2026-01-22 20:12:26.87
+706e7e41
+User
+Error: Cannot find module '/home/runner/workspace/api/dist/server.js'
+2026-01-22 20:12:26.87
+706e7e41
+User
+node:internal/modules/cjs/loader:1210
+2026-01-22 20:12:26.87
+706e7e41
+User
+^
+2026-01-22 20:12:26.87
+706e7e41
+User
+throw err;
+2026-01-22 20:12:26.87
+706e7e41
+User
+requireStack: []
+2026-01-22 20:12:26.87
+706e7e41
+User
+code: 'MODULE_NOT_FOUND',
+2026-01-22 20:12:26.87
+706e7e41
+User
+at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+2026-01-22 20:12:26.87
+706e7e41
+User
+at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+2026-01-22 20:12:26.87
+706e7e41
+User
+Node.js v20.20.0
+2026-01-22 20:12:26.88
+706e7e41
+System
+command finished with error [sh -c node api/dist/server.js]: exit status 1
+2026-01-22 20:12:27.01
+706e7e41
+User
+Error: Cannot find module '/home/runner/workspace/api/dist/server.js'
+2026-01-22 20:12:27.01
+706e7e41
+User
+at Module._load (node:internal/modules/cjs/loader:1038:27)
+2026-01-22 20:12:27.01
+706e7e41
+User
+at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+2026-01-22 20:12:27.01
+706e7e41
+User
+^
+2026-01-22 20:12:27.01
+706e7e41
+User
+Node.js v20.20.0
+2026-01-22 20:12:27.01
+706e7e41
+User
+node:internal/modules/cjs/loader:1210
+2026-01-22 20:12:27.01
+706e7e41
+User
+at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+2026-01-22 20:12:27.01
+706e7e41
+User
+throw err;
+2026-01-22 20:12:27.01
+706e7e41
+User
+at node:internal/main/run_main_module:28:49 {
+2026-01-22 20:12:27.01
+706e7e41
+User
+}
+2026-01-22 20:12:27.01
+706e7e41
+User
+code: 'MODULE_NOT_FOUND',
+2026-01-22 20:12:27.01
+706e7e41
+User
+requireStack: []
+2026-01-22 20:12:27.02
+706e7e41
+System
+command finished with error [sh -c node api/dist/server.js]: exit status 1
