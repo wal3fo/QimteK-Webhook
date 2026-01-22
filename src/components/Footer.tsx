@@ -10,7 +10,7 @@ export default function Footer() {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
           {/* Logo and Company Info */}
           <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
-            <Logo size="sm" className="opacity-90" />
+            <Logo size="lg" className="opacity-90" />
             <div className="text-center sm:text-left">
               <p className="text-sm sm:text-base font-semibold text-qimtek-text">
                 QimteK Inc
@@ -33,7 +33,7 @@ export default function Footer() {
         </div>
 
         {/* Additional Links (Optional) */}
-        <div className="mt-6 pt-6 border-t border-qimtek-border flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm text-qimtek-text-secondary">
+        <div className="hidden mt-6 pt-6 border-t border-qimtek-border flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm text-qimtek-text-secondary">
           <a
             href="https://www.paypal.com/paypalme/drgineer/5?currencyCode=USD"
             target="_blank"
@@ -44,21 +44,23 @@ export default function Footer() {
           </a>
           <span className="hidden sm:inline text-qimtek-text-tertiary">•</span>
           <a
-            href="https://github.com"
+            href="https://github.com/wal3fo"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-[#82c91e] transition-colors duration-200 touch-manipulation"
+            aria-label="Visit our GitHub profile"
           >
             GitHub
           </a>
           <span className="hidden sm:inline text-qimtek-text-tertiary">•</span>
           <a
-            href="https://qimtek.com"
+            href="https://qimtek.ma"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-[#82c91e] transition-colors duration-200 touch-manipulation"
+            aria-label="Visit QimteK website"
           >
-            QimteK.com
+            QimteK.ma
           </a>
         </div>
       </div>

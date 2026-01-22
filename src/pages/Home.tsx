@@ -136,10 +136,13 @@ export default function Home() {
     }
   }, [webhook]);
 
-  const handleDelete = useCallback(async () => {
-    if (confirm('Are you sure you want to delete this webhook? All requests will be lost.')) {
-      await deleteWebhook();
-    }
+  const handleDeleteClick = useCallback(() => {
+    setShowDeleteModal(true);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(async () => {
+    await deleteWebhook();
+    setShowDeleteModal(false);
   }, [deleteWebhook]);
 
   const handleNavigate = useCallback((id: string) => {
