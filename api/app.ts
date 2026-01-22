@@ -21,6 +21,9 @@ if (process.env.NODE_ENV !== 'production') {
 
 const app: express.Application = express()
 
+// Trust proxy - required for correct protocol/IP detection behind load balancers (Vercel, Replit, etc.)
+app.set('trust proxy', 1)
+
 // CORS configuration - allow all origins in production (Vercel handles this)
 app.use(cors({
   origin: process.env.CLIENT_URL || '*',
