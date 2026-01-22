@@ -206,7 +206,7 @@ export default function Home() {
               
               {/* Text with glow effect */}
               <span className="relative z-10 tracking-wide group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all duration-300">
-                Donate $5
+                Donate
               </span>
               
               {/* Sparkle effect on hover */}
