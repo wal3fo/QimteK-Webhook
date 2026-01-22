@@ -19,7 +19,22 @@ export interface Webhook {
   expiresAt: string;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+// Use relative path in production, or use VITE_API_URL if set
+// In production (Netlify/Vercel), we want to use relative paths
+// If VITE_API_URL contains localhost, default to /api for production builds
+const getApiUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (!envUrl) return '/api';
+  
+  // If the URL contains localhost, it's likely a dev config - use relative path in production
+  if (envUrl.includes('localhost') && import.meta.env.PROD) {
+    return '/api';
+  }
+  
+  return envUrl;
+};
+
+const API_URL = getApiUrl();
 
 const STORAGE_KEY = 'webhook_session';
 

@@ -1,3 +1,8 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+  environment = { VITE_API_URL = "/api" }
+
 [dev]
   command = "npm run dev"
   port = 5173
@@ -7,3 +12,9 @@
   [[dev.proxy]]
     path = "/api/*"
     url = "http://localhost:3003"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+  force = true
