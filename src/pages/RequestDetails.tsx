@@ -2,10 +2,17 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import Logo from '@/components/Logo';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
+
+// Safe date formatter that handles invalid dates
+const formatDate = (dateStr: string | null | undefined): string => {
+  if (!dateStr) return 'N/A';
+  const date = new Date(dateStr);
+  return isValid(date) ? format(date, 'PPpp') : 'Invalid date';
+};
 
 interface WebhookRequest {
   id: string;
@@ -73,7 +80,7 @@ export default function RequestDetails() {
 
   // Memoized formatted timestamp
   const formattedTimestamp = useMemo(() => {
-    return request ? format(new Date(request.timestamp), 'PPpp') : '';
+    return request ? formatDate(request.timestamp) : '';
   }, [request]);
 
   // Memoized body content
