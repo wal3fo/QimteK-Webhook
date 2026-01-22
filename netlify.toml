@@ -1,0 +1,9 @@
+[dev]
+  command = "npm run dev"
+  port = 5173
+  targetPort = 5173
+  publish = "dist"
+  # redirect all API calls to your local backend during dev
+  [[dev.proxy]]
+    path = "/api/*"
+    url = "http://localhost:3003"
