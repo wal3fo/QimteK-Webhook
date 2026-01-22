@@ -1,6 +1,6 @@
 # fly.toml - Fly.io configuration for your app
 
-app = "your-app-name"
+app = "QimteK Hooks"
 kill_signal = "SIGINT"
 kill_timeout = 5
 processes = []
