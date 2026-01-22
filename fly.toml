@@ -1,0 +1,38 @@
+# fly.toml - Fly.io configuration for your app
+
+app = "your-app-name"
+kill_signal = "SIGINT"
+kill_timeout = 5
+processes = []
+
+# Mount a persistent volume for SQLite
+[mounts]
+source = "data"
+destination = "/data"
+
+# Environment variables
+[env]
+NODE_ENV = "production"
+DB_PATH = "/data/webhook.db"
+BASE_URL = "https://your-app-name.fly.dev"
+CLIENT_URL = "https://your-frontend-url.com"
+VITE_API_URL = "https://your-app-name.fly.dev/api"
+VITE_SOCKET_URL = "wss://your-app-name.fly.dev"
+
+# Define services (ports & protocol)
+[[services]]
+  internal_port = 3003
+  protocol = "tcp"
+
+  # HTTP and HTTPS entry points
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  # TCP for WebSockets (optional)
+  [[services.tcp_checks]]
+    interval = 10000
+    timeout = 2000
