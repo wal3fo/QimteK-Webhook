@@ -2,21 +2,11 @@ import { useState, useMemo, useCallback, memo, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Copy, Check, Trash2, ExternalLink, Filter, Search, Download, Clock, Globe, X } from 'lucide-react';
 import { useWebhook } from '@/hooks/useWebhook';
-import { cn } from '@/lib/utils';
+import { cn, METHOD_COLORS, METHODS } from '@/lib/utils';
 import { format } from 'date-fns';
 import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
 import ConfirmModal from '@/components/ConfirmModal';
-
-const METHOD_COLORS: Record<string, string> = {
-  GET: 'bg-blue-900/30 text-blue-300 border border-blue-700/50',
-  POST: 'bg-green-900/30 text-green-300 border border-green-700/50',
-  PUT: 'bg-yellow-900/30 text-yellow-300 border border-yellow-700/50',
-  PATCH: 'bg-orange-900/30 text-orange-300 border border-orange-700/50',
-  DELETE: 'bg-red-900/30 text-red-300 border border-red-700/50',
-};
-
-const METHODS = ['ALL', 'GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 
 // Mobile Request Card Component
 const RequestCard = memo(({ request, onNavigate }: { request: any; onNavigate: (id: string) => void }) => (
@@ -200,21 +190,21 @@ export default function Home() {
             >
               {/* Animated gradient overlay */}
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-              
+
               {/* PayPal Icon */}
-              <svg 
-                className="w-5 h-5 sm:w-6 sm:h-6 relative z-10 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 flex-shrink-0" 
-                viewBox="0 0 24 24" 
+              <svg
+                className="w-5 h-5 sm:w-6 sm:h-6 relative z-10 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 flex-shrink-0"
+                viewBox="0 0 24 24"
                 fill="currentColor"
               >
-                <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.203zm14.146-14.42a.805.805 0 0 0-.796-.68h-3.22c-.524 0-.968.382-1.05.9l-1.12 7.203c-.082.519.109.74.633.74h1.78c.524 0 .968-.382 1.05-.9l1.12-7.203c.082-.519-.109-.74-.633-.74h-1.78z"/>
+                <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.203zm14.146-14.42a.805.805 0 0 0-.796-.68h-3.22c-.524 0-.968.382-1.05.9l-1.12 7.203c-.082.519.109.74.633.74h1.78c.524 0 .968-.382 1.05-.9l1.12-7.203c.082-.519-.109-.74-.633-.74h-1.78z" />
               </svg>
-              
+
               {/* Text with glow effect */}
               <span className="relative z-10 tracking-wide group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all duration-300">
                 Donate
               </span>
-              
+
               {/* Sparkle effect on hover */}
               <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-white rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
             </a>
@@ -237,22 +227,22 @@ export default function Home() {
           )}>
             <div className={cn(
               'w-2 h-2 rounded-full transition-all duration-300 flex-shrink-0',
-              webhook 
+              webhook
                 ? (isConnected ? 'bg-green-400 animate-pulse' : 'bg-yellow-400')
                 : 'bg-gray-500'
             )} />
             <span className="hidden sm:inline">
-              {webhook 
-                ? (isConnected 
-                    ? 'Connected (Real-time active)' 
-                    : 'Active (Polling for updates)')
+              {webhook
+                ? (isConnected
+                  ? 'Connected (Real-time active)'
+                  : 'Active (Polling for updates)')
                 : 'No active webhook - Click "Generate Webhook URL" to start'}
             </span>
             <span className="sm:hidden">
-              {webhook 
-                ? (isConnected 
-                    ? 'Connected' 
-                    : 'Active')
+              {webhook
+                ? (isConnected
+                  ? 'Connected'
+                  : 'Active')
                 : 'No webhook'}
             </span>
           </div>
