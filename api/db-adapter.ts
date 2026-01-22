@@ -41,7 +41,11 @@ export async function initDb(): Promise<void> {
     // Priority 1: Try better-sqlite3 (works everywhere, preferred for local dev)
     try {
       const Database = (await import('better-sqlite3')).default;
-      const dbPath = process.env.DB_PATH || path.join(process.cwd(), 'webhook.db');
+      // In serverless environments, use /tmp directory
+      const isServerless = process.env.NETLIFY || process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+      const dbPath = process.env.DB_PATH || (isServerless 
+        ? '/tmp/webhook.db' 
+        : path.join(process.cwd(), 'webhook.db'));
       const sqliteDb = new Database(dbPath);
       sqliteDb.pragma('foreign_keys = ON');
       // Cast to DatabaseAdapter since SQLite Database implements the interface

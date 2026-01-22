@@ -1,7 +1,11 @@
 [build]
   command = "npm run build"
   publish = "dist"
-  environment = { VITE_API_URL = "/api" }
+  environment = { VITE_API_URL = "/api", DB_PATH = "/tmp/webhook-data.json" }
+
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["better-sqlite3"]
 
 [dev]
   command = "npm run dev"

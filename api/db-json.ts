@@ -31,7 +31,20 @@ interface Database {
 
 // JSON database works in all environments
 function getDbPath(): string {
-  return process.env.DB_PATH || path.join(process.cwd(), 'webhook-data.json');
+  // Use DB_PATH if explicitly set
+  if (process.env.DB_PATH) {
+    return process.env.DB_PATH;
+  }
+  
+  // In serverless environments (Netlify, Vercel, etc.), use /tmp directory
+  // which is the only writable directory in serverless functions
+  const isServerless = process.env.NETLIFY || process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+  if (isServerless) {
+    return '/tmp/webhook-data.json';
+  }
+  
+  // For local development, use current working directory
+  return path.join(process.cwd(), 'webhook-data.json');
 }
 
 // Initialize database file if it doesn't exist

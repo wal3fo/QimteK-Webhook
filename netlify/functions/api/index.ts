@@ -21,25 +21,68 @@ const serverlessApp = serverless(app, {
 });
 
 export const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
-  // Ensure database is initialized before handling request
-  if (!dbInitialized) {
-    await initPromise;
-  }
-
   // Netlify functions timeout after a certain time, so we need to ensure
   // the context doesn't get closed before the response
   context.callbackWaitsForEmptyEventLoop = false;
 
   try {
+    // Ensure database is initialized before handling request
+    if (!dbInitialized) {
+      try {
+        await initPromise;
+        if (!dbInitialized) {
+          throw new Error('Database initialization failed');
+        }
+      } catch (dbError) {
+        console.error('Database initialization error:', dbError);
+        return {
+          statusCode: 500,
+          body: JSON.stringify({
+            success: false,
+            error: 'Database initialization failed',
+            details: dbError instanceof Error ? dbError.message : String(dbError),
+          }),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        };
+      }
+    }
+
+    // Netlify redirects /api/* to /.netlify/functions/api/:splat
+    // The event.path will be the original path (/api/webhooks/generate)
+    // serverless-http will handle the path correctly
+    
+    // Log for debugging
+    console.log('Netlify function called:', {
+      path: event.path,
+      rawPath: event.rawPath,
+      rawUrl: event.rawUrl,
+      httpMethod: event.httpMethod,
+    });
+    
     const result = await serverlessApp(event, context);
     return result;
   } catch (error) {
     console.error('Error in Netlify function:', error);
+    console.error('Event:', {
+      path: event.path,
+      rawPath: event.rawPath,
+      rawUrl: event.rawUrl,
+      httpMethod: event.httpMethod,
+    });
+    
+    // Ensure we return a proper Netlify function response
+    if (error && typeof error === 'object' && 'statusCode' in error) {
+      return error as any;
+    }
+    
     return {
       statusCode: 500,
       body: JSON.stringify({
         success: false,
         error: 'Internal server error',
+        details: error instanceof Error ? error.message : String(error),
       }),
       headers: {
         'Content-Type': 'application/json',
