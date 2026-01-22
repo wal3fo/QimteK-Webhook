@@ -3,8 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { Copy, Check, Trash2, ExternalLink, Filter, Search, Download } from 'lucide-react';
 import { useWebhook } from '@/hooks/useWebhook';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import Logo from '@/components/Logo';
+
+const formatDate = (dateValue: string | number | Date | undefined | null): string => {
+  if (!dateValue) return 'N/A';
+  const date = new Date(dateValue);
+  return isValid(date) ? format(date, 'PPpp') : 'Invalid date';
+};
 
 const METHOD_COLORS: Record<string, string> = {
   GET: 'bg-blue-900/30 text-blue-300 border border-blue-700/50',
@@ -33,7 +39,7 @@ const RequestRow = memo(({ request, onNavigate }: { request: any; onNavigate: (i
       </span>
     </td>
     <td className="px-6 py-4 whitespace-nowrap text-sm text-qimtek-text">
-      {format(new Date(request.timestamp), 'PPpp')}
+      {formatDate(request.timestamp)}
     </td>
     <td className="px-6 py-4 whitespace-nowrap text-sm text-qimtek-text-secondary">
       {request.ip_address || 'N/A'}
@@ -240,7 +246,7 @@ export default function Home() {
                   </a>
                 </div>
                 <p className="mt-2 text-sm text-qimtek-text-tertiary">
-                  Expires: {format(new Date(webhook.expiresAt), 'PPpp')}
+                  Expires: {formatDate(webhook.expiresAt)}
                 </p>
               </div>
               <button
