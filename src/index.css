@@ -126,6 +126,36 @@ button:active {
   * {
     -webkit-overflow-scrolling: touch;
   }
+
+  /* Prevent text selection on buttons for better touch */
+  button {
+    -webkit-tap-highlight-color: rgba(130, 201, 30, 0.2);
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* Better input handling */
+  input, select, textarea {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+
+  /* Improve select dropdown on mobile */
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23e8e8e8' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1em;
+    padding-right: 2.5rem;
+  }
+}
+
+/* Touch manipulation for better performance */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(130, 201, 30, 0.2);
 }
 
 /* Improved code block styling */
@@ -182,6 +212,11 @@ html {
   .space-y-3 > * + * {
     margin-top: 0.75rem;
   }
+
+  /* Prevent layout shift when keyboard appears */
+  body {
+    position: relative;
+  }
 }
 
 /* Improved button press feedback */
@@ -237,5 +272,103 @@ a:active {
   
   h3 {
     font-size: 1.25rem;
+  }
+}
+
+/* Mobile input optimizations */
+@media (max-width: 640px) {
+  /* Better input styling */
+  input[type="text"],
+  input[type="search"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="url"],
+  textarea {
+    border-radius: 0.5rem;
+    padding: 0.625rem 0.75rem;
+    min-height: 44px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Better select styling */
+  select {
+    border-radius: 0.5rem;
+    padding: 0.625rem 2.5rem 0.625rem 0.75rem;
+    min-height: 44px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Remove default iOS input styling */
+  input,
+  select,
+  textarea {
+    -webkit-border-radius: 0.5rem;
+    border-radius: 0.5rem;
+  }
+
+  /* Better focus states on mobile */
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline: none;
+    border-color: var(--QimteK-primary, #82c91e);
+    box-shadow: 0 0 0 3px rgba(130, 201, 30, 0.1);
+  }
+}
+
+/* Prevent zoom on input focus (iOS Safari) */
+@media screen and (max-width: 640px) {
+  input[type="text"],
+  input[type="search"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="url"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Better scrollbar on mobile */
+@media (max-width: 640px) {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+}
+
+/* Improve button accessibility on mobile */
+@media (max-width: 640px) {
+  button:not(:disabled) {
+    cursor: pointer;
+    -webkit-tap-highlight-color: rgba(130, 201, 30, 0.2);
+  }
+}
+
+/* Better code block wrapping on mobile */
+@media (max-width: 640px) {
+  code {
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  pre {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    padding: 0.75rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Safe area insets for mobile devices with notches */
+@supports (padding: max(0px)) {
+  @media (max-width: 640px) {
+    body {
+      padding-left: max(1rem, env(safe-area-inset-left));
+      padding-right: max(1rem, env(safe-area-inset-right));
+    }
   }
 }

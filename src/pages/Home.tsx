@@ -1,6 +1,6 @@
-import { useState, useMemo, useCallback, memo } from 'react';
+import { useState, useMemo, useCallback, memo, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Copy, Check, Trash2, ExternalLink, Filter, Search, Download, Clock, Globe } from 'lucide-react';
+import { Copy, Check, Trash2, ExternalLink, Filter, Search, Download, Clock, Globe, X } from 'lucide-react';
 import { useWebhook } from '@/hooks/useWebhook';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -20,7 +20,7 @@ const METHODS = ['ALL', 'GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 const RequestCard = memo(({ request, onNavigate }: { request: any; onNavigate: (id: string) => void }) => (
   <div
     onClick={() => onNavigate(request.id)}
-    className="bg-qimtek-bg-secondary rounded-xl p-4 border border-qimtek-border hover:border-[#82c91e]/50 transition-all duration-300 cursor-pointer active:scale-[0.98] hover:shadow-lg hover:shadow-[#82c91e]/10"
+    className="bg-qimtek-bg-secondary rounded-xl p-4 border border-qimtek-border hover:border-[#82c91e]/50 transition-all duration-300 cursor-pointer active:scale-[0.98] hover:shadow-lg hover:shadow-[#82c91e]/10 touch-manipulation"
   >
     <div className="flex items-start justify-between gap-3 mb-3">
       <span
@@ -36,20 +36,21 @@ const RequestCard = memo(({ request, onNavigate }: { request: any; onNavigate: (
           e.stopPropagation();
           onNavigate(request.id);
         }}
-        className="text-[#82c91e] hover:text-[#6ba017] transition-colors font-medium text-sm px-3 py-1 rounded-lg hover:bg-[#82c91e]/10"
+        className="text-[#82c91e] hover:text-[#6ba017] transition-colors font-medium text-sm px-3 py-1.5 rounded-lg hover:bg-[#82c91e]/10 touch-manipulation min-h-[44px]"
+        aria-label="View request details"
       >
         View →
       </button>
     </div>
     <div className="space-y-2">
       <div className="flex items-center gap-2 text-sm text-qimtek-text-secondary">
-        <Clock className="w-4 h-4" />
+        <Clock className="w-4 h-4 flex-shrink-0" />
         <span className="text-xs">{format(new Date(request.timestamp), 'PPp')}</span>
       </div>
       {request.ip_address && (
         <div className="flex items-center gap-2 text-sm text-qimtek-text-secondary">
-          <Globe className="w-4 h-4" />
-          <span className="text-xs font-mono">{request.ip_address}</span>
+          <Globe className="w-4 h-4 flex-shrink-0" />
+          <span className="text-xs font-mono break-all">{request.ip_address}</span>
         </div>
       )}
     </div>
@@ -102,6 +103,19 @@ export default function Home() {
   const [copied, setCopied] = useState(false);
   const [methodFilter, setMethodFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Memoized handlers
   const handleGenerate = useCallback(async () => {
@@ -128,6 +142,11 @@ export default function Home() {
   const handleNavigate = useCallback((id: string) => {
     navigate(`/request/${id}`);
   }, [navigate]);
+
+  const clearSearch = useCallback(() => {
+    setSearchQuery('');
+    searchInputRef.current?.focus();
+  }, []);
 
   // Memoized filtered requests
   const filteredRequests = useMemo(() => {
@@ -158,16 +177,19 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-qimtek-bg page-enter">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 max-w-7xl">
+      <div className={cn(
+        "container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-7xl",
+        isSearchFocused && isMobile && "pb-2"
+      )}>
         {/* Header */}
-        <div className="mb-6 sm:mb-8 slide-enter">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+        <div className="mb-4 sm:mb-6 lg:mb-8 slide-enter">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
             <Logo size="lg" />
             <a
               href="https://www.paypal.com/paypalme/drgineer/5?currencyCode=USD"
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative flex items-center gap-2.5 px-4 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-[#0070ba] via-[#009cde] to-[#0070ba] text-white rounded-xl font-semibold transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg hover:shadow-2xl hover:shadow-[#0070ba]/50 overflow-hidden text-sm sm:text-base"
+              className="group relative flex items-center gap-2.5 px-4 sm:px-5 py-2.5 sm:py-2.5 bg-gradient-to-r from-[#0070ba] via-[#009cde] to-[#0070ba] text-white rounded-xl font-semibold transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg hover:shadow-2xl hover:shadow-[#0070ba]/50 overflow-hidden text-sm sm:text-base touch-manipulation min-h-[44px]"
               title="Support this project with a donation"
             >
               {/* Animated gradient overlay */}
@@ -175,7 +197,7 @@ export default function Home() {
               
               {/* PayPal Icon */}
               <svg 
-                className="w-5 h-5 sm:w-6 sm:h-6 relative z-10 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3" 
+                className="w-5 h-5 sm:w-6 sm:h-6 relative z-10 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 flex-shrink-0" 
                 viewBox="0 0 24 24" 
                 fill="currentColor"
               >
@@ -197,7 +219,7 @@ export default function Home() {
         </div>
 
         {/* Connection Status */}
-        <div className="mb-6 slide-enter" style={{ animationDelay: '0.1s' }}>
+        <div className="mb-4 sm:mb-6 slide-enter" style={{ animationDelay: '0.1s' }}>
           <div className={cn(
             'inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm border transition-all duration-300',
             webhook
@@ -207,7 +229,7 @@ export default function Home() {
               : 'bg-gray-900/30 text-gray-400 border-gray-700/50'
           )}>
             <div className={cn(
-              'w-2 h-2 rounded-full transition-all duration-300',
+              'w-2 h-2 rounded-full transition-all duration-300 flex-shrink-0',
               webhook 
                 ? (isConnected ? 'bg-green-400 animate-pulse' : 'bg-yellow-400')
                 : 'bg-gray-500'
@@ -231,7 +253,7 @@ export default function Home() {
 
         {/* Webhook Generator */}
         {!webhook ? (
-          <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-6 sm:p-8 mb-6 sm:mb-8 border border-qimtek-border card-enter">
+          <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-5 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8 border border-qimtek-border card-enter">
             <div className="text-center">
               <h2 className="text-xl sm:text-2xl font-bold text-qimtek-text mb-3 sm:mb-4">
                 Generate Webhook URL
@@ -243,11 +265,11 @@ export default function Home() {
                 onClick={handleGenerate}
                 disabled={loading}
                 className={cn(
-                  'px-6 sm:px-8 py-3 sm:py-3.5 bg-[#82c91e] text-black rounded-xl font-semibold',
+                  'px-6 sm:px-8 py-3.5 sm:py-3.5 bg-[#82c91e] text-black rounded-xl font-semibold',
                   'hover:bg-[#6ba017] disabled:opacity-50 disabled:cursor-not-allowed',
                   'transition-all duration-200 hover:scale-105 active:scale-95',
                   'shadow-lg hover:shadow-xl hover:shadow-[#82c91e]/30',
-                  'text-sm sm:text-base'
+                  'text-sm sm:text-base touch-manipulation min-h-[48px] min-w-[200px]'
                 )}
               >
                 {loading ? 'Generating...' : 'Generate Webhook URL'}
@@ -258,14 +280,14 @@ export default function Home() {
             </div>
           </div>
         ) : (
-          <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8 border border-qimtek-border card-enter">
+          <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6 lg:mb-8 border border-qimtek-border card-enter">
             <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-4 mb-4">
-              <div className="flex-1 w-full sm:w-auto">
+              <div className="flex-1 w-full sm:w-auto min-w-0">
                 <h2 className="text-base sm:text-lg font-semibold text-qimtek-text mb-2">
                   Your Webhook URL
                 </h2>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                  <code className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 bg-qimtek-bg-secondary rounded-lg text-xs sm:text-sm break-all text-qimtek-text border border-qimtek-border transition-all font-mono">
+                  <code className="flex-1 px-3 sm:px-4 py-2.5 sm:py-2.5 bg-qimtek-bg-secondary rounded-lg text-xs sm:text-sm break-all text-qimtek-text border border-qimtek-border transition-all font-mono overflow-x-auto min-w-0">
                     {webhook.url}
                   </code>
                   <div className="flex items-center gap-2 sm:flex-shrink-0">
@@ -273,10 +295,11 @@ export default function Home() {
                       onClick={handleCopy}
                       className={cn(
                         'p-2.5 sm:p-3 rounded-lg hover:bg-qimtek-bg-secondary transition-all duration-200 border border-qimtek-border hover:scale-110 active:scale-95',
-                        'flex-shrink-0',
+                        'flex-shrink-0 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center',
                         copied && 'bg-green-900/30 border-green-700'
                       )}
                       title="Copy URL"
+                      aria-label="Copy webhook URL"
                     >
                       {copied ? (
                         <Check className="w-5 h-5 text-green-400" />
@@ -288,15 +311,17 @@ export default function Home() {
                       href={webhook.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-2.5 sm:p-3 rounded-lg hover:bg-qimtek-bg-secondary transition-all duration-200 border border-qimtek-border hover:scale-110 active:scale-95 flex-shrink-0"
+                      className="p-2.5 sm:p-3 rounded-lg hover:bg-qimtek-bg-secondary transition-all duration-200 border border-qimtek-border hover:scale-110 active:scale-95 flex-shrink-0 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
                       title="Open in new tab"
+                      aria-label="Open webhook URL in new tab"
                     >
                       <ExternalLink className="w-5 h-5 text-qimtek-text-secondary" />
                     </a>
                     <button
                       onClick={handleDelete}
-                      className="p-2.5 sm:p-3 text-red-400 hover:bg-red-900/20 rounded-lg transition-all duration-200 border border-transparent hover:border-red-800 hover:scale-110 active:scale-95 flex-shrink-0"
+                      className="p-2.5 sm:p-3 text-red-400 hover:bg-red-900/20 rounded-lg transition-all duration-200 border border-transparent hover:border-red-800 hover:scale-110 active:scale-95 flex-shrink-0 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
                       title="Delete webhook"
+                      aria-label="Delete webhook"
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
@@ -313,8 +338,8 @@ export default function Home() {
         {/* Requests Dashboard */}
         {webhook && (
           <div className="bg-qimtek-bg-surface rounded-xl shadow-lg border border-qimtek-border card-enter" style={{ animationDelay: '0.2s' }}>
-            <div className="p-4 sm:p-6 border-b border-qimtek-border">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+            <div className={cn("p-4 sm:p-6 border-b border-qimtek-border", isSearchFocused && isMobile && "pb-3")}>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
                 <h2 className="text-xl sm:text-2xl font-bold text-qimtek-text flex items-center gap-2">
                   Requests
                   {requests.length > 0 && (
@@ -323,10 +348,11 @@ export default function Home() {
                     </span>
                   )}
                 </h2>
-                {filteredRequests.length > 0 && (
+                {filteredRequests.length > 0 && !isSearchFocused && (
                   <button
                     onClick={exportRequests}
-                    className="flex items-center gap-2 px-4 py-2 bg-qimtek-bg-secondary rounded-lg hover:bg-qimtek-tertiary-bg transition-all duration-200 border border-qimtek-border text-qimtek-text hover:scale-105 active:scale-95 text-sm sm:text-base"
+                    className="flex items-center gap-2 px-4 py-2 bg-qimtek-bg-secondary rounded-lg hover:bg-qimtek-tertiary-bg transition-all duration-200 border border-qimtek-border text-qimtek-text hover:scale-105 active:scale-95 text-sm sm:text-base touch-manipulation min-h-[44px]"
+                    aria-label="Export requests"
                   >
                     <Download className="w-4 h-4" />
                     <span className="hidden sm:inline">Export</span>
@@ -334,14 +360,15 @@ export default function Home() {
                 )}
               </div>
 
-              {/* Filters */}
+              {/* Filters - Mobile Optimized */}
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <Filter className="w-4 h-4 text-qimtek-text-secondary flex-shrink-0" />
                   <select
                     value={methodFilter}
                     onChange={(e) => setMethodFilter(e.target.value)}
-                    className="px-3 py-2 border border-qimtek-border rounded-lg bg-qimtek-bg-secondary text-qimtek-text transition-all focus:outline-none focus:ring-2 focus:ring-[#82c91e]/50 text-sm sm:text-base"
+                    className="flex-1 sm:flex-none px-3 sm:px-4 py-2.5 sm:py-2 border border-qimtek-border rounded-lg bg-qimtek-bg-secondary text-qimtek-text transition-all focus:outline-none focus:ring-2 focus:ring-[#82c91e]/50 text-base sm:text-sm appearance-none cursor-pointer touch-manipulation min-h-[44px]"
+                    style={{ fontSize: '16px' }} // Prevent zoom on iOS
                   >
                     {METHODS.map((method) => (
                       <option key={method} value={method}>
@@ -350,15 +377,30 @@ export default function Home() {
                     ))}
                   </select>
                 </div>
-                <div className="flex-1 flex items-center gap-2">
-                  <Search className="w-4 h-4 text-qimtek-text-secondary flex-shrink-0" />
+                <div className="flex-1 flex items-center gap-2 relative">
+                  <Search className="w-4 h-4 text-qimtek-text-secondary flex-shrink-0 absolute left-3 pointer-events-none" />
                   <input
+                    ref={searchInputRef}
                     type="text"
+                    inputMode="search"
                     placeholder="Search in body/headers..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-qimtek-border rounded-lg bg-qimtek-bg-secondary text-qimtek-text placeholder:text-qimtek-text-tertiary transition-all focus:outline-none focus:ring-2 focus:ring-[#82c91e]/50 text-sm sm:text-base"
+                    onFocus={() => setIsSearchFocused(true)}
+                    onBlur={() => setIsSearchFocused(false)}
+                    className="flex-1 pl-9 pr-9 sm:pr-3 py-2.5 sm:py-2 border border-qimtek-border rounded-lg bg-qimtek-bg-secondary text-qimtek-text placeholder:text-qimtek-text-tertiary transition-all focus:outline-none focus:ring-2 focus:ring-[#82c91e]/50 text-base sm:text-sm touch-manipulation min-h-[44px]"
+                    style={{ fontSize: '16px' }} // Prevent zoom on iOS
+                    aria-label="Search requests"
                   />
+                  {searchQuery && (
+                    <button
+                      onClick={clearSearch}
+                      className="absolute right-2 p-1.5 rounded-lg hover:bg-qimtek-bg transition-colors touch-manipulation min-h-[36px] min-w-[36px] flex items-center justify-center"
+                      aria-label="Clear search"
+                    >
+                      <X className="w-4 h-4 text-qimtek-text-secondary" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
