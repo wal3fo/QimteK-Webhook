@@ -45,8 +45,20 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
         }
       } catch (dbError) {
         const error = dbError instanceof Error ? dbError : new Error(String(dbError));
-        console.error('Database initialization error:', error);
-        console.error('Error stack:', error.stack);
+        const cwd = process.cwd();
+        const isNetlify = cwd.startsWith('/var/task') || !!process.env.NETLIFY;
+        const dbPath = process.env.DB_PATH || (isNetlify ? '/tmp/webhook-data.json' : 'webhook-data.json');
+        
+        console.error('❌ Database initialization error:', error);
+        console.error('Error details:', {
+          message: error.message,
+          stack: error.stack,
+          cwd,
+          isNetlify,
+          dbPath,
+          NETLIFY: process.env.NETLIFY,
+        });
+        
         return {
           statusCode: 500,
           body: JSON.stringify({
@@ -54,7 +66,9 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
             error: 'Database initialization failed',
             details: error.message,
             stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
-            dbPath: process.env.DB_PATH || '/tmp/webhook-data.json',
+            dbPath,
+            cwd,
+            isNetlify,
           }),
           headers: {
             'Content-Type': 'application/json',
@@ -64,6 +78,10 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
       
       // Check if there was a previous initialization error
       if (dbInitError) {
+        const cwd = process.cwd();
+        const isNetlify = cwd.startsWith('/var/task') || !!process.env.NETLIFY;
+        const dbPath = process.env.DB_PATH || (isNetlify ? '/tmp/webhook-data.json' : 'webhook-data.json');
+        
         return {
           statusCode: 500,
           body: JSON.stringify({
@@ -71,7 +89,9 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
             error: 'Database initialization failed',
             details: dbInitError.message,
             stack: process.env.NODE_ENV === 'development' ? dbInitError.stack : undefined,
-            dbPath: process.env.DB_PATH || '/tmp/webhook-data.json',
+            dbPath,
+            cwd,
+            isNetlify,
           }),
           headers: {
             'Content-Type': 'application/json',

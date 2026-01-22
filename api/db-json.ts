@@ -72,23 +72,50 @@ function getDbPath(): string {
 // Initialize database file if it doesn't exist
 function ensureDbFile(): void {
   const dbPath = getDbPath();
+  console.log(`📁 Ensuring database file exists at: ${dbPath}`);
   try {
     // Ensure the directory exists (especially for /tmp)
     const dir = path.dirname(dbPath);
+    console.log(`📁 Database directory: ${dir}`);
+    
     if (!fs.existsSync(dir)) {
+      console.log(`📁 Creating directory: ${dir}`);
       fs.mkdirSync(dir, { recursive: true });
+      console.log(`✅ Directory created: ${dir}`);
+    } else {
+      console.log(`✅ Directory exists: ${dir}`);
+    }
+    
+    // Check if directory is writable
+    try {
+      fs.accessSync(dir, fs.constants.W_OK);
+      console.log(`✅ Directory is writable: ${dir}`);
+    } catch (accessError) {
+      console.error(`❌ Directory is NOT writable: ${dir}`, accessError);
+      throw new Error(`Directory ${dir} is not writable`);
     }
     
     if (!fs.existsSync(dbPath)) {
+      console.log(`📝 Creating new database file: ${dbPath}`);
       const initialData: Database = {
         webhooks: [],
         requests: [],
       };
       fs.writeFileSync(dbPath, JSON.stringify(initialData, null, 2), 'utf8');
       console.log(`✅ Created database file at: ${dbPath}`);
+    } else {
+      console.log(`✅ Database file already exists: ${dbPath}`);
     }
   } catch (error) {
     console.error(`❌ Failed to ensure database file at ${dbPath}:`, error);
+    const errorDetails = {
+      path: dbPath,
+      dir: path.dirname(dbPath),
+      cwd: process.cwd(),
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    };
+    console.error('Error details:', errorDetails);
     throw new Error(`Cannot create database file at ${dbPath}: ${error instanceof Error ? error.message : String(error)}`);
   }
 }

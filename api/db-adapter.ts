@@ -38,78 +38,74 @@ export async function initDb(): Promise<void> {
   }
 
   initPromise = (async () => {
+    const cwd = process.cwd();
+    const isNetlify = cwd.startsWith('/var/task') || !!process.env.NETLIFY || !!process.env.NETLIFY_DEV;
+    
+    console.log('🔍 Database initialization starting...', {
+      cwd,
+      isNetlify,
+      NETLIFY: process.env.NETLIFY,
+      NETLIFY_DEV: process.env.NETLIFY_DEV,
+      DB_PATH: process.env.DB_PATH,
+    });
+    
     // Priority 1: Try better-sqlite3 (works everywhere, preferred for local dev)
-    try {
-      const Database = (await import('better-sqlite3')).default;
-      // In Netlify serverless functions, use /tmp directory
-      const cwd = process.cwd();
-      
-      // Default to /tmp if we're in /var/task (Netlify Functions always run here)
-      let dbPath: string;
-      if (cwd.startsWith('/var/task')) {
-        dbPath = process.env.DB_PATH || '/tmp/webhook.db';
-        console.log(`✅ Netlify Functions detected (cwd: ${cwd}) - SQLite path: ${dbPath}`);
-      } else {
-        const isNetlifyServerless = 
-          !!process.env.NETLIFY || 
-          !!process.env.NETLIFY_DEV ||
-          cwd.includes('netlify') ||
-          !!process.env.AWS_LAMBDA_FUNCTION_NAME ||
-          !!process.env._HANDLER ||
-          (typeof process.env.LAMBDA_TASK_ROOT !== 'undefined');
-        dbPath = process.env.DB_PATH || (isNetlifyServerless 
-          ? '/tmp/webhook.db' 
-          : path.join(cwd, 'webhook.db'));
-        console.log(`SQLite database path: ${dbPath} (Netlify: ${isNetlifyServerless}, cwd: ${cwd})`);
+    // Skip SQLite in Netlify - it requires native compilation and won't work
+    if (!isNetlify) {
+      try {
+        const Database = (await import('better-sqlite3')).default;
+        const dbPath = process.env.DB_PATH || path.join(cwd, 'webhook.db');
+        console.log(`📦 Trying SQLite at: ${dbPath}`);
+        const sqliteDb = new Database(dbPath);
+        sqliteDb.pragma('foreign_keys = ON');
+        db = sqliteDb as unknown as DatabaseAdapter;
+        console.log('✅ Using better-sqlite3 database');
+        await createSchema(db);
+        return;
+      } catch (error: any) {
+        console.log('⚠️  better-sqlite3 failed, trying JSON database fallback:', error.message);
       }
-      const sqliteDb = new Database(dbPath);
-      sqliteDb.pragma('foreign_keys = ON');
-      // Cast to DatabaseAdapter since SQLite Database implements the interface
-      db = sqliteDb as unknown as DatabaseAdapter;
-      console.log('✅ Using better-sqlite3 database');
-      
-      // Create schema for SQLite
-      await createSchema(db);
-      return;
-    } catch (error: any) {
-      console.log('⚠️  better-sqlite3 not available, trying JSON database fallback');
+    } else {
+      console.log('⏭️  Skipping SQLite in Netlify (requires native compilation), using JSON database');
     }
 
     // Priority 2: Fallback to JSON database (works everywhere)
     try {
+      console.log('📦 Initializing JSON database...');
       // Import and initialize JSON database
       const { initDb: initJsonDb } = await import('./db-json.js');
       await initJsonDb();
       db = jsonDb;
       console.log('✅ Using JSON database');
       await createSchema(db);
+      console.log('✅ Database schema created successfully');
       return;
     } catch (error) {
-      console.error('⚠️  JSON database failed:', error);
-      console.error('Error details:', {
+      console.error('❌ JSON database initialization failed:', error);
+      const errorDetails = {
         message: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
-        dbPath: process.env.DB_PATH || (process.env.NETLIFY || process.env.VERCEL ? '/tmp/webhook-data.json' : 'webhook-data.json'),
-      });
+        cwd: process.cwd(),
+        isNetlify: cwd.startsWith('/var/task') || !!process.env.NETLIFY,
+        dbPath: process.env.DB_PATH || (cwd.startsWith('/var/task') ? '/tmp/webhook-data.json' : 'webhook-data.json'),
+      };
+      console.error('Error details:', errorDetails);
       // Fall through to throw error
     }
 
     // If all databases failed, throw error
     const cwd = process.cwd();
-    const isNetlifyServerless = 
-      process.env.NETLIFY || 
-      process.env.NETLIFY_DEV ||
-      cwd.startsWith('/var/task') ||
-      cwd.includes('netlify') ||
-      process.env.AWS_LAMBDA_FUNCTION_NAME;
-    const dbPath = process.env.DB_PATH || (isNetlifyServerless ? '/tmp/webhook-data.json' : 'webhook-data.json');
-    throw new Error(
-      `Failed to initialize any database. ` +
-      `SQLite (better-sqlite3) is not available in this environment, ` +
+    const isNetlify = cwd.startsWith('/var/task') || !!process.env.NETLIFY || !!process.env.NETLIFY_DEV;
+    const dbPath = process.env.DB_PATH || (isNetlify ? '/tmp/webhook-data.json' : 'webhook-data.json');
+    
+    const errorMsg = `Failed to initialize any database. ` +
+      `SQLite (better-sqlite3) ${isNetlify ? 'is skipped in Netlify' : 'is not available'}, ` +
       `and JSON database initialization failed. ` +
-      `Database path: ${dbPath} (Netlify: ${isNetlifyServerless}, cwd: ${cwd}). ` +
-      `Please check file system permissions and ensure the directory is writable.`
-    );
+      `Database path: ${dbPath} (Netlify: ${isNetlify}, cwd: ${cwd}). ` +
+      `Please check file system permissions and ensure /tmp directory is writable.`;
+    
+    console.error('❌', errorMsg);
+    throw new Error(errorMsg);
   })();
 
   return initPromise;
