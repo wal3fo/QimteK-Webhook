@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
+import ConfirmModal from '@/components/ConfirmModal';
 
 const METHOD_COLORS: Record<string, string> = {
   GET: 'bg-blue-900/30 text-blue-300 border border-blue-700/50',
@@ -107,6 +108,7 @@ export default function Home() {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Detect mobile device
   useEffect(() => {
@@ -319,7 +321,7 @@ export default function Home() {
                       <ExternalLink className="w-5 h-5 text-qimtek-text-secondary" />
                     </a>
                     <button
-                      onClick={handleDelete}
+                      onClick={handleDeleteClick}
                       className="p-2.5 sm:p-3 text-red-400 hover:bg-red-900/20 rounded-lg transition-all duration-200 border border-transparent hover:border-red-800 hover:scale-110 active:scale-95 flex-shrink-0 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
                       title="Delete webhook"
                       aria-label="Delete webhook"
@@ -456,6 +458,18 @@ export default function Home() {
         )}
       </div>
       <Footer />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Webhook"
+        message="Are you sure you want to delete this webhook? All associated requests will be permanently lost and cannot be recovered."
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmButtonColor="bg-red-600 hover:bg-red-700"
+      />
     </div>
   );
 }

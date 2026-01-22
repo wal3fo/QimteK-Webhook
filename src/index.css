@@ -75,6 +75,15 @@ body,
   }
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* Apply animations */
 .page-enter {
   animation: fadeIn 0.4s ease-out;
@@ -86,6 +95,14 @@ body,
 
 .slide-enter {
   animation: slideIn 0.4s ease-out;
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.3s ease-out;
 }
 
 /* Smooth hover transitions */
