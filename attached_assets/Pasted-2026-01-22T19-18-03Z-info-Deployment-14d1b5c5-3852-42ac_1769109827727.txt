@@ -1,0 +1,67 @@
+2026-01-22T19:18:03Z info: Deployment: 14d1b5c5-3852-42ac-96da-3daeaf1190d9
+2026-01-22T19:18:03Z info: Build: 35737823-1f99-4f44-804d-e5f72a2c640f
+2026-01-22T19:18:03Z info: Running Security Scan
+2026-01-22T19:18:03Z info: Security Scan Complete
+2026-01-22T19:18:03Z info: Connecting to builder
+2026-01-22T19:18:04Z info: Builder connected
+2026-01-22T19:18:04Z info: Installing packages
+2026-01-22T19:18:04Z info: Starting Build
+
+> qimtek-hooks@0.0.0 build
+> tsc -b && vite build
+
+
+vite v6.4.1 building for production...
+
+transforming...
+
+✓ 1954 modules transformed.
+
+rendering chunks...
+
+computing gzip size...
+
+dist/index.html                           4.56 kB │ gzip:  1.30 kB
+
+dist/assets/index-DYtkoIDT.css           32.56 kB │ gzip:  6.96 kB
+
+dist/assets/RequestDetails-D6IgOskX.js   29.09 kB │ gzip:  4.29 kB
+
+dist/assets/Home-CDIwveYM.js             48.10 kB │ gzip:  8.23 kB
+
+dist/assets/Footer-CbPk5uVs.js           70.88 kB │ gzip: 18.11 kB
+
+dist/assets/index-Cb7S52Ye.js           182.88 kB │ gzip: 60.26 kB
+
+✓ built in 7.48s
+
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 11.8.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.8.0
+npm notice To update run: npm install -g npm@11.8.0
+npm notice
+
+2026-01-22T19:18:22Z info: Pushing pid1 binary layer...
+2026-01-22T19:18:23Z info: Pushing Repl layer...
+2026-01-22T19:18:23Z info: Pushing hosting layer...
+2026-01-22T19:18:24Z info: Created hosting layer
+2026-01-22T19:18:28Z info: Created pid1 binary layer
+2026-01-22T19:18:36Z info: Created Repl layer
+2026-01-22T19:18:39Z info: Pushed image manifest
+2026-01-22T19:18:41Z info: Pushed soci index manifest
+2026-01-22T19:18:44Z info: Creating Autoscale service
+node:internal/modules/cjs/loader:1210
+Node.js v20.20.0
+  ^
+Error: Cannot find module '/home/runner/workspace/api/dist/server.js'
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1207:15)
+  requireStack: []
+
+    at node:internal/main/run_main_module:28:49 {
+
+  ^
+    at Module._load (node:internal/modules/cjs/loader:1038:27)
+
+}
+crash loop detected
+2026-01-22T19:21:25Z error: The deployment is crash looping. This can happen if the run command fails or exits immediately after starting. Check the logs for more information.

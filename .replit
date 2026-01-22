@@ -46,5 +46,5 @@ externalPort = 80
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["sh", "-c", "node api/dist/server.js"]
-build = ["npm run build"]
+run = ["node", "api/dist/server.js"]
+build = ["npm run build && tsc -p tsconfig.json --outDir api/dist"]
