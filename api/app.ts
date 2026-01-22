@@ -27,7 +27,6 @@ const __dirname = path.dirname(__filename)
 
 const app: express.Application = express()
 
-<<<<<<< HEAD
 // Static files for frontend - try current dir first, then parent
 const distPath = path.join(__dirname, 'dist');
 const distPathParent = path.join(__dirname, '../dist');
@@ -35,10 +34,9 @@ const distPathParent = path.join(__dirname, '../dist');
 // Serve static files from wherever dist exists
 app.use(express.static(distPath));
 app.use(express.static(distPathParent));
-=======
+
 // Trust proxy - required for correct protocol/IP detection behind load balancers (Vercel, Replit, etc.)
 app.set('trust proxy', 1)
->>>>>>> 65ce4b410a87514973463ca4886ea22fcad431e0
 
 // CORS configuration - allow all origins in production (Vercel handles this)
 app.use(cors({
