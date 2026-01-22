@@ -34,7 +34,7 @@ export default defineConfig({
       }
     },
     allowedHosts: [
-      'all'
+      'https://qimte-k-webhook.vercel.app'
     ]
   }
 })
