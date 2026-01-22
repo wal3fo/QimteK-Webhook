@@ -90,7 +90,7 @@ export async function initDb(): Promise<void> {
       const errorDetails = {
         message: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
-        cwd: process.cwd(),
+        cwd,
         isNetlify: cwd.startsWith('/var/task') || !!process.env.NETLIFY,
         dbPath: process.env.DB_PATH || (cwd.startsWith('/var/task') ? '/tmp/webhook-data.json' : 'webhook-data.json'),
       };
@@ -99,8 +99,7 @@ export async function initDb(): Promise<void> {
     }
 
     // If all databases failed, throw error
-    const cwd = process.cwd();
-    const isNetlify = cwd.startsWith('/var/task') || !!process.env.NETLIFY || !!process.env.NETLIFY_DEV;
+    // Reuse cwd and isNetlify variables already declared at the top of the function
     const dbPath = process.env.DB_PATH || (isNetlify ? '/tmp/webhook-data.json' : 'webhook-data.json');
     
     const errorMsg = `Failed to initialize any database. ` +
