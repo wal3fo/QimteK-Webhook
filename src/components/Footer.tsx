@@ -28,18 +28,15 @@ export default function Footer() {
       {/* Decorative gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#82c91e]/5 via-transparent to-transparent pointer-events-none" />
       
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 max-w-7xl relative z-10">
+      <div className="container mx-auto py-2 px-4 sm:px-6 lg:px-8 max-w-7xl relative z-10">
         {/* Main Footer Content */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 mb-10 sm:mb-12">
+        <div className="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 mb-10 sm:mb-12">
           {/* Brand Section */}
           <div className="lg:col-span-1 space-y-4">
             <div className="flex items-center gap-3 mb-4">
               <Logo size="xl" className="opacity-95" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-qimtek-text mb-2">
-                QimteK Hooks
-              </h3>
               <p className="text-sm text-qimtek-text-secondary leading-relaxed mb-4">
                 The ultimate webhook inspection tool for developers. Capture, inspect, and debug HTTP requests in real-time with ease.
               </p>
@@ -71,9 +68,6 @@ export default function Footer() {
                     <span className="group-hover:translate-x-0.5 transition-transform duration-200">
                       {link.name}
                     </span>
-                    {link.external && (
-                      <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                    )}
                   </a>
                 </li>
               ))}
@@ -183,7 +177,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-8 sm:pt-10 border-t border-qimtek-border">
+        <div className="border-qimtek-border">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             {/* Copyright */}
             <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center sm:text-left">
