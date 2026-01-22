@@ -39,19 +39,23 @@ export async function initDb(): Promise<void> {
 
   initPromise = (async () => {
     const cwd = process.cwd();
+    // CRITICAL: Check /var/task first - this is the definitive indicator of Netlify Functions
     const isNetlify = cwd.startsWith('/var/task') || !!process.env.NETLIFY || !!process.env.NETLIFY_DEV;
     
     console.log('🔍 Database initialization starting...', {
       cwd,
       isNetlify,
+      isVarTask: cwd.startsWith('/var/task'),
       NETLIFY: process.env.NETLIFY,
       NETLIFY_DEV: process.env.NETLIFY_DEV,
       DB_PATH: process.env.DB_PATH,
     });
     
     // Priority 1: Try better-sqlite3 (works everywhere, preferred for local dev)
-    // Skip SQLite in Netlify - it requires native compilation and won't work
-    if (!isNetlify) {
+    // CRITICAL: Skip SQLite in Netlify - it requires native compilation and won't work
+    // Netlify Functions always run in /var/task, so skip SQLite if we're there
+    const isInVarTask = cwd.startsWith('/var/task');
+    if (!isNetlify && !isInVarTask) {
       try {
         const Database = (await import('better-sqlite3')).default;
         const dbPath = process.env.DB_PATH || path.join(cwd, 'webhook.db');
@@ -67,6 +71,7 @@ export async function initDb(): Promise<void> {
       }
     } else {
       console.log('⏭️  Skipping SQLite in Netlify (requires native compilation), using JSON database');
+      console.log(`   Detected Netlify: cwd=${cwd}, startsWith('/var/task')=${cwd.startsWith('/var/task')}`);
     }
 
     // Priority 2: Fallback to JSON database (works everywhere)

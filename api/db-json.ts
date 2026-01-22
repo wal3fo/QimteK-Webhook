@@ -31,31 +31,31 @@ interface Database {
 
 // JSON database works in all environments
 function getDbPath(): string {
-  // Use DB_PATH if explicitly set
+  const cwd = process.cwd();
+  
+  // CRITICAL: If we're in /var/task, we're definitely in Netlify Functions
+  // This is the most reliable detection method - check this FIRST (before DB_PATH)
+  // Netlify Functions ALWAYS run in /var/task, so this is 100% reliable
+  if (cwd.startsWith('/var/task')) {
+    const tmpPath = process.env.DB_PATH || '/tmp/webhook-data.json';
+    console.log(`🚀 Netlify Functions detected (cwd: ${cwd}) - Using: ${tmpPath}`);
+    return tmpPath;
+  }
+  
+  // Use DB_PATH if explicitly set (only if not in /var/task)
   if (process.env.DB_PATH) {
     console.log(`✅ Using explicit DB_PATH: ${process.env.DB_PATH}`);
     return process.env.DB_PATH;
   }
   
-  // In Netlify serverless functions, use /tmp directory
-  // which is the only writable directory in serverless functions
-  // Check multiple indicators of Netlify serverless environment
-  const cwd = process.cwd();
+  // Additional Netlify detection (backup checks)
   const isNetlifyServerless = 
     !!process.env.NETLIFY || 
-    !!process.env.NETLIFY_DEV || // Netlify Dev
-    cwd.startsWith('/var/task') || // Netlify Functions execution directory (most reliable)
-    cwd.includes('netlify') || // Netlify-related paths
-    !!process.env.AWS_LAMBDA_FUNCTION_NAME || // Netlify uses AWS Lambda under the hood
-    !!process.env._HANDLER || // Lambda handler indicator
-    (typeof process.env.LAMBDA_TASK_ROOT !== 'undefined'); // Lambda task root
-  
-  // Default to /tmp if we're in /var/task (Netlify Functions always run here)
-  if (cwd.startsWith('/var/task')) {
-    const tmpPath = '/tmp/webhook-data.json';
-    console.log(`✅ Netlify Functions detected (cwd: ${cwd}) - Using: ${tmpPath}`);
-    return tmpPath;
-  }
+    !!process.env.NETLIFY_DEV ||
+    cwd.includes('netlify') ||
+    !!process.env.AWS_LAMBDA_FUNCTION_NAME ||
+    !!process.env._HANDLER ||
+    (typeof process.env.LAMBDA_TASK_ROOT !== 'undefined');
   
   if (isNetlifyServerless) {
     const tmpPath = '/tmp/webhook-data.json';
@@ -65,7 +65,7 @@ function getDbPath(): string {
   
   // For local development, use current working directory
   const localPath = path.join(cwd, 'webhook-data.json');
-  console.log(`✅ Local development - Using: ${localPath} (cwd: ${cwd})`);
+  console.log(`✅ Local development - Using database path: ${localPath} (cwd: ${cwd})`);
   return localPath;
 }
 
