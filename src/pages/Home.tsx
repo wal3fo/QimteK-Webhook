@@ -190,7 +190,7 @@ export default function Home() {
         {/* Header */}
         <div className="mb-4 sm:mb-6 lg:mb-8 slide-enter">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
-            <Logo size="lg" />
+            <Logo size="xl" />
             <a
               href="https://www.paypal.com/paypalme/drgineer/5?currencyCode=USD"
               target="_blank"
@@ -219,6 +219,7 @@ export default function Home() {
               <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-white rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
             </a>
           </div>
+          <h1 className="sr-only">QimteK Hooks - Webhook Inspection Tool</h1>
           <p className="text-qimtek-text-secondary text-sm sm:text-base">
             Generate temporary webhook URLs to capture and inspect HTTP requests
           </p>

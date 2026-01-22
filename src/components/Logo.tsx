@@ -2,7 +2,7 @@ import { cn } from '@/lib/utils';
 
 interface LogoProps {
   className?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
 export default function Logo({ className, size = 'md' }: LogoProps) {
@@ -10,6 +10,7 @@ export default function Logo({ className, size = 'md' }: LogoProps) {
     sm: 'h-6',
     md: 'h-8',
     lg: 'h-12',
+    xl: 'h-16',
   };
 
   return (

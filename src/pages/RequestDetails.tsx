@@ -130,7 +130,7 @@ export default function RequestDetails() {
         <div className="mb-4 sm:mb-6 slide-enter">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
             <div className="flex items-center gap-3 flex-wrap">
-              <Logo size="lg" />
+              <Logo size="xl" />
               <a
                 href="https://www.paypal.com/paypalme/drgineer/5?currencyCode=USD"
                 target="_blank"
