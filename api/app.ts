@@ -19,7 +19,16 @@ if (process.env.NODE_ENV !== 'production') {
   dotenv.config()
 }
 
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
 const app: express.Application = express()
+
+// Static files for frontend
+app.use(express.static(path.join(__dirname, '../../dist')))
 
 // CORS configuration - allow all origins in production (Vercel handles this)
 app.use(cors({
@@ -68,14 +77,17 @@ app.use((error: Error, req: Request, res: Response, next: NextFunction): void =>
   })
 })
 
-/**
- * 404 handler
- */
-app.use((req: Request, res: Response) => {
+// 404 handler for API
+app.use('/api', (req: Request, res: Response) => {
   res.status(404).json({
     success: false,
     error: 'API not found',
   })
+})
+
+// Serve frontend for all other routes
+app.get('*', (req: Request, res: Response) => {
+  res.sendFile(path.join(__dirname, '../../dist/index.html'))
 })
 
 export default app
