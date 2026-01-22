@@ -72,17 +72,20 @@ export function useWebhook() {
                 }
               }
             } else {
-              // Webhook expired or invalid, clear storage
+              // Webhook expired or invalid, clear storage and requests
               localStorage.removeItem(STORAGE_KEY);
+              setRequests([]);
             }
           } else {
-            // Webhook not found, clear storage
+            // Webhook not found, clear storage and requests
             localStorage.removeItem(STORAGE_KEY);
+            setRequests([]);
           }
         }
       } catch (err) {
         console.error('Error loading session:', err);
         localStorage.removeItem(STORAGE_KEY);
+        setRequests([]);
       }
     };
 
