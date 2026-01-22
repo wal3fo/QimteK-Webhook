@@ -41,21 +41,27 @@ export async function initDb(): Promise<void> {
     // Priority 1: Try better-sqlite3 (works everywhere, preferred for local dev)
     try {
       const Database = (await import('better-sqlite3')).default;
-      // In serverless environments, use /tmp directory
+      // In Netlify serverless functions, use /tmp directory
       const cwd = process.cwd();
-      const isServerless = 
-        process.env.NETLIFY || 
-        process.env.VERCEL || 
-        process.env.AWS_LAMBDA_FUNCTION_NAME ||
-        process.env.NETLIFY_DEV ||
-        process.env._HANDLER ||
-        (typeof process.env.LAMBDA_TASK_ROOT !== 'undefined') ||
-        cwd.startsWith('/var/task') || // Netlify/AWS Lambda execution directory
-        cwd.startsWith('/tmp'); // Some serverless environments
-      const dbPath = process.env.DB_PATH || (isServerless 
-        ? '/tmp/webhook.db' 
-        : path.join(cwd, 'webhook.db'));
-      console.log(`SQLite database path: ${dbPath} (serverless: ${isServerless}, cwd: ${cwd})`);
+      
+      // Default to /tmp if we're in /var/task (Netlify Functions always run here)
+      let dbPath: string;
+      if (cwd.startsWith('/var/task')) {
+        dbPath = process.env.DB_PATH || '/tmp/webhook.db';
+        console.log(`✅ Netlify Functions detected (cwd: ${cwd}) - SQLite path: ${dbPath}`);
+      } else {
+        const isNetlifyServerless = 
+          !!process.env.NETLIFY || 
+          !!process.env.NETLIFY_DEV ||
+          cwd.includes('netlify') ||
+          !!process.env.AWS_LAMBDA_FUNCTION_NAME ||
+          !!process.env._HANDLER ||
+          (typeof process.env.LAMBDA_TASK_ROOT !== 'undefined');
+        dbPath = process.env.DB_PATH || (isNetlifyServerless 
+          ? '/tmp/webhook.db' 
+          : path.join(cwd, 'webhook.db'));
+        console.log(`SQLite database path: ${dbPath} (Netlify: ${isNetlifyServerless}, cwd: ${cwd})`);
+      }
       const sqliteDb = new Database(dbPath);
       sqliteDb.pragma('foreign_keys = ON');
       // Cast to DatabaseAdapter since SQLite Database implements the interface
@@ -89,13 +95,19 @@ export async function initDb(): Promise<void> {
     }
 
     // If all databases failed, throw error
-    const isServerless = process.env.NETLIFY || process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
-    const dbPath = process.env.DB_PATH || (isServerless ? '/tmp/webhook-data.json' : 'webhook-data.json');
+    const cwd = process.cwd();
+    const isNetlifyServerless = 
+      process.env.NETLIFY || 
+      process.env.NETLIFY_DEV ||
+      cwd.startsWith('/var/task') ||
+      cwd.includes('netlify') ||
+      process.env.AWS_LAMBDA_FUNCTION_NAME;
+    const dbPath = process.env.DB_PATH || (isNetlifyServerless ? '/tmp/webhook-data.json' : 'webhook-data.json');
     throw new Error(
       `Failed to initialize any database. ` +
       `SQLite (better-sqlite3) is not available in this environment, ` +
       `and JSON database initialization failed. ` +
-      `Database path: ${dbPath}. ` +
+      `Database path: ${dbPath} (Netlify: ${isNetlifyServerless}, cwd: ${cwd}). ` +
       `Please check file system permissions and ensure the directory is writable.`
     );
   })();

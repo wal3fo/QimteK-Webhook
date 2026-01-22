@@ -1,17 +1,10 @@
 /**
- * Express application for Vercel serverless functions
+ * Express application for serverless functions (Netlify)
  * 
- * This app is exported as a handler for Vercel serverless functions.
- * It does NOT start a server - Vercel handles that automatically.
+ * This app is exported as a handler for Netlify serverless functions.
+ * It does NOT start a server - Netlify handles that automatically.
  * 
  * For local development, use api/server.ts which wraps this app.
- */
-
-/**
- * Express application for Vercel serverless functions
- * 
- * This app is exported as a handler for Vercel serverless functions.
- * It does NOT start a server - Vercel handles that automatically.
  */
 
 import express, {
@@ -24,8 +17,8 @@ import dotenv from 'dotenv'
 import webhookRoutes from './routes/webhooks.js'
 import webhookReceiverRoutes from './routes/webhook-receiver.js'
 
-// Load environment variables (only in local dev, Vercel provides them automatically)
-if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+// Load environment variables (only in local dev, Netlify provides them automatically)
+if (process.env.NODE_ENV !== 'production' || !process.env.NETLIFY) {
   dotenv.config()
 }
 
@@ -62,7 +55,7 @@ app.get('/api/health', (req: Request, res: Response): void => {
     message: 'ok',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
-    vercel: !!process.env.VERCEL,
+    netlify: !!process.env.NETLIFY,
   })
 })
 

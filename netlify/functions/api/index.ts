@@ -16,12 +16,13 @@ const initPromise = initDb().then(() => {
 }).catch((err) => {
   dbInitError = err instanceof Error ? err : new Error(String(err));
   console.error('❌ Failed to initialize database:', err);
-  console.error('Error details:', {
-    message: err instanceof Error ? err.message : String(err),
-    stack: err instanceof Error ? err.stack : undefined,
-    dbPath: process.env.DB_PATH || '/tmp/webhook-data.json',
-    isServerless: !!(process.env.NETLIFY || process.env.VERCEL),
-  });
+          console.error('Error details:', {
+            message: err instanceof Error ? err.message : String(err),
+            stack: err instanceof Error ? err.stack : undefined,
+            dbPath: process.env.DB_PATH || '/tmp/webhook-data.json',
+            cwd: process.cwd(),
+            netlify: !!process.env.NETLIFY,
+          });
 });
 
 // Wrap Express app with serverless-http
@@ -89,6 +90,8 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
       rawPath: event.rawPath,
       rawUrl: event.rawUrl,
       httpMethod: event.httpMethod,
+      cwd: process.cwd(),
+      netlify: !!process.env.NETLIFY,
     });
     
     const result = await serverlessApp(event, context);

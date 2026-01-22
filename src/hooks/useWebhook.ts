@@ -20,7 +20,7 @@ export interface Webhook {
 }
 
 // Use relative path in production, or use VITE_API_URL if set
-// In production (Netlify/Vercel), we want to use relative paths
+// In production (Netlify), we want to use relative paths
 // If VITE_API_URL contains localhost, default to /api for production builds
 const getApiUrl = () => {
   const envUrl = import.meta.env.VITE_API_URL;

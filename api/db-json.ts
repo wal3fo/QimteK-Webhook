@@ -33,32 +33,39 @@ interface Database {
 function getDbPath(): string {
   // Use DB_PATH if explicitly set
   if (process.env.DB_PATH) {
+    console.log(`✅ Using explicit DB_PATH: ${process.env.DB_PATH}`);
     return process.env.DB_PATH;
   }
   
-  // In serverless environments (Netlify, Vercel, etc.), use /tmp directory
+  // In Netlify serverless functions, use /tmp directory
   // which is the only writable directory in serverless functions
-  // Check multiple indicators of serverless environment
+  // Check multiple indicators of Netlify serverless environment
   const cwd = process.cwd();
-  const isServerless = 
-    process.env.NETLIFY || 
-    process.env.VERCEL || 
-    process.env.AWS_LAMBDA_FUNCTION_NAME ||
-    process.env.NETLIFY_DEV || // Netlify Dev
-    process.env._HANDLER || // AWS Lambda
-    (typeof process.env.LAMBDA_TASK_ROOT !== 'undefined') || // AWS Lambda
-    cwd.startsWith('/var/task') || // Netlify/AWS Lambda execution directory
-    cwd.startsWith('/tmp'); // Some serverless environments
+  const isNetlifyServerless = 
+    !!process.env.NETLIFY || 
+    !!process.env.NETLIFY_DEV || // Netlify Dev
+    cwd.startsWith('/var/task') || // Netlify Functions execution directory (most reliable)
+    cwd.includes('netlify') || // Netlify-related paths
+    !!process.env.AWS_LAMBDA_FUNCTION_NAME || // Netlify uses AWS Lambda under the hood
+    !!process.env._HANDLER || // Lambda handler indicator
+    (typeof process.env.LAMBDA_TASK_ROOT !== 'undefined'); // Lambda task root
   
-  if (isServerless) {
+  // Default to /tmp if we're in /var/task (Netlify Functions always run here)
+  if (cwd.startsWith('/var/task')) {
     const tmpPath = '/tmp/webhook-data.json';
-    console.log(`Using serverless database path: ${tmpPath} (cwd: ${cwd})`);
+    console.log(`✅ Netlify Functions detected (cwd: ${cwd}) - Using: ${tmpPath}`);
+    return tmpPath;
+  }
+  
+  if (isNetlifyServerless) {
+    const tmpPath = '/tmp/webhook-data.json';
+    console.log(`✅ Netlify serverless detected - Using: ${tmpPath} (cwd: ${cwd})`);
     return tmpPath;
   }
   
   // For local development, use current working directory
   const localPath = path.join(cwd, 'webhook-data.json');
-  console.log(`Using local database path: ${localPath} (cwd: ${cwd})`);
+  console.log(`✅ Local development - Using: ${localPath} (cwd: ${cwd})`);
   return localPath;
 }
 
