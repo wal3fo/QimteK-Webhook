@@ -160,7 +160,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
     const token = generateToken({
       id: user.id,
       email: user.email,
-      role: user.role as 'admin' | 'user',
+      role: user.role as 'Administrator' | 'Professional' | 'user',
     });
     
     res.json({
