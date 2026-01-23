@@ -35,17 +35,8 @@ export default function AdminUsers() {
   const [userToEditRole, setUserToEditRole] = useState<UserData | null>(null);
 
   useEffect(() => {
-    if (authLoading) return; // Wait for auth check to complete
-
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
-    if (!isAdmin) {
-      navigate('/');
-      return;
-    }
-  }, [isAuthenticated, isAdmin, navigate, authLoading]);
+    // Auth check is now handled by ProtectedRoute
+  }, []);
 
   const fetchUsers = useCallback(async () => {
     if (!token) return;

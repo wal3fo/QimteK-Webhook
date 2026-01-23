@@ -44,12 +44,6 @@ export default function RequestDetails() {
   useEffect(() => {
     if (!id || authLoading) return;
 
-    if (!token) {
-      setError('Authentication required');
-      setLoading(false);
-      return;
-    }
-
     const fetchRequest = async () => {
       try {
         const response = await fetch(`${API_URL}/webhooks/requests/${id}`, {
