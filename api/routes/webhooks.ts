@@ -42,7 +42,7 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
     const countResult = database.prepare(`
       SELECT COUNT(*) as count 
       FROM webhooks 
-      WHERE user_id = ? AND is_active = 1
+      WHERE user_id = ? AND is_active = 1 AND expires_at > datetime('now')
     `).get(user.id);
 
     console.log('Count result:', countResult);
@@ -72,7 +72,14 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
 
     // Calculate expiration time
     const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + expiresIn);
+
+    // Policy: Administrator and Professional have valid lifetime (100 years),
+    // Users have fixed 24h expiration
+    if (user.role === 'Administrator' || user.role === 'Professional') {
+      expiresAt.setFullYear(expiresAt.getFullYear() + 100);
+    } else {
+      expiresAt.setHours(expiresAt.getHours() + 24);
+    }
 
     // Build webhook URL
     // Handles both local development and production (behind proxy)
