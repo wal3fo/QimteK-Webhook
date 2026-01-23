@@ -517,15 +517,16 @@ class JsonDatabase {
       all: (...params: any[]) => {
         const db = readDb();
 
-        // Handle SELECT id, email, role, created_at FROM users
-        if (sql.includes('SELECT id, email, role, created_at FROM users')) {
+        // Handle SELECT id, email, role, created_at, mfa_enabled FROM users
+        if (sql.includes('SELECT id, email, role, created_at') && sql.includes('FROM users')) {
           return db.users
             .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
             .map(u => ({
               id: u.id,
               email: u.email,
               role: u.role,
-              created_at: u.created_at
+              created_at: u.created_at,
+              mfa_enabled: u.mfa_enabled ? 1 : 0
             }));
         }
 

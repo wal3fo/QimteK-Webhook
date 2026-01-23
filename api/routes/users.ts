@@ -56,11 +56,12 @@ router.post('/', authenticate, requireAdmin, async (req: Request, res: Response)
     }
 
     const database = await ensureDb();
+    const normalizedEmail = email.toLowerCase();
 
     // Check if user already exists
     const existingUser = database.prepare(`
       SELECT * FROM users WHERE email = ?
-    `).get(email);
+    `).get(normalizedEmail);
 
     const userResult = await (existingUser instanceof Promise
       ? existingUser
@@ -84,14 +85,14 @@ router.post('/', authenticate, requireAdmin, async (req: Request, res: Response)
       VALUES (?, ?, ?, ?)
     `);
 
-    const result = stmt.run(userId, email.toLowerCase(), passwordHash, role);
+    const result = stmt.run(userId, normalizedEmail, passwordHash, role);
     await (result instanceof Promise ? result : Promise.resolve(result));
 
     res.status(201).json({
       success: true,
       user: {
         id: userId,
-        email: email.toLowerCase(),
+        email: normalizedEmail,
         role: role,
         created_at: new Date().toISOString() // Approximate for response
       },
