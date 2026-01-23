@@ -43,7 +43,25 @@ app.set('trust proxy', 1)
 
 // CORS configuration - allow all origins in production (Vercel handles this)
 app.use(cors({
-  origin: process.env.CLIENT_URL || '*',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    // Allow localhost
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) return callback(null, true);
+
+    // Allow Replit domains
+    if (origin.includes('replit.app') || origin.includes('repl.co')) return callback(null, true);
+
+    // Allow Vercel domains
+    if (origin.includes('vercel.app')) return callback(null, true);
+
+    // Allow configured CLIENT_URL
+    if (process.env.CLIENT_URL && origin === process.env.CLIENT_URL) return callback(null, true);
+
+    // Default allow for now to ensure visitor counter works
+    return callback(null, true);
+  },
   credentials: true,
 }))
 
