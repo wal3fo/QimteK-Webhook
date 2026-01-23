@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, UserPlus, Mail, Lock, Shield, Briefcase } from 'lucide-react';
+import { X, UserPlus, Mail, Lock, Shield, Briefcase, User, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface CreateUserModalProps {
@@ -151,51 +151,73 @@ export default function CreateUserModal({
           </div>
 
           {/* Role Selection */}
-          <div>
-            <label className="block text-sm font-medium text-qimtek-text-secondary mb-2">
+          <div className="space-y-3">
+            <label className="block text-sm font-medium text-qimtek-text-secondary">
               Role
             </label>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setRole('user')}
-                className={cn(
-                  "flex-1 px-2 py-3 rounded-lg border text-sm font-medium transition-all flex flex-col items-center justify-center gap-1",
-                  role === 'user'
-                    ? "bg-[#82c91e]/10 border-[#82c91e] text-[#82c91e]"
-                    : "bg-qimtek-bg-secondary border-qimtek-border text-qimtek-text-secondary hover:border-qimtek-text-tertiary"
-                )}
-              >
-                <UserPlus className="w-4 h-4" />
-                User
-              </button>
-              <button
-                type="button"
-                onClick={() => setRole('Professional')}
-                className={cn(
-                  "flex-1 px-2 py-3 rounded-lg border text-sm font-medium transition-all flex flex-col items-center justify-center gap-1",
-                  role === 'Professional'
-                    ? "bg-blue-500/10 border-blue-500 text-blue-400"
-                    : "bg-qimtek-bg-secondary border-qimtek-border text-qimtek-text-secondary hover:border-qimtek-text-tertiary"
-                )}
-              >
-                <Briefcase className="w-4 h-4" />
-                Pro
-              </button>
-              <button
-                type="button"
-                onClick={() => setRole('Administrator')}
-                className={cn(
-                  "flex-1 px-2 py-3 rounded-lg border text-sm font-medium transition-all flex flex-col items-center justify-center gap-1",
-                  role === 'Administrator'
-                    ? "bg-purple-500/10 border-purple-500 text-purple-400"
-                    : "bg-qimtek-bg-secondary border-qimtek-border text-qimtek-text-secondary hover:border-qimtek-text-tertiary"
-                )}
-              >
-                <Shield className="w-4 h-4" />
-                Admin
-              </button>
-            </div>
+
+            {/* User Role */}
+            <button
+              type="button"
+              onClick={() => setRole('user')}
+              className={cn(
+                "w-full flex items-center justify-between p-4 rounded-lg border transition-all",
+                role === 'user'
+                  ? "bg-[#82c91e]/10 border-[#82c91e] text-[#82c91e]"
+                  : "bg-qimtek-bg-secondary border-qimtek-border text-qimtek-text hover:border-qimtek-text-tertiary"
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <User className="w-5 h-5" />
+                <div className="text-left">
+                  <div className="font-semibold">User</div>
+                  <div className="text-xs opacity-80">Standard access</div>
+                </div>
+              </div>
+              {role === 'user' && <Check className="w-5 h-5" />}
+            </button>
+
+            {/* Professional Role */}
+            <button
+              type="button"
+              onClick={() => setRole('Professional')}
+              className={cn(
+                "w-full flex items-center justify-between p-4 rounded-lg border transition-all",
+                role === 'Professional'
+                  ? "bg-blue-500/10 border-blue-500 text-blue-400"
+                  : "bg-qimtek-bg-secondary border-qimtek-border text-qimtek-text hover:border-qimtek-text-tertiary"
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <Briefcase className="w-5 h-5" />
+                <div className="text-left">
+                  <div className="font-semibold">Professional</div>
+                  <div className="text-xs opacity-80">Enhanced access</div>
+                </div>
+              </div>
+              {role === 'Professional' && <Check className="w-5 h-5" />}
+            </button>
+
+            {/* Administrator Role */}
+            <button
+              type="button"
+              onClick={() => setRole('Administrator')}
+              className={cn(
+                "w-full flex items-center justify-between p-4 rounded-lg border transition-all",
+                role === 'Administrator'
+                  ? "bg-purple-500/10 border-purple-500 text-purple-400"
+                  : "bg-qimtek-bg-secondary border-qimtek-border text-qimtek-text hover:border-qimtek-text-tertiary"
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <Shield className="w-5 h-5" />
+                <div className="text-left">
+                  <div className="font-semibold">Administrator</div>
+                  <div className="text-xs opacity-80">Full system access</div>
+                </div>
+              </div>
+              {role === 'Administrator' && <Check className="w-5 h-5" />}
+            </button>
           </div>
 
           {/* Actions */}
