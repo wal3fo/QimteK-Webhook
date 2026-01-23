@@ -18,26 +18,46 @@ export async function initAdminAccount(): Promise<void> {
   try {
     const database = await ensureDb();
 
-    // Check if admin already exists (case insensitive)
-    const existingAdmin = database.prepare(`
+    // Check for duplicate admin accounts and clean them up
+    const existingAdmins = database.prepare(`
       SELECT * FROM users WHERE lower(email) = ?
-    `).get(ADMIN_EMAIL);
+    `).all(ADMIN_EMAIL);
 
-    const adminResult = await (existingAdmin instanceof Promise
-      ? existingAdmin
-      : Promise.resolve(existingAdmin));
+    const adminResults = await (existingAdmins instanceof Promise
+      ? existingAdmins
+      : Promise.resolve(existingAdmins));
 
-    if (adminResult) {
+    if (adminResults && adminResults.length > 0) {
+      // Sort by creation time (oldest first)
+      const sortedAdmins = adminResults.sort((a: any, b: any) =>
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+
+      const primaryAdmin = sortedAdmins[0];
+
+      // Remove duplicates if any
+      if (sortedAdmins.length > 1) {
+        console.log(`⚠️ Found ${sortedAdmins.length} admin accounts. Cleaning up duplicates...`);
+        for (let i = 1; i < sortedAdmins.length; i++) {
+          const dup = sortedAdmins[i];
+          console.log(`   Deleting duplicate admin: ${dup.id} (${dup.email})`);
+          const deleteStmt = database.prepare('DELETE FROM users WHERE id = ?');
+          const deleteResult = deleteStmt.run(dup.id);
+          await (deleteResult instanceof Promise ? deleteResult : Promise.resolve(deleteResult));
+        }
+        console.log('✅ Duplicate admin accounts removed.');
+      }
+
       // Check if role needs update (e.g. migration from 'admin' to 'Administrator')
-      if (adminResult.role !== 'Administrator') {
+      if (primaryAdmin.role !== 'Administrator') {
         console.log('🔄 Updating admin role to Administrator and resetting password');
         const passwordHash = await hashPassword(ADMIN_PASSWORD);
         const updateStmt = database.prepare('UPDATE users SET role = ?, password_hash = ? WHERE id = ?');
-        const updateResult = updateStmt.run('Administrator', passwordHash, adminResult.id);
+        const updateResult = updateStmt.run('Administrator', passwordHash, primaryAdmin.id);
         await (updateResult instanceof Promise ? updateResult : Promise.resolve(updateResult));
         console.log('✅ Admin role updated to Administrator and password reset');
       } else {
-        console.log('✅ Admin account already exists');
+        console.log('✅ Admin account already exists and is valid');
       }
       return;
     }

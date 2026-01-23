@@ -212,6 +212,11 @@ class JsonDatabase {
           const passwordHash = params[2];
           const role = params[3] || 'user';
 
+          // Check for duplicate email (case-insensitive)
+          if (db.users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
+            throw new Error(`UNIQUE constraint failed: users.email`);
+          }
+
           const user: User = {
             id,
             email,
@@ -516,6 +521,12 @@ class JsonDatabase {
       },
       all: (...params: any[]) => {
         const db = readDb();
+
+        // Handle SELECT * FROM users WHERE lower(email) = ? (for duplicate detection)
+        if (sql.includes('SELECT') && sql.includes('users') && (sql.includes('lower(email) = ?') || sql.includes('LOWER(email) = ?'))) {
+          const email = params[0];
+          return db.users.filter(u => u.email.toLowerCase() === email.toLowerCase());
+        }
 
         // Handle SELECT id, email, role, created_at, mfa_enabled FROM users
         if (sql.includes('SELECT id, email, role, created_at') && sql.includes('FROM users')) {
