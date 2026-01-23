@@ -7,7 +7,7 @@
 import { Router, type Request, type Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { ensureDb } from '../db.js';
-import { hashPassword, comparePassword, generateToken, authenticate } from '../utils/auth.js';
+import { hashPassword, comparePassword, generateToken, authenticate, generateMfaSecret, generateQrCode, verifyMfaToken } from '../utils/auth.js';
 
 const router = Router();
 
@@ -18,7 +18,7 @@ const router = Router();
 router.post('/register', async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
-    
+
     // Validate input
     if (!email || !password) {
       res.status(400).json({
@@ -27,7 +27,7 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
       });
       return;
     }
-    
+
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -37,7 +37,7 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
       });
       return;
     }
-    
+
     // Validate password length
     if (password.length < 6) {
       res.status(400).json({
@@ -46,18 +46,18 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
       });
       return;
     }
-    
+
     const database = await ensureDb();
-    
+
     // Check if user already exists
     const existingUser = database.prepare(`
       SELECT * FROM users WHERE email = ?
     `).get(email);
-    
-    const userResult = await (existingUser instanceof Promise 
-      ? existingUser 
+
+    const userResult = await (existingUser instanceof Promise
+      ? existingUser
       : Promise.resolve(existingUser));
-    
+
     if (userResult) {
       res.status(409).json({
         success: false,
@@ -65,27 +65,27 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
       });
       return;
     }
-    
+
     // Hash password
     const passwordHash = await hashPassword(password);
-    
+
     // Create user
     const userId = uuidv4();
     const stmt = database.prepare(`
       INSERT INTO users (id, email, password_hash, role)
       VALUES (?, ?, ?, 'user')
     `);
-    
+
     const result = stmt.run(userId, email.toLowerCase(), passwordHash);
     await (result instanceof Promise ? result : Promise.resolve(result));
-    
+
     // Generate token
     const token = generateToken({
       id: userId,
       email: email.toLowerCase(),
       role: 'user',
     });
-    
+
     res.status(201).json({
       success: true,
       token,
@@ -110,8 +110,9 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
  */
 router.post('/login', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password } = req.body;
-    
+    const { email, password, mfa_token } = req.body;
+    console.log('Login attempt:', { email, passwordProvided: !!password });
+
     // Validate input
     if (!email || !password) {
       res.status(400).json({
@@ -120,34 +121,38 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
       });
       return;
     }
-    
+
     const database = await ensureDb();
-    
+
     // Find user by email
     const userResult = database.prepare(`
       SELECT * FROM users WHERE email = ?
     `).get(email.toLowerCase());
-    
-    const user = await (userResult instanceof Promise 
-      ? userResult 
+
+    const user = await (userResult instanceof Promise
+      ? userResult
       : Promise.resolve(userResult)) as {
-      id: string;
-      email: string;
-      password_hash: string;
-      role: string;
-    } | undefined;
-    
+        id: string;
+        email: string;
+        password_hash: string;
+        role: string;
+        mfa_enabled: boolean;
+        mfa_secret: string;
+      } | undefined;
+
     if (!user) {
+      console.log('User not found:', email);
       res.status(401).json({
         success: false,
         error: 'Invalid email or password',
       });
       return;
     }
-    
+
     // Verify password
     const isValidPassword = await comparePassword(password, user.password_hash);
-    
+    console.log('Password valid:', isValidPassword);
+
     if (!isValidPassword) {
       res.status(401).json({
         success: false,
@@ -155,14 +160,35 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
       });
       return;
     }
-    
+
+    // Check MFA
+    if (user.mfa_enabled) {
+      if (!mfa_token) {
+        res.status(403).json({
+          success: false,
+          error: 'MFA code required',
+          mfa_required: true
+        });
+        return;
+      }
+
+      const isValidMfa = await verifyMfaToken(mfa_token, user.mfa_secret);
+      if (!isValidMfa) {
+        res.status(401).json({
+          success: false,
+          error: 'Invalid MFA code',
+        });
+        return;
+      }
+    }
+
     // Generate token
     const token = generateToken({
       id: user.id,
       email: user.email,
       role: user.role as 'Administrator' | 'Professional' | 'user',
     });
-    
+
     res.json({
       success: true,
       token,
@@ -170,6 +196,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
         id: user.id,
         email: user.email,
         role: user.role,
+        mfa_enabled: !!user.mfa_enabled
       },
     });
   } catch (error) {
@@ -189,21 +216,22 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
 router.get('/me', authenticate, async (req: Request, res: Response): Promise<void> => {
   try {
     const user = (req as any).user;
-    
+
     const database = await ensureDb();
     const userResult = database.prepare(`
-      SELECT id, email, role, created_at FROM users WHERE id = ?
+      SELECT id, email, role, created_at, mfa_enabled FROM users WHERE id = ?
     `).get(user.id);
-    
-    const dbUser = await (userResult instanceof Promise 
-      ? userResult 
+
+    const dbUser = await (userResult instanceof Promise
+      ? userResult
       : Promise.resolve(userResult)) as {
-      id: string;
-      email: string;
-      role: string;
-      created_at: string;
-    } | undefined;
-    
+        id: string;
+        email: string;
+        role: string;
+        created_at: string;
+        mfa_enabled: boolean;
+      } | undefined;
+
     if (!dbUser) {
       res.status(404).json({
         success: false,
@@ -211,7 +239,7 @@ router.get('/me', authenticate, async (req: Request, res: Response): Promise<voi
       });
       return;
     }
-    
+
     res.json({
       success: true,
       user: {
@@ -219,6 +247,7 @@ router.get('/me', authenticate, async (req: Request, res: Response): Promise<voi
         email: dbUser.email,
         role: dbUser.role,
         created_at: dbUser.created_at,
+        mfa_enabled: !!dbUser.mfa_enabled
       },
     });
   } catch (error) {
@@ -226,6 +255,77 @@ router.get('/me', authenticate, async (req: Request, res: Response): Promise<voi
     res.status(500).json({
       success: false,
       error: 'Failed to fetch user',
+    });
+  }
+});
+
+/**
+ * Setup MFA (Generate Secret and QR)
+ * POST /api/auth/mfa/setup
+ */
+router.post('/mfa/setup', authenticate, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = (req as any).user;
+    const { secret, otpauth } = generateMfaSecret(user.email);
+    const qrCodeUrl = await generateQrCode(otpauth);
+
+    res.json({
+      success: true,
+      secret,
+      qrCodeUrl
+    });
+  } catch (error) {
+    console.error('Error setting up MFA:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to setup MFA',
+    });
+  }
+});
+
+/**
+ * Enable MFA (Verify and Save)
+ * POST /api/auth/mfa/enable
+ */
+router.post('/mfa/enable', authenticate, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = (req as any).user;
+    const { token, secret } = req.body;
+
+    if (!token || !secret) {
+      res.status(400).json({
+        success: false,
+        error: 'Token and secret are required',
+      });
+      return;
+    }
+
+    const isValid = await verifyMfaToken(token, secret);
+    if (!isValid) {
+      res.status(400).json({
+        success: false,
+        error: 'Invalid MFA token',
+      });
+      return;
+    }
+
+    const database = await ensureDb();
+    const stmt = database.prepare(`
+      UPDATE users SET mfa_secret = ?, mfa_enabled = 1 WHERE id = ?
+    `);
+
+    const result = stmt.run(secret, user.id);
+    await (result instanceof Promise ? result : Promise.resolve(result));
+
+    res.json({
+      success: true,
+      message: 'MFA enabled successfully'
+    });
+  } catch (error) {
+    console.error('Error enabling MFA:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to enable MFA',
     });
   }
 });
