@@ -15,7 +15,7 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 export interface UserPayload {
   id: string;
   email: string;
-  role: 'admin' | 'user';
+  role: 'Administrator' | 'Professional' | 'user';
 }
 
 /**
@@ -59,7 +59,7 @@ export function verifyToken(token: string): UserPayload | null {
 export function authenticate(req: Request, res: Response, next: NextFunction): void {
   try {
     const authHeader = req.headers.authorization;
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       res.status(401).json({
         success: false,
@@ -67,10 +67,10 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
       });
       return;
     }
-    
+
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
     const payload = verifyToken(token);
-    
+
     if (!payload) {
       res.status(401).json({
         success: false,
@@ -78,7 +78,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
       });
       return;
     }
-    
+
     // Attach user info to request object
     (req as any).user = payload;
     next();
@@ -96,14 +96,14 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
  */
 export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
   const user = (req as any).user as UserPayload | undefined;
-  
-  if (!user || user.role !== 'admin') {
+
+  if (!user || user.role !== 'Administrator') {
     res.status(403).json({
       success: false,
       error: 'Admin access required',
     });
     return;
   }
-  
+
   next();
 }

@@ -39,12 +39,12 @@ export async function initDb(): Promise<void> {
 
   initPromise = (async () => {
     const cwd = process.cwd();
-    
+
     console.log('🔍 Database initialization starting...', {
       cwd,
       DB_PATH: process.env.DB_PATH,
     });
-    
+
     // Priority 1: Try better-sqlite3 (works everywhere, preferred for local dev)
     try {
       const Database = (await import('better-sqlite3')).default;
@@ -91,13 +91,13 @@ export async function initDb(): Promise<void> {
 
     // If all databases failed, throw error
     const dbPath = process.env.DB_PATH || 'webhook-data.json';
-    
+
     const errorMsg = `Failed to initialize any database. ` +
       `SQLite (better-sqlite3) is not available, ` +
       `and JSON database initialization failed. ` +
       `Database path: ${dbPath} (cwd: ${cwd}). ` +
       `Please check file system permissions.`;
-    
+
     console.error('❌', errorMsg);
     throw new Error(errorMsg);
   })();
@@ -124,6 +124,7 @@ async function createSchema(database: DatabaseAdapter): Promise<void> {
     CREATE TABLE IF NOT EXISTS webhooks (
       token TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
+      name TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       expires_at DATETIME NOT NULL,
       is_active BOOLEAN DEFAULT 1,
@@ -156,6 +157,19 @@ async function createSchema(database: DatabaseAdapter): Promise<void> {
   if (result instanceof Promise) {
     await result;
   }
+
+  // Migration: Add name column to webhooks if it doesn't exist
+  try {
+    const migration = database.prepare('ALTER TABLE webhooks ADD COLUMN name TEXT');
+    const migrationResult = migration.run();
+    if (migrationResult instanceof Promise) {
+      await migrationResult;
+    }
+  } catch (error) {
+    // Ignore error if column already exists
+    // SQLite throws "duplicate column name: name"
+  }
+
   console.log('✅ Database schema initialized');
 }
 

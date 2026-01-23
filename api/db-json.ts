@@ -8,6 +8,7 @@ import path from 'path';
 interface Webhook {
   token: string;
   user_id: string;
+  name?: string;
   created_at: string;
   expires_at: string;
   is_active: boolean;
@@ -29,7 +30,7 @@ interface User {
   id: string;
   email: string;
   password_hash: string;
-  role: 'admin' | 'user';
+  role: 'Administrator' | 'Professional' | 'user';
   created_at: string;
 }
 
@@ -156,6 +157,20 @@ function readDb(): Database {
     if (!db.users) {
       db.users = [];
       writeDb(db);
+    } else {
+      // Migrate 'admin' role to 'Administrator'
+      let migrated = false;
+      db.users = db.users.map((u: any) => {
+        if (u.role === 'admin') {
+          migrated = true;
+          return { ...u, role: 'Administrator' };
+        }
+        return u;
+      });
+      if (migrated) {
+        writeDb(db);
+        console.log('✅ Migrated "admin" roles to "Administrator"');
+      }
     }
 
     return db;
@@ -181,7 +196,8 @@ function writeDb(data: Database): void {
 
 // Database interface matching better-sqlite3 API
 class JsonDatabase {
-  prepare(sql: string) {
+  prepare(rawSql: string) {
+    const sql = rawSql.replace(/\s+/g, ' ').trim();
     return {
       run: (...params: any[]) => {
         const db = readDb();
@@ -198,7 +214,7 @@ class JsonDatabase {
             id,
             email,
             password_hash: passwordHash,
-            role: role as 'admin' | 'user',
+            role: role as 'Administrator' | 'Professional' | 'user',
             created_at: new Date().toISOString(),
           };
 
@@ -243,13 +259,26 @@ class JsonDatabase {
         // Handle INSERT INTO webhooks
         if (sql.includes('INSERT INTO webhooks')) {
           const token = params[0];
-          const userId = params[1]; // user_id is now the second parameter
-          const expiresAt = params[2]; // expires_at is now the third parameter
-          const isActive = params[3] !== undefined ? params[3] : true;
+          const userId = params[1];
+          let name: string | undefined;
+          let expiresAt: string;
+          let isActive = true;
+
+          // Check if we have name parameter (new format has 4 params: token, user_id, name, expires_at)
+          if (params.length >= 4) {
+            name = params[2];
+            expiresAt = params[3];
+            isActive = params[4] !== undefined ? params[4] : true;
+          } else {
+            // Old format: token, user_id, expires_at
+            expiresAt = params[2];
+            isActive = params[3] !== undefined ? params[3] : true;
+          }
 
           const webhook: Webhook = {
             token,
             user_id: userId,
+            name,
             created_at: new Date().toISOString(),
             expires_at: expiresAt,
             is_active: isActive,
@@ -493,6 +522,7 @@ class JsonDatabase {
             .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
             .map(w => ({
               token: w.token,
+              name: w.name,
               created_at: w.created_at,
               expires_at: w.expires_at,
               is_active: w.is_active ? 1 : 0,

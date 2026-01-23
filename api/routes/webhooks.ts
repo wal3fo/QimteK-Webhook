@@ -33,7 +33,7 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
   try {
     const user = (req as any).user;
     // Default expiration: 60 minutes
-    const { expiresIn = 60 } = req.body;
+    const { expiresIn = 60, name } = req.body;
 
     const database = await ensureDb();
 
@@ -55,7 +55,9 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
     const currentCount = (countResult as any).count;
     console.log(`Current count: ${currentCount}`);
 
-    const limit = user.role === 'admin' ? WEBHOOK_LIMITS.ADMIN : WEBHOOK_LIMITS.USER;
+    let limit = WEBHOOK_LIMITS.USER;
+    if (user.role === 'Administrator') limit = WEBHOOK_LIMITS.ADMIN;
+    else if (user.role === 'Professional') limit = WEBHOOK_LIMITS.PROFESSIONAL;
 
     if (currentCount >= limit) {
       res.status(403).json({
@@ -81,16 +83,17 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
 
     // Store webhook in database (linked to user)
     const stmt = database.prepare(`
-      INSERT INTO webhooks (token, user_id, expires_at, is_active)
-      VALUES (?, ?, ?, 1)
+      INSERT INTO webhooks (token, user_id, name, expires_at, is_active)
+      VALUES (?, ?, ?, ?, 1)
     `);
 
-    const result = stmt.run(token, user.id, expiresAt.toISOString());
+    const result = stmt.run(token, user.id, name || null, expiresAt.toISOString());
     await (result instanceof Promise ? result : Promise.resolve(result));
 
     res.status(201).json({
       success: true,
       token,
+      name,
       url: webhookUrl,
       expiresAt: expiresAt.toISOString(),
     });
@@ -118,7 +121,7 @@ router.get('/', authenticate, async (req: Request, res: Response): Promise<void>
 
     // Get all webhooks for this user
     const webhooksResult = database.prepare(`
-      SELECT token, created_at, expires_at, is_active
+      SELECT token, name, created_at, expires_at, is_active
       FROM webhooks 
       WHERE user_id = ? AND is_active = 1 AND expires_at > datetime('now')
       ORDER BY created_at DESC
@@ -128,6 +131,7 @@ router.get('/', authenticate, async (req: Request, res: Response): Promise<void>
       ? webhooksResult
       : Promise.resolve(webhooksResult)) as Array<{
         token: string;
+        name?: string;
         created_at: string;
         expires_at: string;
         is_active: number;
@@ -140,6 +144,7 @@ router.get('/', authenticate, async (req: Request, res: Response): Promise<void>
 
     const webhooksWithUrls = webhooks.map(wh => ({
       token: wh.token,
+      name: wh.name,
       url: `${baseUrl}/api/webhook/${wh.token}`,
       createdAt: wh.created_at,
       expiresAt: wh.expires_at,

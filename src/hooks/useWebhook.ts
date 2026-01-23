@@ -16,6 +16,7 @@ export interface WebhookRequest {
 
 export interface Webhook {
   token: string;
+  name?: string;
   url: string;
   expiresAt: string;
   created_at?: string;
@@ -26,11 +27,11 @@ export interface Webhook {
 const getApiUrl = () => {
   const envUrl = import.meta.env.VITE_API_URL;
   if (!envUrl) return '/api';
-  
+
   if (envUrl.includes('localhost') && import.meta.env.PROD) {
     return '/api';
   }
-  
+
   return envUrl;
 };
 
@@ -67,7 +68,7 @@ export function useWebhook() {
   // Load all webhooks for the user
   const fetchWebhooks = useCallback(async () => {
     if (!isAuthenticated || !authToken) return;
-    
+
     try {
       const response = await fetch(`${API_URL}/webhooks`, {
         headers: getAuthHeaders(),
@@ -78,7 +79,7 @@ export function useWebhook() {
         if (data.success) {
           const fetchedWebhooks = data.webhooks || [];
           setWebhooks(fetchedWebhooks);
-          
+
           // Logic to select webhook: Stored > First Available
           if (!selectedWebhook && fetchedWebhooks.length > 0) {
             const storedToken = localStorage.getItem(WEBHOOK_STORAGE_KEY);
@@ -115,7 +116,7 @@ export function useWebhook() {
   // Fetch requests for the selected webhook
   const fetchRequests = useCallback(async (webhookToken: string) => {
     if (!authToken) return;
-    
+
     try {
       const response = await fetch(`${API_URL}/webhooks/${webhookToken}/requests`, {
         headers: getAuthHeaders(),
@@ -142,7 +143,7 @@ export function useWebhook() {
   }, [selectedWebhook, isAuthenticated, fetchRequests]);
 
   // Generate new webhook
-  const generateWebhook = useCallback(async (expiresIn: number = 60) => {
+  const generateWebhook = useCallback(async (expiresIn: number = 60, name?: string) => {
     if (!authToken) {
       setError('Please login to generate webhooks');
       return;
@@ -154,7 +155,7 @@ export function useWebhook() {
       const response = await fetch(`${API_URL}/webhooks/generate`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ expiresIn }),
+        body: JSON.stringify({ expiresIn, name }),
       });
 
       if (!response.ok) {
@@ -166,14 +167,15 @@ export function useWebhook() {
       if (data.success) {
         const newWebhook = {
           token: data.token,
+          name: data.name,
           url: data.url,
           expiresAt: data.expiresAt,
         };
-        
+
         // Add to webhooks list and select it
         setWebhooks(prev => [newWebhook, ...prev]);
         setSelectedWebhook(newWebhook);
-        
+
         // Load initial requests
         await fetchRequests(data.token);
       }
@@ -186,7 +188,7 @@ export function useWebhook() {
 
   const deleteWebhook = useCallback(async (webhookToken: string) => {
     if (!authToken) return;
-    
+
     try {
       const response = await fetch(`${API_URL}/webhooks/${webhookToken}`, {
         method: 'DELETE',
@@ -196,7 +198,7 @@ export function useWebhook() {
       if (response.ok) {
         // Remove from list
         setWebhooks(prev => prev.filter(w => w.token !== webhookToken));
-        
+
         // If deleted webhook was selected, select another or clear
         if (selectedWebhook?.token === webhookToken) {
           const remaining = webhooks.filter(w => w.token !== webhookToken);
@@ -215,9 +217,9 @@ export function useWebhook() {
       setIsConnected(false);
       return;
     }
-    
+
     setIsConnected(true);
-    
+
     const pollInterval = setInterval(() => {
       fetchRequests(selectedWebhook.token);
     }, 5000); // Poll every 5 seconds

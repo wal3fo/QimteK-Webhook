@@ -8,6 +8,8 @@ import { format } from 'date-fns';
 import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
 import ConfirmModal from '@/components/ConfirmModal';
+import GenerateWebhookModal from '@/components/GenerateWebhookModal';
+import WebhookSelector from '@/components/WebhookSelector';
 
 // Mobile Request Card Component
 const RequestCard = memo(({ request, onNavigate }: { request: any; onNavigate: (id: string) => void }) => (
@@ -101,6 +103,8 @@ export default function Home() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [webhookName, setWebhookName] = useState('');
 
   // Detect mobile device
   useEffect(() => {
@@ -113,9 +117,11 @@ export default function Home() {
   }, []);
 
   // Memoized handlers
-  const handleGenerate = useCallback(async () => {
-    await generateWebhook(60);
-  }, [generateWebhook]);
+  const handleGenerate = useCallback(async (arg?: any) => {
+    const nameToUse = typeof arg === 'string' ? arg : webhookName;
+    await generateWebhook(60, nameToUse);
+    setWebhookName('');
+  }, [generateWebhook, webhookName]);
 
   const handleCopy = useCallback(async () => {
     if (!selectedWebhook) return;
@@ -227,33 +233,6 @@ export default function Home() {
                   <span className="text-sm font-medium">Login</span>
                 </Link>
               )}
-              <a
-                href="https://www.paypal.com/paypalme/drgineer/5?currencyCode=USD"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group relative flex items-center gap-2.5 px-4 sm:px-5 py-2.5 sm:py-2.5 bg-gradient-to-r from-[#0070ba] via-[#009cde] to-[#0070ba] text-white rounded-xl font-semibold transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg hover:shadow-2xl hover:shadow-[#0070ba]/50 overflow-hidden text-sm sm:text-base touch-manipulation min-h-[44px]"
-                title="Support this project with a donation"
-              >
-                {/* Animated gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-
-                {/* PayPal Icon */}
-                <svg
-                  className="w-5 h-5 sm:w-6 sm:h-6 relative z-10 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 flex-shrink-0"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.203zm14.146-14.42a.805.805 0 0 0-.796-.68h-3.22c-.524 0-.968.382-1.05.9l-1.12 7.203c-.082.519.109.74.633.74h1.78c.524 0 .968-.382 1.05-.9l1.12-7.203c.082-.519-.109-.74-.633-.74h-1.78z" />
-                </svg>
-
-                {/* Text with glow effect */}
-                <span className="relative z-10 tracking-wide group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all duration-300">
-                  Donate
-                </span>
-
-                {/* Sparkle effect on hover */}
-                <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-white rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
-              </a>
             </div>
           </div>
           <h1 className="sr-only">QimteK Hooks - Webhook Inspection Tool</h1>
@@ -330,6 +309,17 @@ export default function Home() {
               <p className="text-sm sm:text-base text-qimtek-text-secondary mb-6">
                 Create a temporary webhook endpoint to receive and inspect HTTP requests
               </p>
+
+              <div className="max-w-md mx-auto mb-4">
+                <input
+                  type="text"
+                  value={webhookName}
+                  onChange={(e) => setWebhookName(e.target.value)}
+                  placeholder="Webhook Name (Optional)"
+                  className="w-full px-4 py-3 bg-qimtek-bg-secondary border border-qimtek-border rounded-xl text-qimtek-text focus:outline-none focus:ring-2 focus:ring-[#82c91e]/50 text-center placeholder:text-qimtek-text-tertiary"
+                />
+              </div>
+
               <button
                 onClick={handleGenerate}
                 disabled={loading}
@@ -353,23 +343,11 @@ export default function Home() {
             {/* Webhook Selector */}
             {webhooks.length > 1 && (
               <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-4 border border-qimtek-border">
-                <label className="block text-sm font-medium text-qimtek-text-secondary mb-2">
-                  Select Webhook ({webhooks.length} total)
-                </label>
-                <select
-                  value={selectedWebhook?.token || ''}
-                  onChange={(e) => {
-                    const webhook = webhooks.find(w => w.token === e.target.value);
-                    if (webhook) setSelectedWebhook(webhook);
-                  }}
-                  className="w-full px-4 py-2 bg-qimtek-bg-secondary border border-qimtek-border rounded-lg text-qimtek-text focus:outline-none focus:ring-2 focus:ring-[#82c91e]/50"
-                >
-                  {webhooks.map((wh) => (
-                    <option key={wh.token} value={wh.token}>
-                      {wh.url} - Expires: {wh.expiresAt ? format(new Date(wh.expiresAt), 'PPp') : 'N/A'}
-                    </option>
-                  ))}
-                </select>
+                <WebhookSelector
+                  webhooks={webhooks}
+                  selectedWebhook={selectedWebhook}
+                  onSelect={setSelectedWebhook}
+                />
               </div>
             )}
 
@@ -379,7 +357,16 @@ export default function Home() {
                 <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-4 mb-4">
                   <div className="flex-1 w-full sm:w-auto min-w-0">
                     <h2 className="text-base sm:text-lg font-semibold text-qimtek-text mb-2">
-                      {webhooks.length > 1 ? 'Selected Webhook URL' : 'Your Webhook URL'}
+                      {selectedWebhook.name ? (
+                        <span className="flex items-center gap-2">
+                          {selectedWebhook.name}
+                          <span className="text-sm font-normal text-qimtek-text-secondary">
+                            ({webhooks.length > 1 ? 'Selected' : 'Your'} Webhook)
+                          </span>
+                        </span>
+                      ) : (
+                        webhooks.length > 1 ? 'Selected Webhook URL' : 'Your Webhook URL'
+                      )}
                     </h2>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <code className="flex-1 px-3 sm:px-4 py-2.5 sm:py-2.5 bg-qimtek-bg-secondary rounded-lg text-xs sm:text-sm break-all text-qimtek-text border border-qimtek-border transition-all font-mono overflow-x-auto min-w-0">
@@ -427,7 +414,7 @@ export default function Home() {
                         Expires: {selectedWebhook.expiresAt ? format(new Date(selectedWebhook.expiresAt), 'PPp') : 'N/A'}
                       </p>
                       <button
-                        onClick={handleGenerate}
+                        onClick={() => setShowGenerateModal(true)}
                         disabled={loading}
                         className="text-xs sm:text-sm text-[#82c91e] hover:text-[#6ba017] font-medium transition-colors"
                       >
@@ -561,6 +548,13 @@ export default function Home() {
         )}
       </div>
       <Footer />
+
+      <GenerateWebhookModal
+        isOpen={showGenerateModal}
+        onClose={() => setShowGenerateModal(false)}
+        onGenerate={handleGenerate}
+        loading={loading}
+      />
 
       {/* Delete Confirmation Modal */}
       <ConfirmModal

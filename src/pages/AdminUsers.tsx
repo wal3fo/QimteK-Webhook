@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Trash2, Shield, User, RefreshCw, AlertTriangle, UserPlus } from 'lucide-react';
+import { ArrowLeft, Trash2, Shield, User, RefreshCw, AlertTriangle, UserPlus, Briefcase } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -9,13 +9,14 @@ import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
 import ConfirmModal from '@/components/ConfirmModal';
 import CreateUserModal from '@/components/CreateUserModal';
+import EditRoleModal from '@/components/EditRoleModal';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 interface UserData {
   id: string;
   email: string;
-  role: 'admin' | 'user';
+  role: 'Administrator' | 'Professional' | 'user';
   created_at: string;
 }
 
@@ -29,7 +30,9 @@ export default function AdminUsers() {
   // Modal state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [roleModalOpen, setRoleModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<UserData | null>(null);
+  const [userToEditRole, setUserToEditRole] = useState<UserData | null>(null);
 
   useEffect(() => {
     if (authLoading) return; // Wait for auth check to complete
@@ -114,7 +117,7 @@ export default function AdminUsers() {
     }
   };
 
-  const handleCreateUser = async (userData: { email: string; password: string; role: 'user' | 'admin' }) => {
+  const handleCreateUser = async (userData: { email: string; password: string; role: 'user' | 'Administrator' | 'Professional' }) => {
     if (!token) return;
 
     try {
@@ -161,17 +164,16 @@ export default function AdminUsers() {
     }
   };
 
-  const handleToggleRole = async (targetUser: UserData) => {
-    if (!token) return;
+  const openRoleModal = (user: UserData) => {
+    setUserToEditRole(user);
+    setRoleModalOpen(true);
+  };
 
-    const newRole = targetUser.role === 'admin' ? 'user' : 'admin';
-
-    if (!confirm(`Are you sure you want to change ${targetUser.email}'s role to ${newRole}?`)) {
-      return;
-    }
+  const handleRoleUpdate = async (newRole: 'user' | 'Administrator' | 'Professional') => {
+    if (!userToEditRole || !token) return;
 
     try {
-      const response = await fetch(`${API_URL}/users/${targetUser.id}/role`, {
+      const response = await fetch(`${API_URL}/users/${userToEditRole.id}/role`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -183,13 +185,15 @@ export default function AdminUsers() {
       const data = await response.json();
 
       if (data.success) {
-        setUsers(users.map(u => u.id === targetUser.id ? { ...u, role: newRole } : u));
+        setUsers(users.map(u => u.id === userToEditRole.id ? { ...u, role: newRole } : u));
+        // Modal closing is handled by the component on success, but we can update state here if needed
+        // The modal calls this function and waits for it.
       } else {
-        alert(data.error || 'Failed to update role');
+        throw new Error(data.error || 'Failed to update role');
       }
     } catch (err) {
       console.error('Error updating role:', err);
-      alert('Failed to update role');
+      throw err;
     }
   };
 
@@ -268,17 +272,21 @@ export default function AdminUsers() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <button
-                        onClick={() => userData.id !== user?.id && handleToggleRole(userData)}
+                        onClick={() => userData.id !== user?.id && openRoleModal(userData)}
                         disabled={userData.id === user?.id}
                         className={cn(
                           "px-2 py-1 rounded-md text-xs font-medium border flex items-center gap-1.5 transition-all",
-                          userData.role === 'admin'
+                          userData.role === 'Administrator'
                             ? "bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20"
-                            : "bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20",
+                            : userData.role === 'Professional'
+                              ? "bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20"
+                              : "bg-[#82c91e]/10 text-[#82c91e] border-[#82c91e]/20 hover:bg-[#82c91e]/20",
                           userData.id === user?.id && "opacity-50 cursor-not-allowed"
                         )}
                       >
-                        <Shield className="w-3 h-3" />
+                        {userData.role === 'Administrator' ? <Shield className="w-3 h-3" /> :
+                          userData.role === 'Professional' ? <Briefcase className="w-3 h-3" /> :
+                            <User className="w-3 h-3" />}
                         {userData.role.toUpperCase()}
                       </button>
                     </td>
@@ -331,6 +339,17 @@ export default function AdminUsers() {
         isOpen={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
         onConfirm={handleCreateUser}
+      />
+
+      <EditRoleModal
+        isOpen={roleModalOpen}
+        onClose={() => {
+          setRoleModalOpen(false);
+          setUserToEditRole(null);
+        }}
+        onConfirm={handleRoleUpdate}
+        currentRole={userToEditRole?.role || 'user'}
+        userEmail={userToEditRole?.email || ''}
       />
     </div>
   );

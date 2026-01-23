@@ -5,6 +5,7 @@
  */
 
 export const WEBHOOK_LIMITS = {
-  USER: 1,      // Ordinary users and QimteK customers
-  ADMIN: 5,     // Administrators
+  USER: 1,          // Ordinary users
+  PROFESSIONAL: 10, // Professional users
+  ADMIN: 100,       // Administrators
 };

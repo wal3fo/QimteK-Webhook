@@ -1,47 +1,52 @@
 <!doctype html>
 <html lang="en" data-bs-theme="dark">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
-    
-    <!-- Primary Meta Tags -->
-    <title>QimteK Hooks - Webhook Inspection Tool | Capture & Inspect HTTP Requests</title>
-    <meta name="title" content="QimteK Hooks - Webhook Inspection Tool | Capture & Inspect HTTP Requests" />
-    <meta name="description" content="Generate temporary webhook URLs to capture and inspect HTTP requests in real-time. Free webhook testing tool for developers. Debug APIs, test integrations, and monitor webhook payloads. QimteK Hooks - The best webhook inspector alternative to webhook.site." />
-    <meta name="keywords" content="webhook, webhook testing, webhook inspector, HTTP request inspector, API testing, webhook debugger, request capture, webhook tool, API debugging, webhook.site alternative, QimteK, QimteK Inc, webhook tester, request logger, API monitor, webhook receiver, HTTP capture, webhook endpoint, temporary webhook, free webhook tool" />
-    <meta name="author" content="QimteK Inc" />
-    <meta name="robots" content="index, follow" />
-    <meta name="language" content="English" />
-    <meta name="revisit-after" content="7 days" />
-    
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://hooks.qimtek.ma/" />
-    <meta property="og:title" content="QimteK Hooks - Webhook Inspection Tool | Capture & Inspect HTTP Requests" />
-    <meta property="og:description" content="Generate temporary webhook URLs to capture and inspect HTTP requests in real-time. Free webhook testing tool for developers." />
-    <meta property="og:image" content="/QimteKw.png" />
-    <meta property="og:site_name" content="QimteK Hooks" />
-    
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://hooks.qimtek.ma/" />
-    <meta property="twitter:title" content="QimteK Hooks - Webhook Inspection Tool | Capture & Inspect HTTP Requests" />
-    <meta property="twitter:description" content="Generate temporary webhook URLs to capture and inspect HTTP requests in real-time. Free webhook testing tool for developers." />
-    <meta property="twitter:image" content="/QimteKw.png" />
-    
-    <!-- Additional SEO -->
-    <meta name="theme-color" content="#1a1a1a" />
-    <link rel="canonical" href="https://hooks.qimtek.ma/" />
-    <meta name="geo.region" content="MA" />
-    <meta name="geo.placename" content="Morocco" />
-    <meta name="application-name" content="QimteK Hooks" />
-    <meta name="apple-mobile-web-app-title" content="QimteK Hooks" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    
-    <!-- Structured Data (JSON-LD) -->
-    <script type="application/ld+json">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="/favicon.ico" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+
+  <!-- Primary Meta Tags -->
+  <title>QimteK Hooks - Webhook Inspection Tool | Capture & Inspect HTTP Requests</title>
+  <meta name="title" content="QimteK Hooks - Webhook Inspection Tool | Capture & Inspect HTTP Requests" />
+  <meta name="description"
+    content="Generate temporary webhook URLs to capture and inspect HTTP requests in real-time. Free webhook testing tool for developers. Debug APIs, test integrations, and monitor webhook payloads. QimteK Hooks - The best webhook inspector alternative to webhook.site." />
+  <meta name="keywords"
+    content="webhook, webhook testing, webhook inspector, HTTP request inspector, API testing, webhook debugger, request capture, webhook tool, API debugging, webhook.site alternative, QimteK, QimteK Inc, webhook tester, request logger, API monitor, webhook receiver, HTTP capture, webhook endpoint, temporary webhook, free webhook tool" />
+  <meta name="author" content="QimteK Inc" />
+  <meta name="robots" content="index, follow" />
+  <meta name="language" content="English" />
+  <meta name="revisit-after" content="7 days" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://hooks.qimtek.ma/" />
+  <meta property="og:title" content="QimteK Hooks - Webhook Inspection Tool | Capture & Inspect HTTP Requests" />
+  <meta property="og:description"
+    content="Generate temporary webhook URLs to capture and inspect HTTP requests in real-time. Free webhook testing tool for developers." />
+  <meta property="og:image" content="/QimteKw.png" />
+  <meta property="og:site_name" content="QimteK Hooks" />
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:url" content="https://hooks.qimtek.ma/" />
+  <meta property="twitter:title" content="QimteK Hooks - Webhook Inspection Tool | Capture & Inspect HTTP Requests" />
+  <meta property="twitter:description"
+    content="Generate temporary webhook URLs to capture and inspect HTTP requests in real-time. Free webhook testing tool for developers." />
+  <meta property="twitter:image" content="/QimteKw.png" />
+
+  <!-- Additional SEO -->
+  <meta name="theme-color" content="#1a1a1a" />
+  <link rel="canonical" href="https://hooks.qimtek.ma/" />
+  <meta name="geo.region" content="MA" />
+  <meta name="geo.placename" content="Morocco" />
+  <meta name="application-name" content="QimteK Hooks" />
+  <meta name="apple-mobile-web-app-title" content="QimteK Hooks" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+
+  <!-- Structured Data (JSON-LD) -->
+  <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "WebApplication",
@@ -72,9 +77,9 @@
       "screenshot": "/QimteKw.png"
     }
     </script>
-    
-    <!-- Organization Structured Data -->
-    <script type="application/ld+json">
+
+  <!-- Organization Structured Data -->
+  <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "Organization",
@@ -86,20 +91,22 @@
       ]
     }
     </script>
-    <script type="module">
-      if (import.meta.hot?.on) {
-        import.meta.hot.on('vite:error', (error) => {
-          if (error.err) {
-            console.error(
-              [error.err.message, error.err.frame].filter(Boolean).join('\n'),
-            )
-          }
-        })
-      }
-    </script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+  <script type="module">
+    if (import.meta.hot?.on) {
+      import.meta.hot.on('vite:error', (error) => {
+        if (error.err) {
+          console.error(
+            [error.err.message, error.err.frame].filter(Boolean).join('\n'),
+          )
+        }
+      })
+    }
+  </script>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>

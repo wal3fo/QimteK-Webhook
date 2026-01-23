@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 export interface User {
   id: string;
   email: string;
-  role: 'admin' | 'user';
+  role: 'Administrator' | 'Professional' | 'user';
   created_at?: string;
 }
 
@@ -49,7 +49,7 @@ export function useAuth() {
           return;
         }
       }
-      
+
       // If fetch fails, token is invalid
       throw new Error('Invalid token');
     } catch (error) {
@@ -128,6 +128,6 @@ export function useAuth() {
     register,
     logout,
     isAuthenticated: !!user && !!token,
-    isAdmin: user?.role === 'admin',
+    isAdmin: user?.role === 'Administrator',
   };
 }

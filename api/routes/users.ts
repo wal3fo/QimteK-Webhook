@@ -47,10 +47,10 @@ router.post('/', authenticate, requireAdmin, async (req: Request, res: Response)
     }
 
     // Validate role
-    if (role !== 'user' && role !== 'admin') {
+    if (!['user', 'Administrator', 'Professional'].includes(role)) {
       res.status(400).json({
         success: false,
-        error: 'Invalid role. Must be "user" or "admin"',
+        error: 'Invalid role. Must be "user", "Professional" or "Administrator"',
       });
       return;
     }
@@ -199,10 +199,10 @@ router.patch('/:id/role', authenticate, requireAdmin, async (req: Request, res: 
       return;
     }
 
-    if (!['admin', 'user'].includes(role)) {
+    if (!['Administrator', 'Professional', 'user'].includes(role)) {
       res.status(400).json({
         success: false,
-        error: 'Invalid role. Must be "admin" or "user"',
+        error: 'Invalid role. Must be "Administrator", "Professional", or "user"',
       });
       return;
     }
