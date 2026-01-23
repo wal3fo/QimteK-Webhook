@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Copy, Check } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { cn, METHOD_COLORS } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
 
@@ -21,6 +21,17 @@ interface WebhookRequest {
   ip_address: string | null;
 }
 
+// Helper to safely format dates
+const safeFormatDate = (dateStr: string) => {
+  try {
+    const date = new Date(dateStr);
+    if (!isValid(date)) return 'Invalid Date';
+    return format(date, 'PPp');
+  } catch (e) {
+    return 'Invalid Date';
+  }
+};
+
 export default function RequestDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -32,12 +43,6 @@ export default function RequestDetails() {
 
   useEffect(() => {
     if (!id || authLoading) return;
-
-    if (!token) {
-      setError('Authentication required');
-      setLoading(false);
-      return;
-    }
 
     const fetchRequest = async () => {
       try {
@@ -89,7 +94,7 @@ export default function RequestDetails() {
 
   // Memoized formatted timestamp
   const formattedTimestamp = useMemo(() => {
-    return request ? format(new Date(request.timestamp), 'PPp') : '';
+    return request ? safeFormatDate(request.timestamp) : '';
   }, [request]);
 
   // Memoized body content

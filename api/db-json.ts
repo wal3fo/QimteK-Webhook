@@ -472,7 +472,7 @@ class JsonDatabase {
             headers: typeof request.headers === 'string' ? request.headers : JSON.stringify(request.headers),
             body: request.body ? (typeof request.body === 'string' ? request.body : JSON.stringify(request.body)) : null,
             query: request.query ? (typeof request.query === 'string' ? request.query : JSON.stringify(request.query)) : null,
-            timestamp: request.timestamp,
+            timestamp: request.timestamp || new Date().toISOString(),
             ip_address: request.ip_address,
           };
         }
@@ -550,7 +550,7 @@ class JsonDatabase {
             headers: typeof req.headers === 'string' ? req.headers : JSON.stringify(req.headers),
             body: req.body ? (typeof req.body === 'string' ? req.body : JSON.stringify(req.body)) : null,
             query: req.query ? (typeof req.query === 'string' ? req.query : JSON.stringify(req.query)) : null,
-            timestamp: req.timestamp,
+            timestamp: req.timestamp || new Date().toISOString(),
             ip_address: req.ip_address,
           }));
         }

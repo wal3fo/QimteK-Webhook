@@ -7,6 +7,8 @@ const RequestDetails = lazy(() => import("@/pages/RequestDetails"));
 const Login = lazy(() => import("@/pages/Login"));
 const AdminUsers = lazy(() => import("@/pages/AdminUsers"));
 
+import ProtectedRoute from "@/components/ProtectedRoute";
+
 // Loading component
 const LoadingSpinner = () => (
   <div className="min-h-screen bg-qimtek-bg flex items-center justify-center page-enter">
@@ -38,8 +40,22 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/request/:id" element={<RequestDetails />} />
-          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route 
+            path="/request/:id" 
+            element={
+              <ProtectedRoute>
+                <RequestDetails />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/users" 
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminUsers />
+              </ProtectedRoute>
+            } 
+          />
         </Routes>
       </Suspense>
     </Router>
