@@ -47,6 +47,8 @@ export function DataTable<T extends { id?: string | number } & Record<string, an
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [currentPage, setCurrentPage] = useState(1);
 
+  const [activeFilterColumn, setActiveFilterColumn] = useState<string | null>(null);
+
   // Helper to access value
   const getValue = (item: T, column: Column<T>) => {
     if (column.accessor) {
@@ -174,9 +176,17 @@ export function DataTable<T extends { id?: string | number } & Record<string, an
 
   return (
     <div className={cn("flex flex-col gap-4 w-full max-w-full overflow-hidden", className)}>
+      {/* Backdrop for filters */}
+      {activeFilterColumn && (
+        <div
+          className="fixed inset-0 z-40 bg-transparent"
+          onClick={() => setActiveFilterColumn(null)}
+        />
+      )}
+
       {/* Table Container */}
-      <div className="bg-qimtek-bg-secondary rounded-xl border border-qimtek-border overflow-hidden flex flex-col w-full shadow-sm">
-        
+      <div className="bg-qimtek-bg-secondary rounded-xl border border-qimtek-border overflow-hidden flex flex-col w-full shadow-sm relative z-0">
+
         {/* Loading State */}
         {isLoading && (
           <div className="absolute inset-0 bg-qimtek-bg/50 backdrop-blur-sm z-10 flex items-center justify-center">
@@ -185,17 +195,16 @@ export function DataTable<T extends { id?: string | number } & Record<string, an
         )}
 
         <div className="overflow-x-auto w-full scrollbar-thin scrollbar-thumb-qimtek-border scrollbar-track-transparent">
-          <table className="w-full text-left border-collapse min-w-[600px]">
+          <table className="w-full text-center border-collapse min-w-[600px] border border-qimtek-border">
             <thead>
-              <tr className="border-b border-qimtek-border bg-qimtek-bg/50">
+              <tr className="bg-qimtek-bg/50">
                 {columns.map((column) => (
                   <th
                     key={column.key}
                     className={cn(
-                      "px-6 py-4 text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider align-top group transition-colors hover:bg-qimtek-bg/80",
+                      "px-6 py-4 text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider align-middle group transition-colors hover:bg-qimtek-bg/80 relative border border-qimtek-border",
                       column.width && `w-[${column.width}]`,
-                      column.align === 'center' && "text-center",
-                      column.align === 'right' && "text-right",
+                      column.align === 'left' ? "text-left" : (column.align === 'right' ? "text-right" : "text-center"),
                       column.sortable && "cursor-pointer select-none",
                       column.className
                     )}
@@ -206,11 +215,12 @@ export function DataTable<T extends { id?: string | number } & Record<string, an
                     }}
                   >
                     <div className={cn(
-                      "flex items-center gap-2 mb-2",
-                      column.align === 'center' && "justify-center",
-                      column.align === 'right' && "justify-end"
+                      "flex items-center gap-2",
+                      column.align === 'left' ? "justify-start" : (column.align === 'right' ? "justify-end" : "justify-center")
                     )}>
                       <span>{column.header}</span>
+
+                      {/* Sort Icon */}
                       {column.sortable && (
                         <div className="flex flex-col text-qimtek-text-secondary/50">
                           {(() => {
@@ -221,35 +231,59 @@ export function DataTable<T extends { id?: string | number } & Record<string, an
                           })()}
                         </div>
                       )}
-                    </div>
-                    
-                    {/* Filter Input */}
-                    {column.filterable && (
-                      <div className="mt-1" onClick={(e) => e.stopPropagation()}>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            placeholder={`Filter...`}
-                            value={filters[column.key] || ''}
-                            onChange={(e) => handleFilterChange(column.key, e.target.value)}
-                            className="w-full px-2 py-1 text-xs bg-qimtek-bg border border-qimtek-border rounded text-qimtek-text placeholder:text-qimtek-text-secondary/50 focus:outline-none focus:border-[#82c91e] transition-colors"
-                          />
-                          {filters[column.key] && (
-                            <button
-                              onClick={() => handleFilterChange(column.key, '')}
-                              className="absolute right-1 top-1/2 -translate-y-1/2 text-qimtek-text-secondary hover:text-qimtek-text"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
+
+                      {/* Filter Icon & Dropdown */}
+                      {column.filterable && (
+                        <div className="relative ml-1" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => setActiveFilterColumn(activeFilterColumn === column.key ? null : column.key)}
+                            className={cn(
+                              "p-1 rounded hover:bg-qimtek-bg-surface transition-colors",
+                              filters[column.key] ? "text-[#82c91e] bg-[#82c91e]/10" : "text-qimtek-text-secondary opacity-0 group-hover:opacity-100"
+                            )}
+                            title="Filter"
+                          >
+                            <Filter className="w-3 h-3" />
+                          </button>
+
+                          {activeFilterColumn === column.key && (
+                            <div className="absolute top-full right-0 mt-2 w-56 bg-qimtek-bg-surface border border-qimtek-border rounded-lg shadow-xl z-50 p-3">
+                              <div className="flex flex-col gap-2">
+                                <input
+                                  type="text"
+                                  autoFocus
+                                  placeholder={`Filter ${column.header}...`}
+                                  value={filters[column.key] || ''}
+                                  onChange={(e) => handleFilterChange(column.key, e.target.value)}
+                                  className="w-full px-3 py-2 text-sm bg-qimtek-bg border border-qimtek-border rounded-md text-qimtek-text placeholder:text-qimtek-text-secondary/50 focus:outline-none focus:border-[#82c91e] transition-colors"
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      setActiveFilterColumn(null);
+                                    }
+                                  }}
+                                />
+                                {filters[column.key] && (
+                                  <button
+                                    onClick={() => {
+                                      handleFilterChange(column.key, '');
+                                      setActiveFilterColumn(null);
+                                    }}
+                                    className="text-xs text-red-400 hover:text-red-300 self-end"
+                                  >
+                                    Clear Filter
+                                  </button>
+                                )}
+                              </div>
+                            </div>
                           )}
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-qimtek-border">
+            <tbody className="">
               {paginatedData.length > 0 ? (
                 paginatedData.map((item, index) => (
                   <tr
@@ -264,9 +298,8 @@ export function DataTable<T extends { id?: string | number } & Record<string, an
                       <td
                         key={column.key}
                         className={cn(
-                          "px-6 py-4 whitespace-nowrap text-sm text-qimtek-text-secondary",
-                          column.align === 'center' && "text-center",
-                          column.align === 'right' && "text-right"
+                          "px-6 py-4 whitespace-nowrap text-sm text-qimtek-text-secondary border border-qimtek-border",
+                          column.align === 'left' ? "text-left" : (column.align === 'right' ? "text-right" : "text-center")
                         )}
                       >
                         {column.render ? column.render(item) : getValue(item, column)}
@@ -298,7 +331,7 @@ export function DataTable<T extends { id?: string | number } & Record<string, an
             </tbody>
           </table>
         </div>
-        
+
         {/* Pagination */}
         {pagination && totalPages > 1 && (
           <div className="border-t border-qimtek-border p-4 flex items-center justify-between bg-qimtek-bg/30">
@@ -313,7 +346,7 @@ export function DataTable<T extends { id?: string | number } & Record<string, an
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              
+
               {getPageNumbers().map((page, i) => (
                 typeof page === 'number' ? (
                   <button
