@@ -10,6 +10,7 @@ router.post('/join', (req: Request, res: Response) => {
     res.status(400).json({ error: 'sessionId required' });
     return;
   }
+  console.log(`Visitor joined: ${sessionId}`);
   visitorService.join(sessionId);
   res.json({ success: true });
 });
@@ -35,7 +36,9 @@ router.post('/heartbeat', (req: Request, res: Response) => {
 
 // Stats - Get current counts
 router.get('/stats', (req: Request, res: Response) => {
-  res.json(visitorService.getStats());
+  const stats = visitorService.getStats();
+  // console.log('Visitor stats:', stats);
+  res.json(stats);
 });
 
 export default router;

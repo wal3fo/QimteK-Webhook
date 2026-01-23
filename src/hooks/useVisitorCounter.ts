@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3003/api';
 
 interface VisitorStats {
   activeVisitors: number;
@@ -27,7 +27,7 @@ export function useVisitorCounter() {
           body: JSON.stringify({ sessionId: sessionId.current }),
         });
       } catch (err) {
-        // Ignore network errors on join
+        console.error('Visitor counter join error:', err);
       }
     };
 
@@ -39,14 +39,16 @@ export function useVisitorCounter() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sessionId: sessionId.current }),
         });
-        
+
         const res = await fetch(`${API_URL}/visitor/stats`);
         if (res.ok) {
           const data = await res.json();
           setStats(data);
+        } else {
+          console.error('Visitor stats fetch failed:', res.status, res.statusText);
         }
       } catch (err) {
-        // Ignore network errors
+        console.error('Visitor heartbeat/stats error:', err);
       }
     };
 
@@ -59,7 +61,7 @@ export function useVisitorCounter() {
     // Handle unload / tab close
     const handleUnload = () => {
       if (!sessionId.current) return;
-      
+
       const url = `${API_URL}/visitor/leave`;
       const data = JSON.stringify({ sessionId: sessionId.current });
 
@@ -74,7 +76,7 @@ export function useVisitorCounter() {
           headers: { 'Content-Type': 'application/json' },
           body: data,
           keepalive: true,
-        }).catch(() => {});
+        }).catch(() => { });
       }
     };
 
