@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, memo, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Copy, Check, Trash2, ExternalLink, Filter, Search, Download, Clock, Globe, X, LogIn, LogOut, User, Shield } from 'lucide-react';
+import { Copy, Check, Trash2, ExternalLink, Filter, Search, Download, Clock, Globe, X, LogIn, LogOut, User, Shield, Lock } from 'lucide-react';
 import { useWebhook } from '@/hooks/useWebhook';
 import { useAuth } from '@/hooks/useAuth';
 import { cn, METHOD_COLORS, METHODS } from '@/lib/utils';
@@ -9,7 +9,10 @@ import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
 import ConfirmModal from '@/components/ConfirmModal';
 import GenerateWebhookModal from '@/components/GenerateWebhookModal';
+import ChangePasswordModal from '@/components/ChangePasswordModal';
 import WebhookSelector from '@/components/WebhookSelector';
+
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Helper to safely format dates
 const safeFormatDate = (dateStr: string) => {
@@ -106,7 +109,7 @@ RequestRow.displayName = 'RequestRow';
 export default function Home() {
   const navigate = useNavigate();
   const { webhooks, selectedWebhook, requests, loading, error, isConnected, generateWebhook, deleteWebhook, setSelectedWebhook } = useWebhook();
-  const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const { user, token, isAuthenticated, isAdmin, logout } = useAuth();
   const [copied, setCopied] = useState(false);
   const [methodFilter, setMethodFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -115,6 +118,7 @@ export default function Home() {
   const [isMobile, setIsMobile] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [isChangePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
   const [webhookName, setWebhookName] = useState('');
 
   // Detect mobile device
@@ -126,6 +130,28 @@ export default function Home() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  const handleChangePassword = async (data: { currentPassword: string; newPassword: string }) => {
+    try {
+      const response = await fetch(`${API_URL}/auth/change-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(data)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to change password');
+      }
+
+      // Success is handled by the modal closing
+    } catch (error) {
+      throw error; // Re-throw so modal can display error
+    }
+  };
 
   // Memoized handlers
   const handleGenerate = useCallback(async (arg?: any) => {
@@ -211,6 +237,13 @@ export default function Home() {
                     <span className="text-sm text-qimtek-text-secondary hidden sm:inline">
                       {user?.email}
                     </span>
+                    <button
+                      onClick={() => setChangePasswordModalOpen(true)}
+                      className="p-1 hover:bg-qimtek-bg text-qimtek-text-secondary hover:text-qimtek-text rounded transition-colors"
+                      title="Change Password"
+                    >
+                      <Lock className="w-4 h-4" />
+                    </button>
                     {isAdmin && (
                       <div className="flex items-center gap-2">
                         <span className="px-2 py-0.5 bg-[#82c91e]/20 text-[#82c91e] rounded text-xs font-semibold">
@@ -577,6 +610,12 @@ export default function Home() {
         confirmText="Delete"
         cancelText="Cancel"
         isDanger
+      />
+
+      <ChangePasswordModal
+        isOpen={isChangePasswordModalOpen}
+        onClose={() => setChangePasswordModalOpen(false)}
+        onConfirm={handleChangePassword}
       />
     </div>
   );
