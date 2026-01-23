@@ -29,6 +29,7 @@ import webhookRoutes from './routes/webhooks.js'
 import webhookReceiverRoutes from './routes/webhook-receiver.js'
 import authRoutes from './routes/auth.js'
 import userRoutes from './routes/users.js'
+import visitorRoutes from './routes/visitor.js'
 
 // Load environment variables
 if (process.env.NODE_ENV !== 'production') {
@@ -89,6 +90,11 @@ app.use('/api/auth', authRoutes)
  * User Management Routes (Admin Only)
  */
 app.use('/api/users', userRoutes)
+
+/**
+ * Visitor Tracking Routes
+ */
+app.use('/api/visitor', visitorRoutes)
 
 /**
  * Webhook Management Routes
