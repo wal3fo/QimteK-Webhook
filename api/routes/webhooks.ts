@@ -35,6 +35,14 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
     // Default expiration: 60 minutes
     const { expiresIn = 60, name } = req.body;
 
+    if (!name || !name.trim()) {
+      res.status(400).json({
+        success: false,
+        error: 'Webhook name is required',
+      });
+      return;
+    }
+
     const database = await ensureDb();
 
     // Check webhook limits
