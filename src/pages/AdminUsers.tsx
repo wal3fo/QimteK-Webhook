@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Trash2, Shield, User, RefreshCw, AlertTriangle, UserPlus, Briefcase } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -11,6 +11,7 @@ import ConfirmModal from '@/components/ConfirmModal';
 import CreateUserModal from '@/components/CreateUserModal';
 import EditRoleModal from '@/components/EditRoleModal';
 import MfaSetupModal from '@/components/MfaSetupModal';
+import { DataTable, Column } from '@/components/DataTable';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -191,6 +192,105 @@ export default function AdminUsers() {
     }
   };
 
+  const columns = useMemo<Column<UserData>[]>(() => [
+    {
+      key: 'email',
+      header: 'User',
+      sortable: true,
+      filterable: true,
+      render: (userData) => (
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-qimtek-bg border border-qimtek-border flex items-center justify-center text-qimtek-text-secondary">
+            <User className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="text-sm font-medium text-qimtek-text">{userData.email}</div>
+            <div className="text-xs text-qimtek-text-secondary font-mono">{userData.id.slice(0, 8)}...</div>
+          </div>
+        </div>
+      )
+    },
+    {
+      key: 'role',
+      header: 'Role',
+      sortable: true,
+      filterable: true,
+      render: (userData) => (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (userData.id !== user?.id) openRoleModal(userData);
+          }}
+          disabled={userData.id === user?.id}
+          className={cn(
+            "px-2 py-1 rounded-md text-xs font-medium border flex items-center gap-1.5 transition-all w-fit",
+            userData.role === 'Administrator'
+              ? "bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20"
+              : userData.role === 'Professional'
+                ? "bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20"
+                : "bg-[#82c91e]/10 text-[#82c91e] border-[#82c91e]/20 hover:bg-[#82c91e]/20",
+            userData.id === user?.id && "opacity-50 cursor-not-allowed"
+          )}
+        >
+          {userData.role === 'Administrator' ? <Shield className="w-3 h-3" /> :
+            userData.role === 'Professional' ? <Briefcase className="w-3 h-3" /> :
+              <User className="w-3 h-3" />}
+          {userData.role.toUpperCase()}
+        </button>
+      )
+    },
+    {
+      key: 'mfa_enabled',
+      header: '2FA',
+      sortable: true,
+      align: 'center',
+      render: (userData) => (
+        userData.mfa_enabled ? (
+          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-[#82c91e]/10 text-[#82c91e] border border-[#82c91e]/20">
+            <Shield className="w-3 h-3" />
+            Enabled
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-gray-500/10 text-gray-400 border border-gray-500/20">
+            <Shield className="w-3 h-3 opacity-50" />
+            Disabled
+          </span>
+        )
+      )
+    },
+    {
+      key: 'created_at',
+      header: 'Joined',
+      sortable: true,
+      filterable: true,
+      render: (userData) => (
+        <span className="text-qimtek-text-secondary">
+          {format(new Date(userData.created_at || Date.now()), 'PP')}
+        </span>
+      )
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      align: 'right',
+      render: (userData) => (
+        userData.id !== user?.id ? (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setUserToDelete(userData);
+              setDeleteModalOpen(true);
+            }}
+            className="text-qimtek-text-secondary hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-500/10"
+            title="Delete User"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        ) : null
+      )
+    }
+  ], [user, openRoleModal]);
+
   return (
     <div className="min-h-screen bg-qimtek-bg text-qimtek-text font-sans selection:bg-[#82c91e] selection:text-black flex flex-col">
       {/* Header */}
@@ -258,95 +358,16 @@ export default function AdminUsers() {
           </div>
         )}
 
-        <div className="bg-qimtek-bg-secondary rounded-xl border border-qimtek-border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-qimtek-border bg-qimtek-bg/50">
-                  <th className="px-6 py-4 text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">User</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">Role</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">2FA</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">Joined</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-qimtek-border">
-                {users.map((userData) => (
-                  <tr key={userData.id} className="group hover:bg-qimtek-bg transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-qimtek-bg border border-qimtek-border flex items-center justify-center text-qimtek-text-secondary">
-                          <User className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-qimtek-text">{userData.email}</div>
-                          <div className="text-xs text-qimtek-text-secondary font-mono">{userData.id.slice(0, 8)}...</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <button
-                        onClick={() => userData.id !== user?.id && openRoleModal(userData)}
-                        disabled={userData.id === user?.id}
-                        className={cn(
-                          "px-2 py-1 rounded-md text-xs font-medium border flex items-center gap-1.5 transition-all",
-                          userData.role === 'Administrator'
-                            ? "bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20"
-                            : userData.role === 'Professional'
-                              ? "bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20"
-                              : "bg-[#82c91e]/10 text-[#82c91e] border-[#82c91e]/20 hover:bg-[#82c91e]/20",
-                          userData.id === user?.id && "opacity-50 cursor-not-allowed"
-                        )}
-                      >
-                        {userData.role === 'Administrator' ? <Shield className="w-3 h-3" /> :
-                          userData.role === 'Professional' ? <Briefcase className="w-3 h-3" /> :
-                            <User className="w-3 h-3" />}
-                        {userData.role.toUpperCase()}
-                      </button>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {userData.mfa_enabled ? (
-                        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-[#82c91e]/10 text-[#82c91e] border border-[#82c91e]/20">
-                          <Shield className="w-3 h-3" />
-                          Enabled
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-gray-500/10 text-gray-400 border border-gray-500/20">
-                          <Shield className="w-3 h-3 opacity-50" />
-                          Disabled
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-qimtek-text-secondary">
-                      {format(new Date(userData.created_at || Date.now()), 'PP')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      {userData.id !== user?.id && (
-                        <button
-                          onClick={() => {
-                            setUserToDelete(userData);
-                            setDeleteModalOpen(true);
-                          }}
-                          className="text-qimtek-text-secondary hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-500/10"
-                          title="Delete User"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-
-                {!loading && users.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="px-6 py-12 text-center text-qimtek-text-secondary">
-                      No users found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+        <div className="flex justify-center">
+          <DataTable
+            columns={columns}
+            data={users}
+            isLoading={loading}
+            emptyMessage="No users found."
+            className="w-full"
+            pagination={true}
+            pageSize={10}
+          />
         </div>
       </main>
 
