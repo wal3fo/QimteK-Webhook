@@ -1,9 +1,11 @@
 import { cn } from '@/lib/utils';
 import Logo from './Logo';
-import { Github, ExternalLink, Heart, Code, Zap, Shield } from 'lucide-react';
+import { Github, ExternalLink, Heart, Code, Zap, Shield, Users, TrendingUp } from 'lucide-react';
+import { useVisitorCounter } from '@/hooks/useVisitorCounter';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const { activeVisitors, maxActiveVisitors } = useVisitorCounter();
 
   const footerLinks = {
     product: [
@@ -193,6 +195,19 @@ export default function Footer() {
 
             {/* Support Link */}
             <div className="flex items-center gap-2">
+              {/* Visitor Stats */}
+              <div className="hidden sm:flex items-center gap-3 text-xs font-medium bg-qimtek-bg-secondary/50 px-3 py-1.5 rounded-full border border-qimtek-border/50 mr-2">
+                <div className="flex items-center gap-1.5 text-qimtek-text-secondary" title="Current active visitors">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#82c91e] animate-pulse" />
+                  <span>{activeVisitors} Online</span>
+                </div>
+                <div className="w-px h-3 bg-qimtek-border" />
+                <div className="flex items-center gap-1.5 text-qimtek-text-tertiary" title="Peak concurrent visitors">
+                  <TrendingUp className="w-3 h-3" />
+                  <span>Peak: {maxActiveVisitors}</span>
+                </div>
+              </div>
+
               <a
                 href="https://www.paypal.com/paypalme/drgineer/5?currencyCode=USD"
                 target="_blank"
