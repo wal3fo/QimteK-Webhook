@@ -194,20 +194,7 @@ export default function Footer() {
             </div>
 
             {/* Support Link */}
-            <div className="flex items-center gap-2">
-              {/* Visitor Stats */}
-              <div className="hidden sm:flex items-center gap-3 text-xs font-medium bg-qimtek-bg-secondary/50 px-3 py-1.5 rounded-full border border-qimtek-border/50 mr-2">
-                <div className="flex items-center gap-1.5 text-qimtek-text-secondary" title="Current active visitors">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#82c91e] animate-pulse" />
-                  <span>{activeVisitors} Online</span>
-                </div>
-                <div className="w-px h-3 bg-qimtek-border" />
-                <div className="flex items-center gap-1.5 text-qimtek-text-tertiary" title="Peak concurrent visitors">
-                  <TrendingUp className="w-3 h-3" />
-                  <span>Peak: {maxActiveVisitors}</span>
-                </div>
-              </div>
-
+            <div className="flex items-center gap-1">
               <a
                 href="https://www.paypal.com/paypalme/drgineer/5?currencyCode=USD"
                 target="_blank"
@@ -220,11 +207,25 @@ export default function Footer() {
                   'transition-all duration-200 hover:scale-105 active:scale-95',
                   'touch-manipulation font-medium'
                 )}
-                aria-label="Support us on PayPal"
-              >
+                aria-label="Support us on PayPal">
                 <Heart className="w-4 h-4 text-red-500" />
                 <span>Support Our Work</span>
               </a>
+
+              {/* Visitor Stats */}
+              <div
+                className={cn(
+                  'hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-lg',
+                  'bg-qimtek-bg-secondary border border-qimtek-border',
+                  'text-sm text-qimtek-text-secondary',
+                  'font-medium select-none mr-2'
+                )}
+                title="Current / Peak visitors">
+                <TrendingUp className="w-4 h-4 text-[#82c91e]" />
+                <span>
+                  {activeVisitors}/{maxActiveVisitors}
+                </span>
+              </div>
             </div>
           </div>
         </div>

@@ -10,7 +10,6 @@ import Footer from '@/components/Footer';
 import ConfirmModal from '@/components/ConfirmModal';
 import CreateUserModal from '@/components/CreateUserModal';
 import EditRoleModal from '@/components/EditRoleModal';
-import MfaSetupModal from '@/components/MfaSetupModal';
 import { DataTable, Column } from '@/components/DataTable';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -34,7 +33,6 @@ export default function AdminUsers() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [roleModalOpen, setRoleModalOpen] = useState(false);
-  const [mfaModalOpen, setMfaModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<UserData | null>(null);
   const [userToEditRole, setUserToEditRole] = useState<UserData | null>(null);
 
@@ -198,12 +196,13 @@ export default function AdminUsers() {
       header: 'User',
       sortable: true,
       filterable: true,
+      align: 'center',
       render: (userData) => (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-center gap-3">
           <div className="w-8 h-8 rounded-full bg-qimtek-bg border border-qimtek-border flex items-center justify-center text-qimtek-text-secondary">
             <User className="w-4 h-4" />
           </div>
-          <div>
+          <div className="text-left">
             <div className="text-sm font-medium text-qimtek-text">{userData.email}</div>
             <div className="text-xs text-qimtek-text-secondary font-mono">{userData.id.slice(0, 8)}...</div>
           </div>
@@ -215,6 +214,7 @@ export default function AdminUsers() {
       header: 'Role',
       sortable: true,
       filterable: true,
+      align: 'center',
       render: (userData) => (
         <button
           onClick={(e) => {
@@ -223,7 +223,7 @@ export default function AdminUsers() {
           }}
           disabled={userData.id === user?.id}
           className={cn(
-            "px-2 py-1 rounded-md text-xs font-medium border flex items-center gap-1.5 transition-all w-fit",
+            "px-2 py-1 rounded-md text-xs font-medium border flex items-center gap-1.5 transition-all w-fit mx-auto",
             userData.role === 'Administrator'
               ? "bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20"
               : userData.role === 'Professional'
@@ -263,6 +263,7 @@ export default function AdminUsers() {
       header: 'Joined',
       sortable: true,
       filterable: true,
+      align: 'center',
       render: (userData) => (
         <span className="text-qimtek-text-secondary">
           {format(new Date(userData.created_at || Date.now()), 'PP')}
@@ -272,7 +273,7 @@ export default function AdminUsers() {
     {
       key: 'actions',
       header: 'Actions',
-      align: 'right',
+      align: 'center',
       render: (userData) => (
         userData.id !== user?.id ? (
           <button
@@ -332,23 +333,6 @@ export default function AdminUsers() {
             <h1 className="text-2xl font-bold mb-2 text-qimtek-text">User Management</h1>
             <p className="text-qimtek-text-secondary">Manage registered users and their roles.</p>
           </div>
-          <div className="flex gap-2 w-full sm:w-auto">
-            <button
-              onClick={() => setMfaModalOpen(true)}
-              className="flex-1 sm:flex-none items-center justify-center gap-2 px-4 py-2 bg-qimtek-bg-secondary text-qimtek-text rounded-lg hover:bg-qimtek-border transition-colors border border-qimtek-border flex"
-            >
-              <Shield className="w-4 h-4 text-[#82c91e]" />
-              <span className="hidden sm:inline">2FA Setup</span>
-              <span className="sm:hidden">2FA</span>
-            </button>
-            <button
-              onClick={() => setCreateModalOpen(true)}
-              className="flex-1 sm:flex-none items-center justify-center gap-2 px-4 py-2 bg-[#82c91e] hover:bg-[#6ba017] text-black rounded-lg transition-colors font-semibold flex"
-            >
-              <UserPlus className="w-4 h-4" />
-              <span className="hidden sm:inline">New User</span>
-            </button>
-          </div>
         </div>
 
         {error && (
@@ -398,11 +382,6 @@ export default function AdminUsers() {
         onConfirm={handleRoleUpdate}
         currentRole={userToEditRole?.role || 'user'}
         userEmail={userToEditRole?.email || ''}
-      />
-
-      <MfaSetupModal
-        isOpen={mfaModalOpen}
-        onClose={() => setMfaModalOpen(false)}
       />
     </div>
   );

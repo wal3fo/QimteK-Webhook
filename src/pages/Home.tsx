@@ -10,6 +10,7 @@ import Footer from '@/components/Footer';
 import ConfirmModal from '@/components/ConfirmModal';
 import GenerateWebhookModal from '@/components/GenerateWebhookModal';
 import ChangePasswordModal from '@/components/ChangePasswordModal';
+import MfaSetupModal from '@/components/MfaSetupModal';
 import WebhookSelector from '@/components/WebhookSelector';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -74,7 +75,7 @@ const RequestRow = memo(({ request, onNavigate }: { request: any; onNavigate: (i
     className="hover:bg-qimtek-bg-secondary transition-all duration-200 cursor-pointer group"
     onClick={() => onNavigate(request.id)}
   >
-    <td className="px-6 py-4 whitespace-nowrap">
+    <td className="px-6 py-4 whitespace-nowrap text-center">
       <span
         className={cn(
           'px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
@@ -84,13 +85,13 @@ const RequestRow = memo(({ request, onNavigate }: { request: any; onNavigate: (i
         {request.method?.toUpperCase()}
       </span>
     </td>
-    <td className="px-6 py-4 whitespace-nowrap text-sm text-qimtek-text">
+    <td className="px-6 py-4 whitespace-nowrap text-sm text-qimtek-text text-center">
       {safeFormatDate(request.timestamp)}
     </td>
-    <td className="px-6 py-4 whitespace-nowrap text-sm text-qimtek-text-secondary font-mono">
+    <td className="px-6 py-4 whitespace-nowrap text-sm text-qimtek-text-secondary font-mono text-center">
       {request.ip_address || 'N/A'}
     </td>
-    <td className="px-6 py-4 whitespace-nowrap text-sm">
+    <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
       <button
         onClick={(e) => {
           e.stopPropagation();
@@ -119,6 +120,7 @@ export default function Home() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [isChangePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
+  const [mfaModalOpen, setMfaModalOpen] = useState(false);
   const [webhookName, setWebhookName] = useState('');
 
   // Detect mobile device
@@ -259,6 +261,15 @@ export default function Home() {
                     )}
 
                     <button
+                      onClick={() => setMfaModalOpen(true)}
+                      className="flex items-center gap-2 px-3 py-2 bg-qimtek-bg-secondary hover:bg-qimtek-bg-surface border border-qimtek-border hover:border-[#82c91e]/50 text-qimtek-text-secondary hover:text-[#82c91e] rounded-lg transition-all duration-200"
+                      title="2FA Setup"
+                    >
+                      <Shield className="w-4 h-4" />
+                      <span className="hidden lg:inline text-sm font-medium">2FA</span>
+                    </button>
+
+                    <button
                       onClick={() => setChangePasswordModalOpen(true)}
                       className="flex items-center gap-2 px-3 py-2 bg-qimtek-bg-secondary hover:bg-qimtek-bg-surface border border-qimtek-border hover:border-[#82c91e]/50 text-qimtek-text-secondary hover:text-[#82c91e] rounded-lg transition-all duration-200"
                       title="Change Password"
@@ -269,7 +280,7 @@ export default function Home() {
 
                     <button
                       onClick={logout}
-                      className="flex items-center gap-2 px-3 py-2 bg-qimtek-bg-secondary hover:bg-red-900/20 border border-qimtek-border hover:border-red-500/50 text-qimtek-text-secondary hover:text-red-400 rounded-lg transition-all duration-200"
+                      className="flex items-center gap-2 px-3 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/50 text-red-500 hover:text-red-400 rounded-lg transition-all duration-200"
                       title="Logout"
                     >
                       <LogOut className="w-4 h-4" />
@@ -572,16 +583,16 @@ export default function Home() {
                       <table className="w-full">
                         <thead className="bg-qimtek-bg">
                           <tr>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">
+                            <th className="px-6 py-3 text-center text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">
                               Method
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">
+                            <th className="px-6 py-3 text-center text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">
                               Time
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">
+                            <th className="px-6 py-3 text-center text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">
                               IP Address
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">
+                            <th className="px-6 py-3 text-center text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">
                               Actions
                             </th>
                           </tr>
@@ -625,6 +636,11 @@ export default function Home() {
         isOpen={isChangePasswordModalOpen}
         onClose={() => setChangePasswordModalOpen(false)}
         onConfirm={handleChangePassword}
+      />
+
+      <MfaSetupModal
+        isOpen={mfaModalOpen}
+        onClose={() => setMfaModalOpen(false)}
       />
     </div>
   );
