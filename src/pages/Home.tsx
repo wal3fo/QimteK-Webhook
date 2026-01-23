@@ -231,42 +231,51 @@ export default function Home() {
             <div className="flex items-center gap-2 sm:gap-3">
               {/* Auth Section */}
               {isAuthenticated ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  {/* User Info */}
                   <div className="flex items-center gap-2 px-3 py-2 bg-qimtek-bg-secondary rounded-lg border border-qimtek-border">
                     <User className="w-4 h-4 text-qimtek-text-secondary" />
                     <span className="text-sm text-qimtek-text-secondary hidden sm:inline">
                       {user?.email}
                     </span>
+                    {isAdmin && (
+                      <span className="px-2 py-0.5 bg-[#82c91e]/20 text-[#82c91e] rounded text-xs font-semibold">
+                        Admin
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2">
+                    {isAdmin && (
+                      <Link
+                        to="/admin/users"
+                        className="flex items-center gap-2 px-3 py-2 bg-qimtek-bg-secondary hover:bg-qimtek-bg-surface border border-qimtek-border hover:border-[#82c91e]/50 text-qimtek-text-secondary hover:text-[#82c91e] rounded-lg transition-all duration-200"
+                        title="Manage Users"
+                      >
+                        <Shield className="w-4 h-4" />
+                        <span className="hidden lg:inline text-sm font-medium">Users</span>
+                      </Link>
+                    )}
+
                     <button
                       onClick={() => setChangePasswordModalOpen(true)}
-                      className="p-1 hover:bg-qimtek-bg text-qimtek-text-secondary hover:text-qimtek-text rounded transition-colors"
+                      className="flex items-center gap-2 px-3 py-2 bg-qimtek-bg-secondary hover:bg-qimtek-bg-surface border border-qimtek-border hover:border-[#82c91e]/50 text-qimtek-text-secondary hover:text-[#82c91e] rounded-lg transition-all duration-200"
                       title="Change Password"
                     >
                       <Lock className="w-4 h-4" />
+                      <span className="hidden lg:inline text-sm font-medium">Password</span>
                     </button>
-                    {isAdmin && (
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 bg-[#82c91e]/20 text-[#82c91e] rounded text-xs font-semibold">
-                          Admin
-                        </span>
-                        <Link
-                          to="/admin/users"
-                          className="p-1 hover:bg-qimtek-bg text-qimtek-text-secondary hover:text-qimtek-text rounded transition-colors"
-                          title="Manage Users"
-                        >
-                          <Shield className="w-4 h-4" />
-                        </Link>
-                      </div>
-                    )}
+
+                    <button
+                      onClick={logout}
+                      className="flex items-center gap-2 px-3 py-2 bg-qimtek-bg-secondary hover:bg-red-900/20 border border-qimtek-border hover:border-red-500/50 text-qimtek-text-secondary hover:text-red-400 rounded-lg transition-all duration-200"
+                      title="Logout"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span className="hidden sm:inline text-sm font-medium">Logout</span>
+                    </button>
                   </div>
-                  <button
-                    onClick={logout}
-                    className="flex items-center gap-2 px-3 py-2 bg-qimtek-bg-secondary rounded-lg border border-qimtek-border text-qimtek-text-secondary hover:text-qimtek-text hover:border-[#82c91e]/30 transition-all duration-200"
-                    title="Logout"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    <span className="hidden sm:inline text-sm">Logout</span>
-                  </button>
                 </div>
               ) : (
                 <Link
