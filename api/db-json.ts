@@ -394,10 +394,10 @@ class JsonDatabase {
       get: (...params: any[]) => {
         const db = readDb();
 
-        // Handle SELECT FROM users WHERE email = ?
-        if (sql.includes('SELECT') && sql.includes('users') && sql.includes('email = ?')) {
+        // Handle SELECT FROM users WHERE email = ? (Case insensitive)
+        if (sql.includes('SELECT') && sql.includes('users') && (sql.includes('email = ?') || sql.includes('lower(email) = ?') || sql.includes('LOWER(email) = ?'))) {
           const email = params[0];
-          const user = db.users.find(u => u.email === email);
+          const user = db.users.find(u => u.email.toLowerCase() === email.toLowerCase());
           return user || undefined;
         }
 

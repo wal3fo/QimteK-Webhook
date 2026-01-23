@@ -10,6 +10,8 @@ import { type Request, type Response, type NextFunction } from 'express';
 import { generateSecret, verify, generateURI } from 'otplib';
 import QRCode from 'qrcode';
 
+import { ensureDb } from '../db.js';
+
 // JWT secret - use environment variable or fallback (should be set in production)
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
@@ -82,9 +84,9 @@ export async function verifyMfaToken(token: string, secret: string) {
 
 /**
  * Authentication middleware
- * Verifies JWT token from Authorization header
+ * Verifies JWT token from Authorization header and checks DB for active user
  */
-export function authenticate(req: Request, res: Response, next: NextFunction): void {
+export async function authenticate(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const authHeader = req.headers.authorization;
 
@@ -107,9 +109,39 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
       return;
     }
 
-    // Attach user info to request object
-    (req as any).user = payload;
-    next();
+    // Verify user exists in database and get latest role
+    try {
+      const database = await ensureDb();
+      const user = database.prepare('SELECT * FROM users WHERE id = ?').get(payload.id) as any;
+
+      const userResult = await (user instanceof Promise ? user : Promise.resolve(user));
+
+      if (!userResult) {
+        res.status(401).json({
+          success: false,
+          error: 'User no longer exists',
+        });
+        return;
+      }
+
+      // Attach latest user info to request object
+      (req as any).user = {
+        id: userResult.id,
+        email: userResult.email,
+        role: userResult.role
+      };
+
+      next();
+    } catch (dbError) {
+      console.error('Database auth check failed:', dbError);
+      // Fallback to token payload if DB check fails (optional, but safer to fail closed)
+      // For high security, we should fail.
+      res.status(500).json({
+        success: false,
+        error: 'Authentication system error',
+      });
+      return;
+    }
   } catch (error) {
     res.status(401).json({
       success: false,
