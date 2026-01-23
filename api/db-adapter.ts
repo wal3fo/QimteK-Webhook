@@ -39,12 +39,12 @@ export async function initDb(): Promise<void> {
 
   initPromise = (async () => {
     const cwd = process.cwd();
-    
+
     console.log('🔍 Database initialization starting...', {
       cwd,
       DB_PATH: process.env.DB_PATH,
     });
-    
+
     // Priority 1: Try better-sqlite3 (works everywhere, preferred for local dev)
     try {
       const Database = (await import('better-sqlite3')).default;
@@ -55,6 +55,9 @@ export async function initDb(): Promise<void> {
       db = sqliteDb as unknown as DatabaseAdapter;
       console.log('✅ Using better-sqlite3 database');
       await createSchema(db);
+      // Initialize admin account after schema creation
+      const { initAdminAccount } = await import('./utils/init-admin.js');
+      await initAdminAccount();
       return;
     } catch (error: any) {
       console.log('⚠️  better-sqlite3 failed, trying JSON database fallback:', error.message);
@@ -70,6 +73,9 @@ export async function initDb(): Promise<void> {
       console.log('✅ Using JSON database');
       await createSchema(db);
       console.log('✅ Database schema created successfully');
+      // Initialize admin account after schema creation
+      const { initAdminAccount } = await import('./utils/init-admin.js');
+      await initAdminAccount();
       return;
     } catch (error) {
       console.error('❌ JSON database initialization failed:', error);
@@ -85,13 +91,13 @@ export async function initDb(): Promise<void> {
 
     // If all databases failed, throw error
     const dbPath = process.env.DB_PATH || 'webhook-data.json';
-    
+
     const errorMsg = `Failed to initialize any database. ` +
       `SQLite (better-sqlite3) is not available, ` +
       `and JSON database initialization failed. ` +
       `Database path: ${dbPath} (cwd: ${cwd}). ` +
       `Please check file system permissions.`;
-    
+
     console.error('❌', errorMsg);
     throw new Error(errorMsg);
   })();
@@ -104,13 +110,28 @@ export async function initDb(): Promise<void> {
  */
 async function createSchema(database: DatabaseAdapter): Promise<void> {
   const schema = `
-    CREATE TABLE IF NOT EXISTS webhooks (
-      token TEXT PRIMARY KEY,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      expires_at DATETIME NOT NULL,
-      is_active BOOLEAN DEFAULT 1
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'user',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+    CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+
+    CREATE TABLE IF NOT EXISTS webhooks (
+      token TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      name TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      expires_at DATETIME NOT NULL,
+      is_active BOOLEAN DEFAULT 1,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_webhooks_user_id ON webhooks(user_id);
     CREATE INDEX IF NOT EXISTS idx_webhooks_expires_at ON webhooks(expires_at);
     CREATE INDEX IF NOT EXISTS idx_webhooks_active ON webhooks(is_active);
 
@@ -136,6 +157,19 @@ async function createSchema(database: DatabaseAdapter): Promise<void> {
   if (result instanceof Promise) {
     await result;
   }
+
+  // Migration: Add name column to webhooks if it doesn't exist
+  try {
+    const migration = database.prepare('ALTER TABLE webhooks ADD COLUMN name TEXT');
+    const migrationResult = migration.run();
+    if (migrationResult instanceof Promise) {
+      await migrationResult;
+    }
+  } catch (error) {
+    // Ignore error if column already exists
+    // SQLite throws "duplicate column name: name"
+  }
+
   console.log('✅ Database schema initialized');
 }
 

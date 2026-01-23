@@ -27,7 +27,7 @@ export default function Footer() {
     <footer className="bg-qimtek-bg-surface border-t border-qimtek-border mt-auto relative overflow-hidden">
       {/* Decorative gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#82c91e]/5 via-transparent to-transparent pointer-events-none" />
-      
+
       <div className="container mx-auto py-2 px-4 sm:px-6 lg:px-8 max-w-7xl relative z-10">
         {/* Main Footer Content */}
         <div className="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 mb-10 sm:mb-12">
@@ -192,23 +192,25 @@ export default function Footer() {
             </div>
 
             {/* Support Link */}
-            <a
-              href="https://www.paypal.com/paypalme/drgineer/5?currencyCode=USD"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={cn(
-                'inline-flex items-center gap-2 px-4 py-2 rounded-lg',
-                'bg-qimtek-bg-secondary border border-qimtek-border',
-                'hover:bg-[#82c91e]/10 hover:border-[#82c91e]/30',
-                'text-sm text-qimtek-text-secondary hover:text-[#82c91e]',
-                'transition-all duration-200 hover:scale-105 active:scale-95',
-                'touch-manipulation font-medium'
-              )}
-              aria-label="Support us on PayPal"
-            >
-              <Heart className="w-4 h-4 text-red-500" />
-              <span>Support Our Work</span>
-            </a>
+            <div className="flex items-center gap-2">
+              <a
+                href="https://www.paypal.com/paypalme/drgineer/5?currencyCode=USD"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  'inline-flex items-center gap-2 px-4 py-2 rounded-lg',
+                  'bg-qimtek-bg-secondary border border-qimtek-border',
+                  'hover:bg-[#82c91e]/10 hover:border-[#82c91e]/30',
+                  'text-sm text-qimtek-text-secondary hover:text-[#82c91e]',
+                  'transition-all duration-200 hover:scale-105 active:scale-95',
+                  'touch-manipulation font-medium'
+                )}
+                aria-label="Support us on PayPal"
+              >
+                <Heart className="w-4 h-4 text-red-500" />
+                <span>Support Our Work</span>
+              </a>
+            </div>
           </div>
         </div>
       </div>

@@ -1,213 +1,81 @@
-# QimteK Hooks
+# QimteK Webhook
 
-A real-time webhook inspection tool similar to webhook.site. Generate temporary webhook URLs to capture and inspect HTTP requests for debugging and testing purposes.
+A powerful and user-friendly webhook inspection tool that allows developers to generate unique webhook URLs, capture incoming requests, and inspect them in real-time.
 
 ## Features
 
-- 🚀 **Generate Webhook URLs**: Create unique, temporary webhook endpoints with one click
-- 📊 **Real-time Dashboard**: View incoming requests in real-time with polling
-- 🔍 **Request Inspector**: Detailed view of headers, body, query parameters, and metadata
-- 🎨 **Modern UI**: Beautiful, responsive interface with dark mode support
-- 📤 **Export Data**: Export requests as JSON for further analysis
-- 🔎 **Search & Filter**: Filter requests by HTTP method and search in body/headers
-- ⏰ **Auto-expiration**: Webhooks automatically expire after a set time
-- 🧹 **Auto-cleanup**: Expired webhooks are automatically cleaned up
+- **Webhook Management**: Generate unique webhook URLs with expiration times.
+- **Real-time Inspection**: View incoming requests (Headers, Body, Query Parameters) as they arrive.
+- **Request Details**: Deep dive into specific request payloads with JSON formatting.
+- **Role-Based Limits**:
+  - **Ordinary Users**: Max 1 active webhook.
+  - **Administrators**: Max 5 active webhooks.
+- **Authentication**: Secure user accounts with JWT authentication.
+- **Responsive UI**: Modern interface built with React and Tailwind CSS.
 
 ## Tech Stack
 
-- **Frontend**: React 18 + TypeScript + Vite + Tailwind CSS
-- **Backend**: Express.js
-- **Database**: SQLite3 (better-sqlite3) or JSON file storage
+### Frontend
+- **React 18** (TypeScript)
+- **Vite** - Build tool
+- **Tailwind CSS** - Styling
+- **React Router** - Navigation
+- **Lucide React** - Icons
+- **Zustand** - State Management (implied by package.json, though Context/Hooks used)
+
+### Backend
+- **Node.js** & **Express**
+- **better-sqlite3** - High-performance SQLite database
+- **JWT** - JSON Web Token for authentication
+- **Bcrypt** - Password hashing
 
 ## Getting Started
 
 ### Prerequisites
-
-- Node.js 18+ and npm/yarn/pnpm
-- Git
+- Node.js (v18 or higher recommended)
+- npm or yarn
 
 ### Installation
 
 1. Clone the repository:
-```bash
-git clone <repository-url>
-cd QimteK-Webhook
-```
+   ```bash
+   git clone <repository-url>
+   cd QimteK-Webhook
+   ```
 
 2. Install dependencies:
-```bash
-npm install
-```
+   ```bash
+   npm install
+   ```
 
-3. Create a `.env` file (copy from `.env.example`):
-```bash
-cp .env.example .env
-```
+3. Start the development server (runs both client and server):
+   ```bash
+   npm run dev
+   ```
 
-4. Update `.env` with your configuration:
-```env
-PORT=3001
-BASE_URL=http://localhost:3001
-CLIENT_URL=http://localhost:5173
-VITE_API_URL=http://localhost:3001/api
-```
-
-### Development
-
-Run both frontend and backend in development mode:
-```bash
-npm run dev
-```
-
-Or run them separately:
-```bash
-# Terminal 1: Backend
-npm run server:dev
-
-# Terminal 2: Frontend
-npm run client:dev
-```
-
-The application will be available at:
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:3001
-
-### Production Build
-
-Build for production:
-```bash
-npm run build
-```
-
-The built files will be in the `dist` directory.
-
-## Usage
-
-1. **Generate Webhook URL**: Click "Generate Webhook URL" on the homepage
-2. **Copy URL**: Copy the generated webhook URL
-3. **Send Requests**: Send HTTP requests to your webhook URL from any client
-4. **View Requests**: See incoming requests appear in real-time on the dashboard
-5. **Inspect Details**: Click on any request to view full details including headers, body, and query parameters
-6. **Export Data**: Export requests as JSON for further analysis
+   - Frontend: http://localhost:5173
+   - Backend API: http://localhost:3003
 
 ## API Endpoints
 
-### Generate Webhook
-```
-POST /api/webhooks/generate
-Body: { expiresIn: number } // Optional, default: 60 minutes
-Response: { success: true, token: string, url: string, expiresAt: string }
-```
+### Authentication
+- `POST /api/auth/register` - Register a new user
+- `POST /api/auth/login` - Login and receive JWT
 
-### Get Requests
-```
-GET /api/webhooks/:token/requests?limit=100&offset=0
-Response: { success: true, requests: Array, total: number }
-```
+### Webhooks
+- `GET /api/webhooks` - List all active webhooks
+- `POST /api/webhooks/generate` - Create a new webhook
+- `DELETE /api/webhooks/:token` - Delete a webhook
 
-### Get Single Request
-```
-GET /api/webhooks/requests/:id
-Response: { success: true, request: Object }
-```
+### Requests
+- `GET /api/webhooks/:token/requests` - List requests for a specific webhook
+- `GET /api/webhooks/requests/:id` - Get details of a specific request
 
-### Delete Webhook
-```
-DELETE /api/webhooks/:token
-Response: { success: true, message: string }
-```
+## Configuration
 
-### Webhook Receiver
-```
-ALL /api/webhook/:token
-Response: { success: true, message: string, requestId: string }
-```
-
-## Environment Variables
-
-See [ENV_CONFIG.md](./ENV_CONFIG.md) for complete environment variable documentation.
-
-### Quick Reference
-
-**Local Development:**
-```env
-NODE_ENV=development
-PORT=3001
-BASE_URL=http://localhost:3001
-CLIENT_URL=http://localhost:5173
-VITE_API_URL=http://localhost:3001/api
-```
-
-**Vercel Production:**
-```env
-NODE_ENV=production
-BASE_URL=https://your-app.vercel.app
-CLIENT_URL=https://your-app.vercel.app
-VITE_API_URL=/api
-```
-
-### All Variables
-
-| Variable | Description | Default | Required (Prod) |
-|----------|-------------|---------|-----------------|
-| `NODE_ENV` | Environment mode | `development` | Yes |
-| `PORT` | Server port | `3001` | No |
-| `BASE_URL` | Base URL for webhook generation | Auto-detected | No |
-| `CLIENT_URL` | Client URL for CORS | `*` | No |
-| `DB_PATH` | Database file path (local only) | `./webhook.db` | No |
-| `VITE_API_URL` | Frontend API URL | `http://localhost:3001/api` | No |
-
-## Database Schema
-
-### Webhooks Table
-- `token` (TEXT, PRIMARY KEY): Unique webhook token
-- `created_at` (DATETIME): Creation timestamp
-- `expires_at` (DATETIME): Expiration timestamp
-- `is_active` (BOOLEAN): Active status
-
-### Requests Table
-- `id` (TEXT, PRIMARY KEY): Unique request ID
-- `webhook_token` (TEXT, FOREIGN KEY): Associated webhook token
-- `method` (TEXT): HTTP method
-- `url` (TEXT): Request URL
-- `headers` (JSON): Request headers
-- `body` (JSON): Request body
-- `query` (JSON): Query parameters
-- `timestamp` (DATETIME): Request timestamp
-- `ip_address` (TEXT): Client IP address
-
-## Deployment
-
-### Vercel
-
-This project is configured for Vercel deployment. The `vercel.json` file includes the necessary rewrites.
-
-1. Install Vercel CLI: `npm i -g vercel`
-2. Deploy: `vercel`
-3. Set environment variables in Vercel dashboard
-
-**Note**: For Vercel deployment, the JSON database adapter will be used as a fallback since SQLite files are not persistent on serverless functions.
-
-### Other Platforms
-
-For other platforms, ensure:
-- Node.js 18+ is available
-- Environment variables are set
-- Database file has write permissions (for SQLite)
-
-## Security Considerations
-
-- Webhook URLs contain tokens - keep them private
-- Webhooks expire automatically
-- Consider rate limiting for production use
-- Use HTTPS in production
-- Validate and sanitize incoming requests
-- Consider adding authentication for production deployments
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+- **Database**: SQLite database file (`webhook.db`) is automatically created in the root directory.
+- **Limits**: Webhook limits are defined in `api/config.ts`.
 
 ## License
 
-See LICENSE file for details.
+Private Project.

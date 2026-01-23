@@ -1,12 +1,15 @@
 import { useState, useMemo, useCallback, memo, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Copy, Check, Trash2, ExternalLink, Filter, Search, Download, Clock, Globe, X } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Copy, Check, Trash2, ExternalLink, Filter, Search, Download, Clock, Globe, X, LogIn, LogOut, User, Shield } from 'lucide-react';
 import { useWebhook } from '@/hooks/useWebhook';
+import { useAuth } from '@/hooks/useAuth';
 import { cn, METHOD_COLORS, METHODS } from '@/lib/utils';
 import { format } from 'date-fns';
 import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
 import ConfirmModal from '@/components/ConfirmModal';
+import GenerateWebhookModal from '@/components/GenerateWebhookModal';
+import WebhookSelector from '@/components/WebhookSelector';
 
 // Mobile Request Card Component
 const RequestCard = memo(({ request, onNavigate }: { request: any; onNavigate: (id: string) => void }) => (
@@ -91,7 +94,8 @@ RequestRow.displayName = 'RequestRow';
 
 export default function Home() {
   const navigate = useNavigate();
-  const { webhook, requests, loading, error, isConnected, generateWebhook, deleteWebhook } = useWebhook();
+  const { webhooks, selectedWebhook, requests, loading, error, isConnected, generateWebhook, deleteWebhook, setSelectedWebhook } = useWebhook();
+  const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const [copied, setCopied] = useState(false);
   const [methodFilter, setMethodFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -99,6 +103,8 @@ export default function Home() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [webhookName, setWebhookName] = useState('');
 
   // Detect mobile device
   useEffect(() => {
@@ -111,29 +117,33 @@ export default function Home() {
   }, []);
 
   // Memoized handlers
-  const handleGenerate = useCallback(async () => {
-    await generateWebhook(60);
-  }, [generateWebhook]);
+  const handleGenerate = useCallback(async (arg?: any) => {
+    const nameToUse = typeof arg === 'string' ? arg : webhookName;
+    await generateWebhook(60, nameToUse);
+    setWebhookName('');
+  }, [generateWebhook, webhookName]);
 
   const handleCopy = useCallback(async () => {
-    if (!webhook) return;
+    if (!selectedWebhook) return;
     try {
-      await navigator.clipboard.writeText(webhook.url);
+      await navigator.clipboard.writeText(selectedWebhook.url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error('Failed to copy:', err);
     }
-  }, [webhook]);
+  }, [selectedWebhook]);
 
   const handleDeleteClick = useCallback(() => {
     setShowDeleteModal(true);
   }, []);
 
   const handleDeleteConfirm = useCallback(async () => {
-    await deleteWebhook();
-    setShowDeleteModal(false);
-  }, [deleteWebhook]);
+    if (selectedWebhook) {
+      await deleteWebhook(selectedWebhook.token);
+      setShowDeleteModal(false);
+    }
+  }, [deleteWebhook, selectedWebhook]);
 
   const handleNavigate = useCallback((id: string) => {
     navigate(`/request/${id}`);
@@ -181,33 +191,49 @@ export default function Home() {
         <div className="mb-4 sm:mb-6 lg:mb-8 slide-enter">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
             <Logo size="xl" />
-            <a
-              href="https://www.paypal.com/paypalme/drgineer/5?currencyCode=USD"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group relative flex items-center gap-2.5 px-4 sm:px-5 py-2.5 sm:py-2.5 bg-gradient-to-r from-[#0070ba] via-[#009cde] to-[#0070ba] text-white rounded-xl font-semibold transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg hover:shadow-2xl hover:shadow-[#0070ba]/50 overflow-hidden text-sm sm:text-base touch-manipulation min-h-[44px]"
-              title="Support this project with a donation"
-            >
-              {/* Animated gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-
-              {/* PayPal Icon */}
-              <svg
-                className="w-5 h-5 sm:w-6 sm:h-6 relative z-10 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 flex-shrink-0"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.203zm14.146-14.42a.805.805 0 0 0-.796-.68h-3.22c-.524 0-.968.382-1.05.9l-1.12 7.203c-.082.519.109.74.633.74h1.78c.524 0 .968-.382 1.05-.9l1.12-7.203c.082-.519-.109-.74-.633-.74h-1.78z" />
-              </svg>
-
-              {/* Text with glow effect */}
-              <span className="relative z-10 tracking-wide group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all duration-300">
-                Donate
-              </span>
-
-              {/* Sparkle effect on hover */}
-              <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-white rounded-full opacity-0 group-hover:opacity-100 group-hover:animate-ping"></div>
-            </a>
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Auth Section */}
+              {isAuthenticated ? (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 px-3 py-2 bg-qimtek-bg-secondary rounded-lg border border-qimtek-border">
+                    <User className="w-4 h-4 text-qimtek-text-secondary" />
+                    <span className="text-sm text-qimtek-text-secondary hidden sm:inline">
+                      {user?.email}
+                    </span>
+                    {isAdmin && (
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-[#82c91e]/20 text-[#82c91e] rounded text-xs font-semibold">
+                          Admin
+                        </span>
+                        <Link
+                          to="/admin/users"
+                          className="p-1 hover:bg-qimtek-bg text-qimtek-text-secondary hover:text-qimtek-text rounded transition-colors"
+                          title="Manage Users"
+                        >
+                          <Shield className="w-4 h-4" />
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={logout}
+                    className="flex items-center gap-2 px-3 py-2 bg-qimtek-bg-secondary rounded-lg border border-qimtek-border text-qimtek-text-secondary hover:text-qimtek-text hover:border-[#82c91e]/30 transition-all duration-200"
+                    title="Logout"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span className="hidden sm:inline text-sm">Logout</span>
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  to="/login"
+                  className="flex items-center gap-2 px-4 py-2 bg-qimtek-bg-secondary rounded-lg border border-qimtek-border text-qimtek-text-secondary hover:text-[#82c91e] hover:border-[#82c91e]/30 transition-all duration-200"
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span className="text-sm font-medium">Login</span>
+                </Link>
+              )}
+            </div>
           </div>
           <h1 className="sr-only">QimteK Hooks - Webhook Inspection Tool</h1>
           <p className="text-qimtek-text-secondary text-sm sm:text-base">
@@ -219,7 +245,7 @@ export default function Home() {
         <div className="mb-4 sm:mb-6 slide-enter" style={{ animationDelay: '0.1s' }}>
           <div className={cn(
             'inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm border transition-all duration-300',
-            webhook
+            selectedWebhook
               ? isConnected
                 ? 'bg-green-900/30 text-green-300 border-green-700/50'
                 : 'bg-yellow-900/30 text-yellow-300 border-yellow-700/50'
@@ -227,19 +253,21 @@ export default function Home() {
           )}>
             <div className={cn(
               'w-2 h-2 rounded-full transition-all duration-300 flex-shrink-0',
-              webhook
+              selectedWebhook
                 ? (isConnected ? 'bg-green-400 animate-pulse' : 'bg-yellow-400')
                 : 'bg-gray-500'
             )} />
             <span className="hidden sm:inline">
-              {webhook
+              {selectedWebhook
                 ? (isConnected
-                  ? 'Connected (Real-time active)'
-                  : 'Active (Polling for updates)')
-                : 'No active webhook - Click "Generate Webhook URL" to start'}
+                  ? `Connected (${webhooks.length} webhook${webhooks.length !== 1 ? 's' : ''})`
+                  : `Active (${webhooks.length} webhook${webhooks.length !== 1 ? 's' : ''})`)
+                : isAuthenticated
+                  ? 'No webhooks - Click "Generate Webhook URL" to start'
+                  : 'Please login to generate webhooks'}
             </span>
             <span className="sm:hidden">
-              {webhook
+              {selectedWebhook
                 ? (isConnected
                   ? 'Connected'
                   : 'Active')
@@ -249,7 +277,30 @@ export default function Home() {
         </div>
 
         {/* Webhook Generator */}
-        {!webhook ? (
+        {!isAuthenticated ? (
+          <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-5 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8 border border-qimtek-border card-enter">
+            <div className="text-center">
+              <h2 className="text-xl sm:text-2xl font-bold text-qimtek-text mb-3 sm:mb-4">
+                Login Required
+              </h2>
+              <p className="text-sm sm:text-base text-qimtek-text-secondary mb-6">
+                Please login to generate and manage webhook URLs
+              </p>
+              <Link
+                to="/login"
+                className={cn(
+                  'inline-flex items-center gap-2 px-6 sm:px-8 py-3.5 sm:py-3.5 bg-[#82c91e] text-black rounded-xl font-semibold',
+                  'hover:bg-[#6ba017] transition-all duration-200 hover:scale-105 active:scale-95',
+                  'shadow-lg hover:shadow-xl hover:shadow-[#82c91e]/30',
+                  'text-sm sm:text-base touch-manipulation'
+                )}
+              >
+                <LogIn className="w-5 h-5" />
+                Go to Login
+              </Link>
+            </div>
+          </div>
+        ) : webhooks.length === 0 ? (
           <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-5 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8 border border-qimtek-border card-enter">
             <div className="text-center">
               <h2 className="text-xl sm:text-2xl font-bold text-qimtek-text mb-3 sm:mb-4">
@@ -258,6 +309,17 @@ export default function Home() {
               <p className="text-sm sm:text-base text-qimtek-text-secondary mb-6">
                 Create a temporary webhook endpoint to receive and inspect HTTP requests
               </p>
+
+              <div className="max-w-md mx-auto mb-4">
+                <input
+                  type="text"
+                  value={webhookName}
+                  onChange={(e) => setWebhookName(e.target.value)}
+                  placeholder="Webhook Name (Optional)"
+                  className="w-full px-4 py-3 bg-qimtek-bg-secondary border border-qimtek-border rounded-xl text-qimtek-text focus:outline-none focus:ring-2 focus:ring-[#82c91e]/50 text-center placeholder:text-qimtek-text-tertiary"
+                />
+              </div>
+
               <button
                 onClick={handleGenerate}
                 disabled={loading}
@@ -277,181 +339,222 @@ export default function Home() {
             </div>
           </div>
         ) : (
-          <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6 lg:mb-8 border border-qimtek-border card-enter">
-            <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-4 mb-4">
-              <div className="flex-1 w-full sm:w-auto min-w-0">
-                <h2 className="text-base sm:text-lg font-semibold text-qimtek-text mb-2">
-                  Your Webhook URL
-                </h2>
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                  <code className="flex-1 px-3 sm:px-4 py-2.5 sm:py-2.5 bg-qimtek-bg-secondary rounded-lg text-xs sm:text-sm break-all text-qimtek-text border border-qimtek-border transition-all font-mono overflow-x-auto min-w-0">
-                    {webhook.url}
-                  </code>
-                  <div className="flex items-center gap-2 sm:flex-shrink-0">
-                    <button
-                      onClick={handleCopy}
-                      className={cn(
-                        'p-2.5 sm:p-3 rounded-lg hover:bg-qimtek-bg-secondary transition-all duration-200 border border-qimtek-border hover:scale-110 active:scale-95',
-                        'flex-shrink-0 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center',
-                        copied && 'bg-green-900/30 border-green-700'
-                      )}
-                      title="Copy URL"
-                      aria-label="Copy webhook URL"
-                    >
-                      {copied ? (
-                        <Check className="w-5 h-5 text-green-400" />
+          <div className="space-y-4 mb-4 sm:mb-6 lg:mb-8">
+            {/* Webhook Selector */}
+            {webhooks.length > 1 && (
+              <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-4 border border-qimtek-border">
+                <WebhookSelector
+                  webhooks={webhooks}
+                  selectedWebhook={selectedWebhook}
+                  onSelect={setSelectedWebhook}
+                />
+              </div>
+            )}
+
+            {/* Selected Webhook Display */}
+            {selectedWebhook && (
+              <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-4 sm:p-6 border border-qimtek-border card-enter">
+                <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-4 mb-4">
+                  <div className="flex-1 w-full sm:w-auto min-w-0">
+                    <h2 className="text-base sm:text-lg font-semibold text-qimtek-text mb-2">
+                      {selectedWebhook.name ? (
+                        <span className="flex items-center gap-2">
+                          {selectedWebhook.name}
+                          <span className="text-sm font-normal text-qimtek-text-secondary">
+                            ({webhooks.length > 1 ? 'Selected' : 'Your'} Webhook)
+                          </span>
+                        </span>
                       ) : (
-                        <Copy className="w-5 h-5 text-qimtek-text-secondary" />
+                        webhooks.length > 1 ? 'Selected Webhook URL' : 'Your Webhook URL'
                       )}
-                    </button>
-                    <a
-                      href={webhook.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2.5 sm:p-3 rounded-lg hover:bg-qimtek-bg-secondary transition-all duration-200 border border-qimtek-border hover:scale-110 active:scale-95 flex-shrink-0 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
-                      title="Open in new tab"
-                      aria-label="Open webhook URL in new tab"
-                    >
-                      <ExternalLink className="w-5 h-5 text-qimtek-text-secondary" />
-                    </a>
-                    <button
-                      onClick={handleDeleteClick}
-                      className="p-2.5 sm:p-3 text-red-400 hover:bg-red-900/20 rounded-lg transition-all duration-200 border border-transparent hover:border-red-800 hover:scale-110 active:scale-95 flex-shrink-0 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
-                      title="Delete webhook"
-                      aria-label="Delete webhook"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
+                    </h2>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <code className="flex-1 px-3 sm:px-4 py-2.5 sm:py-2.5 bg-qimtek-bg-secondary rounded-lg text-xs sm:text-sm break-all text-qimtek-text border border-qimtek-border transition-all font-mono overflow-x-auto min-w-0">
+                        {selectedWebhook.url}
+                      </code>
+                      <div className="flex items-center gap-2 sm:flex-shrink-0">
+                        <button
+                          onClick={handleCopy}
+                          className={cn(
+                            'p-2.5 sm:p-3 rounded-lg hover:bg-qimtek-bg-secondary transition-all duration-200 border border-qimtek-border hover:scale-110 active:scale-95',
+                            'flex-shrink-0 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center',
+                            copied && 'bg-green-900/30 border-green-700'
+                          )}
+                          title="Copy URL"
+                          aria-label="Copy webhook URL"
+                        >
+                          {copied ? (
+                            <Check className="w-5 h-5 text-green-400" />
+                          ) : (
+                            <Copy className="w-5 h-5 text-qimtek-text-secondary" />
+                          )}
+                        </button>
+                        <a
+                          href={selectedWebhook.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2.5 sm:p-3 rounded-lg hover:bg-qimtek-bg-secondary transition-all duration-200 border border-qimtek-border hover:scale-110 active:scale-95 flex-shrink-0 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
+                          title="Open in new tab"
+                          aria-label="Open webhook URL in new tab"
+                        >
+                          <ExternalLink className="w-5 h-5 text-qimtek-text-secondary" />
+                        </a>
+                        <button
+                          onClick={handleDeleteClick}
+                          className="p-2.5 sm:p-3 text-red-400 hover:bg-red-900/20 rounded-lg transition-all duration-200 border border-transparent hover:border-red-800 hover:scale-110 active:scale-95 flex-shrink-0 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
+                          title="Delete webhook"
+                          aria-label="Delete webhook"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                      <p className="text-xs sm:text-sm text-qimtek-text-tertiary">
+                        Expires: {selectedWebhook.expiresAt ? format(new Date(selectedWebhook.expiresAt), 'PPp') : 'N/A'}
+                      </p>
+                      <button
+                        onClick={() => setShowGenerateModal(true)}
+                        disabled={loading}
+                        className="text-xs sm:text-sm text-[#82c91e] hover:text-[#6ba017] font-medium transition-colors"
+                      >
+                        + Generate Another
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <p className="mt-2 text-xs sm:text-sm text-qimtek-text-tertiary">
-                  Expires: {format(new Date(webhook.expiresAt), 'PPp')}
-                </p>
               </div>
-            </div>
-          </div>
-        )}
+            )}
 
-        {/* Requests Dashboard */}
-        {webhook && (
-          <div className="bg-qimtek-bg-surface rounded-xl shadow-lg border border-qimtek-border card-enter" style={{ animationDelay: '0.2s' }}>
-            <div className={cn("p-4 sm:p-6 border-b border-qimtek-border", isSearchFocused && isMobile && "pb-3")}>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
-                <h2 className="text-xl sm:text-2xl font-bold text-qimtek-text flex items-center gap-2">
-                  Requests
-                  {requests.length > 0 && (
-                    <span className="px-2.5 py-1 bg-[#82c91e]/20 text-[#82c91e] rounded-lg text-xs sm:text-sm font-semibold border border-[#82c91e]/30">
-                      {requests.length}
-                    </span>
-                  )}
-                </h2>
-                {filteredRequests.length > 0 && !isSearchFocused && (
-                  <button
-                    onClick={exportRequests}
-                    className="flex items-center gap-2 px-4 py-2 bg-qimtek-bg-secondary rounded-lg hover:bg-qimtek-tertiary-bg transition-all duration-200 border border-qimtek-border text-qimtek-text hover:scale-105 active:scale-95 text-sm sm:text-base touch-manipulation min-h-[44px]"
-                    aria-label="Export requests"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span className="hidden sm:inline">Export</span>
-                  </button>
+            {/* Requests Dashboard */}
+            {selectedWebhook && (
+              <div className="bg-qimtek-bg-surface rounded-xl shadow-lg border border-qimtek-border card-enter" style={{ animationDelay: '0.2s' }}>
+                <div className={cn("p-4 sm:p-6 border-b border-qimtek-border", isSearchFocused && isMobile && "pb-3")}>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
+                    <h2 className="text-xl sm:text-2xl font-bold text-qimtek-text flex items-center gap-2">
+                      Requests
+                      {requests.length > 0 && (
+                        <span className="px-2.5 py-1 bg-[#82c91e]/20 text-[#82c91e] rounded-lg text-xs sm:text-sm font-semibold border border-[#82c91e]/30">
+                          {requests.length}
+                        </span>
+                      )}
+                    </h2>
+                    {filteredRequests.length > 0 && !isSearchFocused && (
+                      <button
+                        onClick={exportRequests}
+                        className="flex items-center gap-2 px-4 py-2 bg-qimtek-bg-secondary rounded-lg hover:bg-qimtek-tertiary-bg transition-all duration-200 border border-qimtek-border text-qimtek-text hover:scale-105 active:scale-95 text-sm sm:text-base touch-manipulation min-h-[44px]"
+                        aria-label="Export requests"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span className="hidden sm:inline">Export</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Filters - Mobile Optimized */}
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Filter className="w-4 h-4 text-qimtek-text-secondary flex-shrink-0" />
+                      <select
+                        value={methodFilter}
+                        onChange={(e) => setMethodFilter(e.target.value)}
+                        className="flex-1 sm:flex-none px-3 sm:px-4 py-2.5 sm:py-2 border border-qimtek-border rounded-lg bg-qimtek-bg-secondary text-qimtek-text transition-all focus:outline-none focus:ring-2 focus:ring-[#82c91e]/50 text-base sm:text-sm appearance-none cursor-pointer touch-manipulation min-h-[44px]"
+                        style={{ fontSize: '16px' }} // Prevent zoom on iOS
+                      >
+                        {METHODS.map((method) => (
+                          <option key={method} value={method}>
+                            {method}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex-1 flex items-center gap-2 relative">
+                      <Search className="w-4 h-4 text-qimtek-text-secondary flex-shrink-0 absolute left-3 pointer-events-none" />
+                      <input
+                        ref={searchInputRef}
+                        type="text"
+                        inputMode="search"
+                        placeholder="Search in body/headers..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onFocus={() => setIsSearchFocused(true)}
+                        onBlur={() => setIsSearchFocused(false)}
+                        className="flex-1 pl-9 pr-9 sm:pr-3 py-2.5 sm:py-2 border border-qimtek-border rounded-lg bg-qimtek-bg-secondary text-qimtek-text placeholder:text-qimtek-text-tertiary transition-all focus:outline-none focus:ring-2 focus:ring-[#82c91e]/50 text-base sm:text-sm touch-manipulation min-h-[44px]"
+                        style={{ fontSize: '16px' }} // Prevent zoom on iOS
+                        aria-label="Search requests"
+                      />
+                      {searchQuery && (
+                        <button
+                          onClick={clearSearch}
+                          className="absolute right-2 p-1.5 rounded-lg hover:bg-qimtek-bg transition-colors touch-manipulation min-h-[36px] min-w-[36px] flex items-center justify-center"
+                          aria-label="Clear search"
+                        >
+                          <X className="w-4 h-4 text-qimtek-text-secondary" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Requests - Mobile Cards / Desktop Table */}
+                {filteredRequests.length === 0 ? (
+                  <div className="p-8 sm:p-12 text-center text-qimtek-text-secondary">
+                    <p className="text-sm sm:text-base">
+                      {requests.length === 0
+                        ? 'No requests received yet. Send a request to your webhook URL to see it here.'
+                        : 'No requests match your filters.'}
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Mobile Card View */}
+                    <div className="p-4 sm:p-6 space-y-3 sm:hidden">
+                      {filteredRequests.map((request) => (
+                        <RequestCard key={request.id} request={request} onNavigate={handleNavigate} />
+                      ))}
+                    </div>
+
+                    {/* Desktop Table View */}
+                    <div className="hidden sm:block overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-qimtek-bg">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">
+                              Method
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">
+                              Time
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">
+                              IP Address
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-qimtek-bg-surface divide-y divide-qimtek-border">
+                          {filteredRequests.map((request) => (
+                            <RequestRow key={request.id} request={request} onNavigate={handleNavigate} />
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
                 )}
               </div>
-
-              {/* Filters - Mobile Optimized */}
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <Filter className="w-4 h-4 text-qimtek-text-secondary flex-shrink-0" />
-                  <select
-                    value={methodFilter}
-                    onChange={(e) => setMethodFilter(e.target.value)}
-                    className="flex-1 sm:flex-none px-3 sm:px-4 py-2.5 sm:py-2 border border-qimtek-border rounded-lg bg-qimtek-bg-secondary text-qimtek-text transition-all focus:outline-none focus:ring-2 focus:ring-[#82c91e]/50 text-base sm:text-sm appearance-none cursor-pointer touch-manipulation min-h-[44px]"
-                    style={{ fontSize: '16px' }} // Prevent zoom on iOS
-                  >
-                    {METHODS.map((method) => (
-                      <option key={method} value={method}>
-                        {method}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex-1 flex items-center gap-2 relative">
-                  <Search className="w-4 h-4 text-qimtek-text-secondary flex-shrink-0 absolute left-3 pointer-events-none" />
-                  <input
-                    ref={searchInputRef}
-                    type="text"
-                    inputMode="search"
-                    placeholder="Search in body/headers..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onFocus={() => setIsSearchFocused(true)}
-                    onBlur={() => setIsSearchFocused(false)}
-                    className="flex-1 pl-9 pr-9 sm:pr-3 py-2.5 sm:py-2 border border-qimtek-border rounded-lg bg-qimtek-bg-secondary text-qimtek-text placeholder:text-qimtek-text-tertiary transition-all focus:outline-none focus:ring-2 focus:ring-[#82c91e]/50 text-base sm:text-sm touch-manipulation min-h-[44px]"
-                    style={{ fontSize: '16px' }} // Prevent zoom on iOS
-                    aria-label="Search requests"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={clearSearch}
-                      className="absolute right-2 p-1.5 rounded-lg hover:bg-qimtek-bg transition-colors touch-manipulation min-h-[36px] min-w-[36px] flex items-center justify-center"
-                      aria-label="Clear search"
-                    >
-                      <X className="w-4 h-4 text-qimtek-text-secondary" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Requests - Mobile Cards / Desktop Table */}
-            {filteredRequests.length === 0 ? (
-              <div className="p-8 sm:p-12 text-center text-qimtek-text-secondary">
-                <p className="text-sm sm:text-base">
-                  {requests.length === 0
-                    ? 'No requests received yet. Send a request to your webhook URL to see it here.'
-                    : 'No requests match your filters.'}
-                </p>
-              </div>
-            ) : (
-              <>
-                {/* Mobile Card View */}
-                <div className="p-4 sm:p-6 space-y-3 sm:hidden">
-                  {filteredRequests.map((request) => (
-                    <RequestCard key={request.id} request={request} onNavigate={handleNavigate} />
-                  ))}
-                </div>
-
-                {/* Desktop Table View */}
-                <div className="hidden sm:block overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-qimtek-bg">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">
-                          Method
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">
-                          Time
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">
-                          IP Address
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-qimtek-bg-surface divide-y divide-qimtek-border">
-                      {filteredRequests.map((request) => (
-                        <RequestRow key={request.id} request={request} onNavigate={handleNavigate} />
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
             )}
           </div>
         )}
       </div>
       <Footer />
+
+      <GenerateWebhookModal
+        isOpen={showGenerateModal}
+        onClose={() => setShowGenerateModal(false)}
+        onGenerate={handleGenerate}
+        loading={loading}
+      />
 
       {/* Delete Confirmation Modal */}
       <ConfirmModal
@@ -462,7 +565,7 @@ export default function Home() {
         message="Are you sure you want to delete this webhook? All associated requests will be permanently lost and cannot be recovered."
         confirmText="Delete"
         cancelText="Cancel"
-        confirmButtonColor="bg-red-600 hover:bg-red-700"
+        isDanger
       />
     </div>
   );
