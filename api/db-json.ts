@@ -297,8 +297,8 @@ class JsonDatabase {
             headers: typeof params[4] === 'string' ? JSON.parse(params[4]) : params[4],
             body: params[5] ? (typeof params[5] === 'string' ? JSON.parse(params[5]) : params[5]) : null,
             query: params[6] ? (typeof params[6] === 'string' ? JSON.parse(params[6]) : params[6]) : null,
-            timestamp: params[7] || new Date().toISOString(),
-            ip_address: params[8] || null,
+            ip_address: params[7] || null,
+            timestamp: params[8] || new Date().toISOString(),
           };
 
           db.requests.push(request);
