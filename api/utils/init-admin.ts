@@ -18,9 +18,9 @@ export async function initAdminAccount(): Promise<void> {
   try {
     const database = await ensureDb();
 
-    // Check if admin already exists
+    // Check if admin already exists (case insensitive)
     const existingAdmin = database.prepare(`
-      SELECT * FROM users WHERE email = ?
+      SELECT * FROM users WHERE lower(email) = ?
     `).get(ADMIN_EMAIL);
 
     const adminResult = await (existingAdmin instanceof Promise
