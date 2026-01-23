@@ -213,7 +213,7 @@ export default function CreateUserModal({
                 <Shield className="w-5 h-5" />
                 <div className="text-left">
                   <div className="font-semibold">Administrator</div>
-                  <div className="text-xs opacity-80">Full system access</div>
+                  <div className="text-xs opacity-80">Full system access • Limit: 100 webhooks</div>
                 </div>
               </div>
               {role === 'Administrator' && <Check className="w-5 h-5" />}

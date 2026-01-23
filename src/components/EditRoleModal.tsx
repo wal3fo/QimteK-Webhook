@@ -131,7 +131,7 @@ export default function EditRoleModal({
             <label className="block text-sm font-medium text-qimtek-text-secondary">
               Select Role
             </label>
-            
+
             {/* User Role */}
             <button
               type="button"
@@ -189,7 +189,7 @@ export default function EditRoleModal({
                 <Shield className="w-5 h-5" />
                 <div className="text-left">
                   <div className="font-semibold">Administrator</div>
-                  <div className="text-xs opacity-80">Full system access</div>
+                  <div className="text-xs opacity-80">Full system access • Limit: 100 webhooks</div>
                 </div>
               </div>
               {selectedRole === 'Administrator' && <Check className="w-5 h-5" />}
