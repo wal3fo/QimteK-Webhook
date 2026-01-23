@@ -167,7 +167,27 @@ async function createSchema(database: DatabaseAdapter): Promise<void> {
     }
   } catch (error) {
     // Ignore error if column already exists
-    // SQLite throws "duplicate column name: name"
+  }
+
+  // Migration: Add mfa_secret and mfa_enabled to users
+  try {
+    const migration = database.prepare('ALTER TABLE users ADD COLUMN mfa_secret TEXT');
+    const migrationResult = migration.run();
+    if (migrationResult instanceof Promise) {
+      await migrationResult;
+    }
+  } catch (error) {
+    // Ignore error
+  }
+
+  try {
+    const migration = database.prepare('ALTER TABLE users ADD COLUMN mfa_enabled BOOLEAN DEFAULT 0');
+    const migrationResult = migration.run();
+    if (migrationResult instanceof Promise) {
+      await migrationResult;
+    }
+  } catch (error) {
+    // Ignore error
   }
 
   console.log('✅ Database schema initialized');

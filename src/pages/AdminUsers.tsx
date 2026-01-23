@@ -10,6 +10,7 @@ import Footer from '@/components/Footer';
 import ConfirmModal from '@/components/ConfirmModal';
 import CreateUserModal from '@/components/CreateUserModal';
 import EditRoleModal from '@/components/EditRoleModal';
+import MfaSetupModal from '@/components/MfaSetupModal';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -18,6 +19,7 @@ interface UserData {
   email: string;
   role: 'Administrator' | 'Professional' | 'user';
   created_at: string;
+  mfa_enabled?: boolean;
 }
 
 export default function AdminUsers() {
@@ -31,6 +33,7 @@ export default function AdminUsers() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [roleModalOpen, setRoleModalOpen] = useState(false);
+  const [mfaModalOpen, setMfaModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<UserData | null>(null);
   const [userToEditRole, setUserToEditRole] = useState<UserData | null>(null);
 
@@ -224,9 +227,28 @@ export default function AdminUsers() {
 
       {/* Main Content */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-2">User Management</h1>
-          <p className="text-qimtek-text-secondary">Manage registered users and their roles.</p>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold mb-2 text-qimtek-text">User Management</h1>
+            <p className="text-qimtek-text-secondary">Manage registered users and their roles.</p>
+          </div>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <button
+              onClick={() => setMfaModalOpen(true)}
+              className="flex-1 sm:flex-none items-center justify-center gap-2 px-4 py-2 bg-qimtek-bg-secondary text-qimtek-text rounded-lg hover:bg-qimtek-border transition-colors border border-qimtek-border flex"
+            >
+              <Shield className="w-4 h-4 text-[#82c91e]" />
+              <span className="hidden sm:inline">2FA Setup</span>
+              <span className="sm:hidden">2FA</span>
+            </button>
+            <button
+              onClick={() => setCreateModalOpen(true)}
+              className="flex-1 sm:flex-none items-center justify-center gap-2 px-4 py-2 bg-[#82c91e] hover:bg-[#6ba017] text-black rounded-lg transition-colors font-semibold flex"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span className="hidden sm:inline">New User</span>
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -243,6 +265,7 @@ export default function AdminUsers() {
                 <tr className="border-b border-qimtek-border bg-qimtek-bg/50">
                   <th className="px-6 py-4 text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">User</th>
                   <th className="px-6 py-4 text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">Role</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">2FA</th>
                   <th className="px-6 py-4 text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider">Joined</th>
                   <th className="px-6 py-4 text-xs font-semibold text-qimtek-text-secondary uppercase tracking-wider text-right">Actions</th>
                 </tr>
@@ -280,6 +303,19 @@ export default function AdminUsers() {
                             <User className="w-3 h-3" />}
                         {userData.role.toUpperCase()}
                       </button>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {userData.mfa_enabled ? (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-[#82c91e]/10 text-[#82c91e] border border-[#82c91e]/20">
+                          <Shield className="w-3 h-3" />
+                          Enabled
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-gray-500/10 text-gray-400 border border-gray-500/20">
+                          <Shield className="w-3 h-3 opacity-50" />
+                          Disabled
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-qimtek-text-secondary">
                       {format(new Date(userData.created_at || Date.now()), 'PP')}
@@ -341,6 +377,11 @@ export default function AdminUsers() {
         onConfirm={handleRoleUpdate}
         currentRole={userToEditRole?.role || 'user'}
         userEmail={userToEditRole?.email || ''}
+      />
+
+      <MfaSetupModal
+        isOpen={mfaModalOpen}
+        onClose={() => setMfaModalOpen(false)}
       />
     </div>
   );

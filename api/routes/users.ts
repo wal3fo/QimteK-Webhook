@@ -115,7 +115,7 @@ router.get('/', authenticate, requireAdmin, async (req: Request, res: Response):
 
     // Get all users (exclude password hash)
     const usersResult = database.prepare(`
-      SELECT id, email, role, created_at
+      SELECT id, email, role, created_at, mfa_enabled
       FROM users
       ORDER BY created_at DESC
     `).all();

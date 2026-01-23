@@ -8,6 +8,7 @@ const Login = lazy(() => import("@/pages/Login"));
 const AdminUsers = lazy(() => import("@/pages/AdminUsers"));
 
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { AuthProvider } from "./context/AuthContext";
 
 // Loading component
 const LoadingSpinner = () => (
@@ -35,29 +36,31 @@ export default function App() {
   }, []);
 
   return (
-    <Router>
-      <Suspense fallback={<LoadingSpinner />}>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route 
-            path="/request/:id" 
-            element={
-              <ProtectedRoute>
-                <RequestDetails />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/users" 
-            element={
-              <ProtectedRoute requireAdmin>
-                <AdminUsers />
-              </ProtectedRoute>
-            } 
-          />
-        </Routes>
-      </Suspense>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Suspense fallback={<LoadingSpinner />}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route
+              path="/request/:id"
+              element={
+                <ProtectedRoute>
+                  <RequestDetails />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <AdminUsers />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </Suspense>
+      </Router>
+    </AuthProvider>
   );
 }

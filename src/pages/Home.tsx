@@ -271,8 +271,8 @@ export default function Home() {
             <span className="hidden sm:inline">
               {selectedWebhook
                 ? (isConnected
-                  ? `Connected (${webhooks.length} webhook${webhooks.length !== 1 ? 's' : ''})`
-                  : `Active (${webhooks.length} webhook${webhooks.length !== 1 ? 's' : ''})`)
+                  ? 'Connected'
+                  : 'Active')
                 : isAuthenticated
                   ? 'No webhooks - Click "Generate Webhook URL" to start'
                   : 'Please login to generate webhooks'}

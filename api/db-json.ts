@@ -31,6 +31,8 @@ interface User {
   email: string;
   password_hash: string;
   role: 'Administrator' | 'Professional' | 'user';
+  mfa_secret?: string;
+  mfa_enabled?: boolean;
   created_at: string;
 }
 
@@ -230,6 +232,19 @@ class JsonDatabase {
 
           if (userIndex !== -1) {
             db.users[userIndex].role = role;
+            changes = 1;
+          }
+        }
+
+        // Handle UPDATE users SET mfa_secret = ?, mfa_enabled = 1 WHERE id = ?
+        if (sql.includes('UPDATE users SET mfa_secret = ?, mfa_enabled = 1 WHERE id = ?')) {
+          const secret = params[0];
+          const id = params[1];
+          const userIndex = db.users.findIndex(u => u.id === id);
+
+          if (userIndex !== -1) {
+            db.users[userIndex].mfa_secret = secret;
+            db.users[userIndex].mfa_enabled = true;
             changes = 1;
           }
         }

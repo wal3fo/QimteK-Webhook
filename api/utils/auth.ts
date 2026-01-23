@@ -7,6 +7,8 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { type Request, type Response, type NextFunction } from 'express';
+import { generateSecret, verify, generateURI } from 'otplib';
+import QRCode from 'qrcode';
 
 // JWT secret - use environment variable or fallback (should be set in production)
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -50,6 +52,32 @@ export function verifyToken(token: string): UserPayload | null {
   } catch (error) {
     return null;
   }
+}
+
+/**
+ * Generate MFA Secret and OTPAuth URL
+ */
+export function generateMfaSecret(email: string) {
+  const secret = generateSecret();
+  const otpauth = generateURI({ secret, label: email, issuer: 'QimteK Webhook' });
+  return { secret, otpauth };
+}
+
+/**
+ * Generate QR Code Data URL
+ */
+export async function generateQrCode(otpauth: string) {
+  return QRCode.toDataURL(otpauth);
+}
+
+/**
+ * Verify MFA Token
+ */
+export async function verifyMfaToken(token: string, secret: string) {
+  // verify from otplib v13+ might return an object { valid: boolean, ... } or boolean
+  const result = await verify({ token, secret });
+  if (typeof result === 'boolean') return result;
+  return (result as any)?.valid === true;
 }
 
 /**
