@@ -4,12 +4,23 @@ import { Copy, Check, Trash2, ExternalLink, Filter, Search, Download, Clock, Glo
 import { useWebhook } from '@/hooks/useWebhook';
 import { useAuth } from '@/hooks/useAuth';
 import { cn, METHOD_COLORS, METHODS } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
 import ConfirmModal from '@/components/ConfirmModal';
 import GenerateWebhookModal from '@/components/GenerateWebhookModal';
 import WebhookSelector from '@/components/WebhookSelector';
+
+// Helper to safely format dates
+const safeFormatDate = (dateStr: string) => {
+  try {
+    const date = new Date(dateStr);
+    if (!isValid(date)) return 'Invalid Date';
+    return format(date, 'PPp');
+  } catch (e) {
+    return 'Invalid Date';
+  }
+};
 
 // Mobile Request Card Component
 const RequestCard = memo(({ request, onNavigate }: { request: any; onNavigate: (id: string) => void }) => (
@@ -40,7 +51,7 @@ const RequestCard = memo(({ request, onNavigate }: { request: any; onNavigate: (
     <div className="space-y-2">
       <div className="flex items-center gap-2 text-sm text-qimtek-text-secondary">
         <Clock className="w-4 h-4 flex-shrink-0" />
-        <span className="text-xs">{format(new Date(request.timestamp), 'PPp')}</span>
+        <span className="text-xs">{safeFormatDate(request.timestamp)}</span>
       </div>
       {request.ip_address && (
         <div className="flex items-center gap-2 text-sm text-qimtek-text-secondary">
@@ -71,7 +82,7 @@ const RequestRow = memo(({ request, onNavigate }: { request: any; onNavigate: (i
       </span>
     </td>
     <td className="px-6 py-4 whitespace-nowrap text-sm text-qimtek-text">
-      {format(new Date(request.timestamp), 'PPp')}
+      {safeFormatDate(request.timestamp)}
     </td>
     <td className="px-6 py-4 whitespace-nowrap text-sm text-qimtek-text-secondary font-mono">
       {request.ip_address || 'N/A'}
