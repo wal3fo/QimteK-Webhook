@@ -368,14 +368,14 @@ export default function Home() {
                   type="text"
                   value={webhookName}
                   onChange={(e) => setWebhookName(e.target.value)}
-                  placeholder="Webhook Name (Optional)"
+                  placeholder="Webhook Name"
                   className="w-full px-4 py-3 bg-qimtek-bg-secondary border border-qimtek-border rounded-xl text-qimtek-text focus:outline-none focus:ring-2 focus:ring-[#82c91e]/50 text-center placeholder:text-qimtek-text-tertiary"
                 />
               </div>
 
               <button
                 onClick={handleGenerate}
-                disabled={loading}
+                disabled={loading || !webhookName.trim()}
                 className={cn(
                   'px-6 sm:px-8 py-3.5 sm:py-3.5 bg-[#82c91e] text-black rounded-xl font-semibold',
                   'hover:bg-[#6ba017] disabled:opacity-50 disabled:cursor-not-allowed',

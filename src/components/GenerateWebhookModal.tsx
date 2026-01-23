@@ -39,7 +39,7 @@ export default function GenerateWebhookModal({ isOpen, onClose, onGenerate, load
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-qimtek-text-secondary mb-1">
-                  Webhook Name (Optional)
+                  Webhook Name
                 </label>
                 <input
                   type="text"
@@ -48,6 +48,7 @@ export default function GenerateWebhookModal({ isOpen, onClose, onGenerate, load
                   placeholder="e.g., Payment Notification"
                   className="w-full px-4 py-2 bg-qimtek-bg-secondary border border-qimtek-border rounded-lg text-qimtek-text focus:outline-none focus:ring-2 focus:ring-[#82c91e]/50"
                   autoFocus
+                  required
                 />
               </div>
 
@@ -61,7 +62,7 @@ export default function GenerateWebhookModal({ isOpen, onClose, onGenerate, load
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || !name.trim()}
                   className="flex-1 px-4 py-2 bg-[#82c91e] text-black rounded-lg hover:bg-[#6ba017] transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Generating...' : 'Generate'}
