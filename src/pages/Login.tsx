@@ -44,9 +44,6 @@ export default function Login() {
           <div className="flex justify-center mb-4">
             <Logo size="xl" />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-qimtek-text mb-2">
-            QimteK Hooks
-          </h1>
           <p className="text-qimtek-text-secondary">
             {isLogin ? 'Sign in to your account' : 'Create a new account'}
           </p>

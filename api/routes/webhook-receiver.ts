@@ -45,39 +45,55 @@ router.all('/:token', async (req: Request, res: Response): Promise<void> => {
   try {
     const { token } = req.params;
     const database = await ensureDb();
-    
-    // Verify webhook exists and is active
-    const webhookResult = database.prepare(`
-      SELECT * FROM webhooks 
-      WHERE token = ? AND is_active = 1 AND expires_at > datetime('now')
-    `).get(token);
-    
-    const webhook = await (webhookResult instanceof Promise 
-      ? webhookResult 
-      : Promise.resolve(webhookResult)) as { token: string; expires_at: string; is_active: number } | undefined;
-    
+
+    // Validate webhook exists and is active
+    const webhook = database.prepare('SELECT * FROM webhooks WHERE token = ?').get(token) as any;
+
     if (!webhook) {
       res.status(404).json({
         success: false,
-        error: 'Webhook not found or expired',
+        error: 'Webhook not found',
       });
       return;
     }
-    
+
+    // Check if expired
+    if (new Date(webhook.expires_at) < new Date()) {
+      res.status(410).json({
+        success: false,
+        error: 'Webhook expired',
+      });
+      return;
+    }
+
+    // Check if active
+    // Handle both boolean (JSON DB) and integer (SQLite) values
+    const isActive = typeof webhook.is_active === 'boolean'
+      ? webhook.is_active
+      : webhook.is_active === 1;
+
+    if (!isActive) {
+      res.status(403).json({
+        success: false,
+        error: 'Webhook is inactive',
+      });
+      return;
+    }
+
     // Generate unique request ID
     const requestId = uuidv4();
-    
+
     // Extract request data
     const method = req.method;
     const url = req.originalUrl;
     const headers = req.headers;
     const query = req.query;
-    
+
     // Parse body - handle different content types
     let body = null;
     const contentType = req.headers['content-type'] || '';
     let rawBody: string | null = null;
-    
+
     // Get raw body (from express.raw() middleware)
     if (Buffer.isBuffer(req.body)) {
       rawBody = req.body.toString('utf8');
@@ -86,7 +102,7 @@ router.all('/:token', async (req: Request, res: Response): Promise<void> => {
     } else if (req.body) {
       rawBody = String(req.body);
     }
-    
+
     // Parse body based on content type
     if (rawBody && rawBody.length > 0) {
       if (contentType.includes('application/json')) {
@@ -114,21 +130,21 @@ router.all('/:token', async (req: Request, res: Response): Promise<void> => {
         body = rawBody;
       }
     }
-    
+
     // Extract source IP address (handles proxies/load balancers)
-    const ipAddress = 
+    const ipAddress =
       (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
       (req.headers['x-real-ip'] as string) ||
       req.socket.remoteAddress ||
       'unknown';
-    
+
     // Store request in database
     const timestamp = new Date().toISOString();
     const stmt = database.prepare(`
       INSERT INTO requests (id, webhook_token, method, url, headers, body, query, ip_address, timestamp)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
-    
+
     try {
       const runResult = stmt.run(
         requestId,
@@ -142,7 +158,7 @@ router.all('/:token', async (req: Request, res: Response): Promise<void> => {
         timestamp
       );
       await (runResult instanceof Promise ? runResult : Promise.resolve(runResult));
-      
+
       // Enforce request limit: keep only the last N requests per webhook
       // Delete older requests beyond the limit
       // Note: For JSON database, this is handled in the INSERT operation
@@ -158,7 +174,7 @@ router.all('/:token', async (req: Request, res: Response): Promise<void> => {
             LIMIT ?
           )
         `);
-        
+
         const limitResult = limitStmt.run(token, token, MAX_REQUESTS_PER_WEBHOOK);
         await (limitResult instanceof Promise ? limitResult : Promise.resolve(limitResult));
       } catch (limitError) {
@@ -166,13 +182,13 @@ router.all('/:token', async (req: Request, res: Response): Promise<void> => {
         // that's okay - JSON database handles limits during INSERT
         console.log('[Webhook] Request limit enforcement skipped (handled by storage layer)');
       }
-      
+
       console.log(`[Webhook] Captured ${method} request to ${url} (ID: ${requestId})`);
     } catch (dbError) {
       console.error('Database error saving request:', dbError);
       // Continue anyway - we'll still return success to the sender
     }
-    
+
     // Return success response to the sender
     // This allows webhook senders to know their request was received
     res.status(200).json({

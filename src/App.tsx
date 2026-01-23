@@ -5,6 +5,7 @@ import { useEffect, lazy, Suspense } from "react";
 const Home = lazy(() => import("@/pages/Home"));
 const RequestDetails = lazy(() => import("@/pages/RequestDetails"));
 const Login = lazy(() => import("@/pages/Login"));
+const AdminUsers = lazy(() => import("@/pages/AdminUsers"));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -21,7 +22,7 @@ export default function App() {
     // Set dark theme attribute
     document.documentElement.setAttribute('data-bs-theme', 'dark');
     document.documentElement.classList.add('dark');
-    
+
     // Add viewport meta tag if not present (for mobile)
     if (!document.querySelector('meta[name="viewport"]')) {
       const viewport = document.createElement('meta');
@@ -38,6 +39,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/request/:id" element={<RequestDetails />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
         </Routes>
       </Suspense>
     </Router>

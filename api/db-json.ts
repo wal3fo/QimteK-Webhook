@@ -42,13 +42,29 @@ interface Database {
 // JSON database works in all environments
 function getDbPath(): string {
   const cwd = process.cwd();
-  
+
   // Use DB_PATH if explicitly set
   if (process.env.DB_PATH) {
     console.log(`✅ Using explicit DB_PATH: ${process.env.DB_PATH}`);
     return process.env.DB_PATH;
   }
-  
+
+  // Try to load from .env if not set (fallback)
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const envPath = path.join(process.cwd(), '.env');
+    if (fs.existsSync(envPath)) {
+      const envConfig = require('dotenv').parse(fs.readFileSync(envPath));
+      if (envConfig.DB_PATH) {
+        console.log(`✅ Using DB_PATH from .env: ${envConfig.DB_PATH}`);
+        return envConfig.DB_PATH;
+      }
+    }
+  } catch (e) {
+    // Ignore error
+  }
+
   // For local development, use current working directory
   const localPath = path.join(cwd, 'webhook-data.json');
   console.log(`✅ Using database path: ${localPath} (cwd: ${cwd})`);
@@ -63,7 +79,7 @@ function ensureDbFile(): void {
     // Ensure the directory exists (especially for /tmp)
     const dir = path.dirname(dbPath);
     console.log(`📁 Database directory: ${dir}`);
-    
+
     if (!fs.existsSync(dir)) {
       console.log(`📁 Creating directory: ${dir}`);
       fs.mkdirSync(dir, { recursive: true });
@@ -71,7 +87,7 @@ function ensureDbFile(): void {
     } else {
       console.log(`✅ Directory exists: ${dir}`);
     }
-    
+
     // Check if directory is writable
     try {
       fs.accessSync(dir, fs.constants.W_OK);
@@ -80,7 +96,7 @@ function ensureDbFile(): void {
       console.error(`❌ Directory is NOT writable: ${dir}`, accessError);
       throw new Error(`Directory ${dir} is not writable`);
     }
-    
+
     if (!fs.existsSync(dbPath)) {
       console.log(`📝 Creating new database file: ${dbPath}`);
       const initialData: Database = {
@@ -135,13 +151,13 @@ function readDb(): Database {
     const dbPath = getDbPath();
     const data = fs.readFileSync(dbPath, 'utf8');
     const db = JSON.parse(data);
-    
+
     // Backward compatibility: ensure users array exists
     if (!db.users) {
       db.users = [];
       writeDb(db);
     }
-    
+
     return db;
   } catch (error) {
     console.error('Error reading database:', error);
@@ -177,7 +193,7 @@ class JsonDatabase {
           const email = params[1];
           const passwordHash = params[2];
           const role = params[3] || 'user';
-          
+
           const user: User = {
             id,
             email,
@@ -185,17 +201,52 @@ class JsonDatabase {
             role: role as 'admin' | 'user',
             created_at: new Date().toISOString(),
           };
-          
+
           db.users.push(user);
           changes = 1;
         }
+
+        // Handle UPDATE users SET role
+        if (sql.includes('UPDATE users SET role = ?')) {
+          const role = params[0];
+          const id = params[1];
+          const userIndex = db.users.findIndex(u => u.id === id);
+
+          if (userIndex !== -1) {
+            db.users[userIndex].role = role;
+            changes = 1;
+          }
+        }
+
+        // Handle DELETE FROM users
+        if (sql.includes('DELETE FROM users WHERE id = ?')) {
+          const id = params[0];
+          const initialLength = db.users.length;
+          db.users = db.users.filter(u => u.id !== id);
+          changes = initialLength - db.users.length;
+        }
+
+        // Handle DELETE FROM webhooks WHERE user_id = ?
+        if (sql.includes('DELETE FROM webhooks WHERE user_id = ?')) {
+          const userId = params[0];
+          const initialLength = db.webhooks.length;
+          // Find webhooks to be deleted to also delete their requests
+          const deletedWebhooks = db.webhooks.filter(w => w.user_id === userId);
+          const deletedTokens = deletedWebhooks.map(w => w.token);
+
+          db.webhooks = db.webhooks.filter(w => w.user_id !== userId);
+          db.requests = db.requests.filter(r => !deletedTokens.includes(r.webhook_token));
+
+          changes = initialLength - db.webhooks.length;
+        }
+
         // Handle INSERT INTO webhooks
         if (sql.includes('INSERT INTO webhooks')) {
           const token = params[0];
           const userId = params[1]; // user_id is now the second parameter
           const expiresAt = params[2]; // expires_at is now the third parameter
           const isActive = params[3] !== undefined ? params[3] : true;
-          
+
           const webhook: Webhook = {
             token,
             user_id: userId,
@@ -203,7 +254,7 @@ class JsonDatabase {
             expires_at: expiresAt,
             is_active: isActive,
           };
-          
+
           db.webhooks.push(webhook);
           changes = 1;
         }
@@ -220,20 +271,20 @@ class JsonDatabase {
             timestamp: params[7] || new Date().toISOString(),
             ip_address: params[8] || null,
           };
-          
+
           db.requests.push(request);
           changes = 1;
-          
+
           // Enforce request limit: keep only last 100 requests per webhook
           // This is done here to keep the JSON database simple
           const MAX_REQUESTS = 100;
           const webhookRequests = db.requests
             .filter(r => r.webhook_token === params[1])
             .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-          
+
           if (webhookRequests.length > MAX_REQUESTS) {
             const toKeep = webhookRequests.slice(0, MAX_REQUESTS).map(r => r.id);
-            db.requests = db.requests.filter(r => 
+            db.requests = db.requests.filter(r =>
               r.webhook_token !== params[1] || toKeep.includes(r.id)
             );
           }
@@ -242,31 +293,31 @@ class JsonDatabase {
         // Note: Request limit is now handled in INSERT, so this is mainly for cleanup
         else if (sql.includes('DELETE FROM requests')) {
           const beforeCount = db.requests.length;
-          
+
           if (sql.includes('webhook_token = ?') && sql.includes('id NOT IN')) {
             // This query is handled during INSERT, but we'll process it here too for safety
             const token = params[0];
             const limit = params[2] || 100;
-            
+
             // Get the IDs of requests to keep (last N requests for this webhook)
             const webhookRequests = db.requests
               .filter(r => r.webhook_token === token)
               .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
               .slice(0, limit)
               .map(r => r.id);
-            
+
             // Delete requests not in the keep list
-            db.requests = db.requests.filter(r => 
+            db.requests = db.requests.filter(r =>
               r.webhook_token !== token || webhookRequests.includes(r.id)
             );
-            
+
             changes = beforeCount - db.requests.length;
           }
         }
         // Handle DELETE FROM webhooks
         else if (sql.includes('DELETE FROM webhooks')) {
           const beforeCount = db.webhooks.length;
-          
+
           if (sql.includes('WHERE token = ?') && sql.includes('user_id = ?')) {
             const token = params[0];
             const userId = params[1];
@@ -289,7 +340,7 @@ class JsonDatabase {
               return !expired;
             });
           }
-          
+
           changes = beforeCount - db.webhooks.length;
         }
 
@@ -298,20 +349,20 @@ class JsonDatabase {
       },
       get: (...params: any[]) => {
         const db = readDb();
-        
+
         // Handle SELECT FROM users WHERE email = ?
         if (sql.includes('SELECT') && sql.includes('users') && sql.includes('email = ?')) {
           const email = params[0];
           const user = db.users.find(u => u.email === email);
           return user || undefined;
         }
-        
+
         // Handle SELECT FROM users WHERE id = ?
         if (sql.includes('SELECT') && sql.includes('users') && sql.includes('id = ?')) {
           const id = params[0];
           const user = db.users.find(u => u.id === id);
           if (!user) return undefined;
-          
+
           // Return user without password hash
           return {
             id: user.id,
@@ -320,33 +371,44 @@ class JsonDatabase {
             created_at: user.created_at,
           };
         }
-        
+
         // Handle SELECT COUNT(*) FROM requests WHERE webhook_token = ?
         if (sql.includes('SELECT COUNT(*)') && sql.includes('requests') && sql.includes('webhook_token = ?')) {
           const token = params[0];
           const count = db.requests.filter(r => r.webhook_token === token).length;
           return { count };
         }
-        
+
+        // Handle SELECT COUNT(*) FROM webhooks WHERE user_id = ? AND is_active = 1
+        if (sql.includes('SELECT COUNT(*)') && sql.includes('webhooks') && sql.includes('user_id = ?')) {
+          const userId = params[0];
+          const count = db.webhooks.filter(w =>
+            w.user_id === userId &&
+            w.is_active &&
+            new Date(w.expires_at) > new Date()
+          ).length;
+          return { count };
+        }
+
         // Handle SELECT FROM webhooks WHERE token = ? AND user_id = ?
         if (sql.includes('SELECT') && sql.includes('webhooks') && sql.includes('token = ?') && sql.includes('user_id = ?')) {
           const token = params[0];
           const userId = params[1];
-          const webhook = db.webhooks.find(w => 
-            w.token === token && 
+          const webhook = db.webhooks.find(w =>
+            w.token === token &&
             w.user_id === userId &&
-            w.is_active && 
+            w.is_active &&
             new Date(w.expires_at) > new Date()
           );
           return webhook || undefined;
         }
-        
+
         // Handle SELECT FROM webhooks WHERE token = ? (for webhook receiver - no auth required)
         if (sql.includes('SELECT') && sql.includes('webhooks') && sql.includes('token = ?') && !sql.includes('user_id = ?')) {
           const token = params[0];
-          const webhook = db.webhooks.find(w => 
-            w.token === token && 
-            w.is_active && 
+          const webhook = db.webhooks.find(w =>
+            w.token === token &&
+            w.is_active &&
             new Date(w.expires_at) > new Date()
           );
           // Return webhook without user_id for backward compatibility
@@ -359,7 +421,70 @@ class JsonDatabase {
           }
           return undefined;
         }
-        
+
+
+        // Handle SELECT r.* FROM requests r INNER JOIN webhooks w ON r.webhook_token = w.token WHERE r.id = ? AND w.user_id = ?
+        if (sql.includes('SELECT r.*') && sql.includes('INNER JOIN') && sql.includes('requests r') && sql.includes('webhooks w') && sql.includes('id = ?') && sql.includes('user_id = ?')) {
+          const id = params[0];
+          const userId = params[1];
+          const request = db.requests.find(r => r.id === id);
+          if (!request) return undefined;
+
+          // Verify webhook belongs to user
+          const webhook = db.webhooks.find(w => w.token === request.webhook_token && w.user_id === userId);
+          if (!webhook) return undefined;
+
+          // Convert to format expected by the code (stringify JSON fields)
+          return {
+            id: request.id,
+            webhook_token: request.webhook_token,
+            method: request.method,
+            url: request.url,
+            headers: typeof request.headers === 'string' ? request.headers : JSON.stringify(request.headers),
+            body: request.body ? (typeof request.body === 'string' ? request.body : JSON.stringify(request.body)) : null,
+            query: request.query ? (typeof request.query === 'string' ? request.query : JSON.stringify(request.query)) : null,
+            timestamp: request.timestamp,
+            ip_address: request.ip_address,
+          };
+        }
+
+        // Handle SELECT FROM requests WHERE id = ? (backward compatibility)
+        if (sql.includes('SELECT') && sql.includes('requests') && sql.includes('id = ?') && !sql.includes('INNER JOIN')) {
+          const id = params[0];
+          const request = db.requests.find(r => r.id === id);
+          if (!request) return undefined;
+
+          // Convert to format expected by the code (stringify JSON fields)
+          return {
+            id: request.id,
+            webhook_token: request.webhook_token,
+            method: request.method,
+            url: request.url,
+            headers: typeof request.headers === 'string' ? request.headers : JSON.stringify(request.headers),
+            body: request.body ? (typeof request.body === 'string' ? request.body : JSON.stringify(request.body)) : null,
+            query: request.query ? (typeof request.query === 'string' ? request.query : JSON.stringify(request.query)) : null,
+            timestamp: request.timestamp,
+            ip_address: request.ip_address,
+          };
+        }
+
+        return undefined;
+      },
+      all: (...params: any[]) => {
+        const db = readDb();
+
+        // Handle SELECT id, email, role, created_at FROM users
+        if (sql.includes('SELECT id, email, role, created_at FROM users')) {
+          return db.users
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .map(u => ({
+              id: u.id,
+              email: u.email,
+              role: u.role,
+              created_at: u.created_at
+            }));
+        }
+
         // Handle SELECT token, created_at, expires_at, is_active FROM webhooks WHERE user_id = ?
         if (sql.includes('SELECT') && sql.includes('webhooks') && sql.includes('user_id = ?') && sql.includes('ORDER BY created_at DESC')) {
           const userId = params[0];
@@ -374,68 +499,18 @@ class JsonDatabase {
             }));
           return webhooks;
         }
-        
-        // Handle SELECT r.* FROM requests r INNER JOIN webhooks w ON r.webhook_token = w.token WHERE r.id = ? AND w.user_id = ?
-        if (sql.includes('SELECT r.*') && sql.includes('INNER JOIN') && sql.includes('requests r') && sql.includes('webhooks w') && sql.includes('id = ?') && sql.includes('user_id = ?')) {
-          const id = params[0];
-          const userId = params[1];
-          const request = db.requests.find(r => r.id === id);
-          if (!request) return undefined;
-          
-          // Verify webhook belongs to user
-          const webhook = db.webhooks.find(w => w.token === request.webhook_token && w.user_id === userId);
-          if (!webhook) return undefined;
-          
-          // Convert to format expected by the code (stringify JSON fields)
-          return {
-            id: request.id,
-            webhook_token: request.webhook_token,
-            method: request.method,
-            url: request.url,
-            headers: typeof request.headers === 'string' ? request.headers : JSON.stringify(request.headers),
-            body: request.body ? (typeof request.body === 'string' ? request.body : JSON.stringify(request.body)) : null,
-            query: request.query ? (typeof request.query === 'string' ? request.query : JSON.stringify(request.query)) : null,
-            timestamp: request.timestamp,
-            ip_address: request.ip_address,
-          };
-        }
-        
-        // Handle SELECT FROM requests WHERE id = ? (backward compatibility)
-        if (sql.includes('SELECT') && sql.includes('requests') && sql.includes('id = ?') && !sql.includes('INNER JOIN')) {
-          const id = params[0];
-          const request = db.requests.find(r => r.id === id);
-          if (!request) return undefined;
-          
-          // Convert to format expected by the code (stringify JSON fields)
-          return {
-            id: request.id,
-            webhook_token: request.webhook_token,
-            method: request.method,
-            url: request.url,
-            headers: typeof request.headers === 'string' ? request.headers : JSON.stringify(request.headers),
-            body: request.body ? (typeof request.body === 'string' ? request.body : JSON.stringify(request.body)) : null,
-            query: request.query ? (typeof request.query === 'string' ? request.query : JSON.stringify(request.query)) : null,
-            timestamp: request.timestamp,
-            ip_address: request.ip_address,
-          };
-        }
-        
-        return undefined;
-      },
-      all: (...params: any[]) => {
-        const db = readDb();
-        
+
         // Handle SELECT FROM requests WHERE webhook_token = ?
         if (sql.includes('SELECT') && sql.includes('requests') && sql.includes('webhook_token = ?')) {
           const token = params[0];
           const limit = params[1] || 100;
           const offset = params[2] || 0;
-          
+
           let requests = db.requests
             .filter(r => r.webhook_token === token)
             .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
             .slice(offset, offset + limit);
-          
+
           // Convert to format expected by the code
           return requests.map(req => ({
             id: req.id,
@@ -449,7 +524,7 @@ class JsonDatabase {
             ip_address: req.ip_address,
           }));
         }
-        
+
         return [];
       },
     };

@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Copy, Check } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 import { cn, METHOD_COLORS } from '@/lib/utils';
 import { format } from 'date-fns';
 import Logo from '@/components/Logo';
@@ -23,18 +24,32 @@ interface WebhookRequest {
 export default function RequestDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { token, loading: authLoading } = useAuth();
   const [request, setRequest] = useState<WebhookRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || authLoading) return;
+    
+    if (!token) {
+        setError('Authentication required');
+        setLoading(false);
+        return;
+    }
 
     const fetchRequest = async () => {
       try {
-        const response = await fetch(`${API_URL}/webhooks/requests/${id}`);
+        const response = await fetch(`${API_URL}/webhooks/requests/${id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         if (!response.ok) {
+          if (response.status === 401) {
+            throw new Error('Authentication failed');
+          }
           throw new Error('Failed to fetch request');
         }
 
@@ -52,7 +67,7 @@ export default function RequestDetails() {
     };
 
     fetchRequest();
-  }, [id]);
+  }, [id, token, authLoading]);
 
   const handleCopy = useCallback(async (text: string, key: string) => {
     try {

@@ -28,6 +28,7 @@ import dotenv from 'dotenv'
 import webhookRoutes from './routes/webhooks.js'
 import webhookReceiverRoutes from './routes/webhook-receiver.js'
 import authRoutes from './routes/auth.js'
+import userRoutes from './routes/users.js'
 
 // Load environment variables
 if (process.env.NODE_ENV !== 'production') {
@@ -71,6 +72,11 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 app.use('/api/auth', authRoutes)
 
 /**
+ * User Management Routes (Admin Only)
+ */
+app.use('/api/users', userRoutes)
+
+/**
  * Webhook Management Routes
  * 
  * Routes for generating webhooks and retrieving captured requests:
@@ -104,8 +110,8 @@ app.use((error: Error, req: Request, res: Response, next: NextFunction): void =>
   console.error('Error:', error);
   res.status(500).json({
     success: false,
-    error: process.env.NODE_ENV === 'production' 
-      ? 'Server internal error' 
+    error: process.env.NODE_ENV === 'production'
+      ? 'Server internal error'
       : error.message,
   })
 })

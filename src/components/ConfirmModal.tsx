@@ -11,6 +11,7 @@ interface ConfirmModalProps {
   confirmText?: string;
   cancelText?: string;
   confirmButtonColor?: string;
+  isDanger?: boolean;
 }
 
 export default function ConfirmModal({
@@ -21,8 +22,14 @@ export default function ConfirmModal({
   message,
   confirmText = 'Confirm',
   cancelText = 'Cancel',
-  confirmButtonColor = 'bg-red-600 hover:bg-red-700',
+  confirmButtonColor,
+  isDanger = false,
 }: ConfirmModalProps) {
+  // Determine styles based on isDanger
+  const buttonColor = confirmButtonColor || (isDanger ? 'bg-red-600 hover:bg-red-700' : 'bg-[#82c91e] hover:bg-[#6ba017] text-black');
+  const iconBgColor = isDanger ? 'bg-red-900/30 border-red-700/50' : 'bg-[#82c91e]/10 border-[#82c91e]/20';
+  const iconColor = isDanger ? 'text-red-400' : 'text-[#82c91e]';
+
   // Handle ESC key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -121,8 +128,8 @@ export default function ConfirmModal({
               onClick={handleConfirm}
               className={cn(
                 'flex-1 px-4 py-3 rounded-lg font-semibold transition-all duration-200',
-                confirmButtonColor,
-                'text-white active:scale-95 shadow-lg hover:shadow-xl',
+                buttonColor,
+                'active:scale-95 shadow-lg hover:shadow-xl',
                 'touch-manipulation min-h-[44px] text-sm sm:text-base'
               )}
             >

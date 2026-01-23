@@ -35,6 +35,7 @@ const getApiUrl = () => {
 };
 
 const API_URL = getApiUrl();
+const WEBHOOK_STORAGE_KEY = 'last_selected_webhook_token';
 
 export function useWebhook() {
   const { token: authToken, isAuthenticated } = useAuth();
@@ -56,6 +57,13 @@ export function useWebhook() {
     return headers;
   }, [authToken]);
 
+  // Persist selected webhook
+  useEffect(() => {
+    if (selectedWebhook) {
+      localStorage.setItem(WEBHOOK_STORAGE_KEY, selectedWebhook.token);
+    }
+  }, [selectedWebhook]);
+
   // Load all webhooks for the user
   const fetchWebhooks = useCallback(async () => {
     if (!isAuthenticated || !authToken) return;
@@ -68,10 +76,23 @@ export function useWebhook() {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          setWebhooks(data.webhooks || []);
-          // If no webhook is selected and we have webhooks, select the first one
-          if (!selectedWebhook && data.webhooks && data.webhooks.length > 0) {
-            setSelectedWebhook(data.webhooks[0]);
+          const fetchedWebhooks = data.webhooks || [];
+          setWebhooks(fetchedWebhooks);
+          
+          // Logic to select webhook: Stored > First Available
+          if (!selectedWebhook && fetchedWebhooks.length > 0) {
+            const storedToken = localStorage.getItem(WEBHOOK_STORAGE_KEY);
+            let webhookToSelect = null;
+
+            if (storedToken) {
+              webhookToSelect = fetchedWebhooks.find((w: Webhook) => w.token === storedToken);
+            }
+
+            if (!webhookToSelect) {
+              webhookToSelect = fetchedWebhooks[0];
+            }
+
+            setSelectedWebhook(webhookToSelect);
           }
         }
       }
