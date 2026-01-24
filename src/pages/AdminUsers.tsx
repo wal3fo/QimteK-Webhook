@@ -310,7 +310,7 @@ export default function AdminUsers() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setCreateModalOpen(true)}
-              className="flex items-center gap-2 px-3 py-2 bg-[#82c91e] hover:bg-[#6ba017] text-black rounded-lg transition-colors text-sm font-semibold"
+              className="flex items-center gap-2 px-2.5 sm:px-3 py-2 bg-[#82c91e] hover:bg-[#6ba017] text-black rounded-lg transition-colors text-sm font-semibold"
             >
               <UserPlus className="w-4 h-4" />
               <span className="hidden sm:inline">New User</span>
