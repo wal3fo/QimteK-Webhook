@@ -25,6 +25,8 @@ import express, {
 } from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import webhookRoutes from './routes/webhooks.js'
 import webhookReceiverRoutes from './routes/webhook-receiver.js'
 import authRoutes from './routes/auth.js'
@@ -154,13 +156,40 @@ app.use((error: Error, req: Request, res: Response, next: NextFunction): void =>
   })
 })
 
+<<<<<<< HEAD
 // 404 handler for API
 app.use('/api', (req: Request, res: Response) => {
   res.status(404).json({
     success: false,
     error: 'API not found',
+=======
+/**
+ * 404 handler and Static File Serving
+ */
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+const distPath = path.join(__dirname, '../../dist')
+
+if (process.env.NODE_ENV === 'production') {
+  console.log(`Serving static files from: ${distPath}`)
+  app.use(express.static(distPath))
+
+  app.get('*', (req: Request, res: Response) => {
+    if (req.path.startsWith('/api')) {
+      res.status(404).json({ success: false, error: 'API not found' })
+      return
+    }
+    res.sendFile(path.join(distPath, 'index.html'))
+>>>>>>> 9b5e62890e36fc51a060e852f217c3c06a5bc229
   })
-})
+} else {
+  app.use((req: Request, res: Response) => {
+    res.status(404).json({
+      success: false,
+      error: 'API not found',
+    })
+  })
+}
 
 // Serve frontend for all other routes
 app.get('*', (req: Request, res: Response) => {
