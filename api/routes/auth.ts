@@ -409,14 +409,14 @@ router.post('/mfa/disable', authenticate, async (req: Request, res: Response): P
     // Optional: Verify password before disabling for extra security
     // For now we trust the authenticated session, but checking password is good practice
     if (password) {
-       const database = await ensureDb();
-       const userResult = database.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
-       const dbUser = await (userResult instanceof Promise ? userResult : Promise.resolve(userResult));
-       const isValid = await comparePassword(password, dbUser.password_hash);
-       if (!isValid) {
-         res.status(401).json({ success: false, error: 'Invalid password' });
-         return;
-       }
+      const database = await ensureDb();
+      const userResult = database.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
+      const dbUser = await (userResult instanceof Promise ? userResult : Promise.resolve(userResult));
+      const isValid = await comparePassword(password, dbUser.password_hash);
+      if (!isValid) {
+        res.status(401).json({ success: false, error: 'Invalid password' });
+        return;
+      }
     }
 
     const database = await ensureDb();
