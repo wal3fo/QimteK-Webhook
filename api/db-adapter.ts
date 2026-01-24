@@ -43,6 +43,8 @@ export async function initDb(): Promise<void> {
     console.log('🔍 Database initialization starting...', {
       cwd,
       DB_PATH: process.env.DB_PATH,
+      SUPABASE_URL_SET: !!process.env.SUPABASE_URL,
+      SUPABASE_KEY_SET: !!process.env.SUPABASE_KEY,
     });
 
     // Priority 1: Try Supabase (if credentials exist)
