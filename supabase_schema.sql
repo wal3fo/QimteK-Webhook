@@ -10,8 +10,22 @@ CREATE TABLE IF NOT EXISTS public.users (
     is_verified BOOLEAN DEFAULT FALSE,
     verification_token TEXT,
     verification_token_expires_at TIMESTAMP WITH TIME ZONE,
+    mfa_enabled BOOLEAN DEFAULT FALSE,
+    mfa_secret TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Migration to add MFA columns if table exists (safe to run)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'mfa_enabled') THEN
+        ALTER TABLE public.users ADD COLUMN mfa_enabled BOOLEAN DEFAULT FALSE;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'mfa_secret') THEN
+        ALTER TABLE public.users ADD COLUMN mfa_secret TEXT;
+    END IF;
+END $$;
 
 -- 2. Webhooks Table
 CREATE TABLE IF NOT EXISTS public.webhooks (
