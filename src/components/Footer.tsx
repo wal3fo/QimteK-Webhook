@@ -32,7 +32,7 @@ export default function Footer() {
 
       <div className="container mx-auto py-2 px-4 sm:px-6 lg:px-8 max-w-7xl relative z-10">
         {/* Main Footer Content */}
-        <div className="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 mb-10 sm:mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 mb-10 sm:mb-12">
           {/* Brand Section */}
           <div className="lg:col-span-1 space-y-4">
             <div className="flex items-center gap-3 mb-4">

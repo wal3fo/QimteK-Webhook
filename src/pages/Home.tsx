@@ -228,14 +228,14 @@ export default function Home() {
       )}>
         {/* Header */}
         <div className="mb-4 sm:mb-6 lg:mb-8 slide-enter">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4 sm:mb-6">
             <Logo size="xl" />
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-center sm:justify-end">
               {/* Auth Section */}
               {isAuthenticated ? (
-                <div className="flex items-center gap-2 sm:gap-3">
+                <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
                   {/* User Info */}
-                  <div className="flex items-center gap-2 px-3 py-2 bg-qimtek-bg-secondary rounded-lg border border-qimtek-border">
+                  <div className="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-qimtek-bg-secondary rounded-lg border border-qimtek-border">
                     <User className="w-4 h-4 text-qimtek-text-secondary" />
                     <span className="text-sm text-qimtek-text-secondary hidden sm:inline">
                       {user?.email}
@@ -248,11 +248,11 @@ export default function Home() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
                     {isAdmin && (
                       <Link
                         to="/admin/users"
-                        className="flex items-center gap-2 px-3 py-2 bg-qimtek-bg-secondary hover:bg-qimtek-bg-surface border border-qimtek-border hover:border-[#82c91e]/50 text-qimtek-text-secondary hover:text-[#82c91e] rounded-lg transition-all duration-200"
+                        className="flex items-center gap-2 px-2.5 sm:px-3 py-2 bg-qimtek-bg-secondary hover:bg-qimtek-bg-surface border border-qimtek-border hover:border-[#82c91e]/50 text-qimtek-text-secondary hover:text-[#82c91e] rounded-lg transition-all duration-200"
                         title="Manage Users"
                       >
                         <Shield className="w-4 h-4" />
@@ -262,7 +262,7 @@ export default function Home() {
 
                     <button
                       onClick={() => setMfaModalOpen(true)}
-                      className="flex items-center gap-2 px-3 py-2 bg-qimtek-bg-secondary hover:bg-qimtek-bg-surface border border-qimtek-border hover:border-[#82c91e]/50 text-qimtek-text-secondary hover:text-[#82c91e] rounded-lg transition-all duration-200"
+                      className="flex items-center gap-2 px-2.5 sm:px-3 py-2 bg-qimtek-bg-secondary hover:bg-qimtek-bg-surface border border-qimtek-border hover:border-[#82c91e]/50 text-qimtek-text-secondary hover:text-[#82c91e] rounded-lg transition-all duration-200"
                       title="2FA Setup"
                     >
                       <Shield className="w-4 h-4" />
@@ -271,7 +271,7 @@ export default function Home() {
 
                     <button
                       onClick={() => setChangePasswordModalOpen(true)}
-                      className="flex items-center gap-2 px-3 py-2 bg-qimtek-bg-secondary hover:bg-qimtek-bg-surface border border-qimtek-border hover:border-[#82c91e]/50 text-qimtek-text-secondary hover:text-[#82c91e] rounded-lg transition-all duration-200"
+                      className="flex items-center gap-2 px-2.5 sm:px-3 py-2 bg-qimtek-bg-secondary hover:bg-qimtek-bg-surface border border-qimtek-border hover:border-[#82c91e]/50 text-qimtek-text-secondary hover:text-[#82c91e] rounded-lg transition-all duration-200"
                       title="Change Password"
                     >
                       <Lock className="w-4 h-4" />
@@ -280,7 +280,7 @@ export default function Home() {
 
                     <button
                       onClick={logout}
-                      className="flex items-center gap-2 px-3 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/50 text-red-500 hover:text-red-400 rounded-lg transition-all duration-200"
+                      className="flex items-center gap-2 px-2.5 sm:px-3 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/50 text-red-500 hover:text-red-400 rounded-lg transition-all duration-200"
                       title="Logout"
                     >
                       <LogOut className="w-4 h-4" />
