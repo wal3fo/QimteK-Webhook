@@ -223,8 +223,8 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-qimtek-bg page-enter flex flex-col">
       {/* Header */}
-      <div className="w-full px-2 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 slide-enter border-b border-qimtek-border">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="w-full px-0 py-4 sm:py-6 lg:py-8 slide-enter border-b border-qimtek-border">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 sm:px-4 lg:px-6">
           <Logo size="xl" />
           <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-center sm:justify-end">
             {/* Auth Section */}
@@ -302,7 +302,7 @@ export default function Home() {
       </div>
 
       <div className={cn(
-        "container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-7xl flex-1",
+        "container mx-auto px-2 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 max-w-7xl flex-1",
         isSearchFocused && isMobile && "pb-2"
       )}>
         <p className="text-qimtek-text-secondary text-sm sm:text-base mb-6 text-center lg:text-left">
