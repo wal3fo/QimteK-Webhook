@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, memo, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Copy, Check, Trash2, ExternalLink, Filter, Search, Download, Clock, Globe, X, LogIn, LogOut, User, Shield, Lock } from 'lucide-react';
+import { Copy, Check, Trash2, ExternalLink, Filter, Search, Download, Clock, Globe, X, LogIn, LogOut, User, Shield, Lock, Users, CircleUser, ShieldCheck, KeyRound } from 'lucide-react';
 import { useWebhook } from '@/hooks/useWebhook';
 import { useAuth } from '@/hooks/useAuth';
 import { cn, METHOD_COLORS, METHODS } from '@/lib/utils';
@@ -222,88 +222,92 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-qimtek-bg page-enter flex flex-col">
+      {/* Header */}
+      <div className="w-full px-2 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 slide-enter border-b border-qimtek-border">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <Logo size="xl" />
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-center sm:justify-end">
+            {/* Auth Section */}
+            {isAuthenticated ? (
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+                {/* User Info */}
+                <div className="relative flex items-center gap-2 px-2.5 py-2 lg:px-3 lg:py-2 bg-qimtek-bg-secondary rounded-lg border border-qimtek-border group">
+                  <CircleUser className="w-5 h-5 lg:w-4 lg:h-4" />
+                  <span className="text-sm hidden lg:inline">
+                    {user?.email}
+                  </span>
+                  {isAdmin && (
+                    <span className="px-2 py-0.5 bg-[#82c91e]/20 text-[#82c91e] rounded text-xs font-semibold hidden lg:inline-block">
+                      Admin
+                    </span>
+                  )}
+                  {isAdmin && (
+                    <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#82c91e] lg:hidden ring-2 ring-qimtek-bg-secondary" title="Admin"></span>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  {isAdmin && (
+                    <Link
+                      to="/admin/users"
+                      className="flex items-center gap-2 px-2.5 py-2 lg:px-3 lg:py-2 bg-qimtek-bg-secondary hover:bg-qimtek-bg-surface border border-qimtek-border hover:border-[#82c91e]/50 text-qimtek-text-secondary hover:text-[#82c91e] rounded-lg transition-all duration-200"
+                      title="Manage Users"
+                    >
+                      <Users className="w-5 h-5 lg:w-4 lg:h-4" />
+                      <span className="hidden lg:inline text-sm font-medium">Users</span>
+                    </Link>
+                  )}
+
+                  <button
+                    onClick={() => setMfaModalOpen(true)}
+                    className="flex items-center gap-2 px-2.5 py-2 lg:px-3 lg:py-2 bg-qimtek-bg-secondary hover:bg-qimtek-bg-surface border border-qimtek-border hover:border-[#82c91e]/50 text-qimtek-text-secondary hover:text-[#82c91e] rounded-lg transition-all duration-200"
+                    title="2FA Setup"
+                  >
+                    <ShieldCheck className="w-5 h-5 lg:w-4 lg:h-4" />
+                    <span className="hidden lg:inline text-sm font-medium">2FA</span>
+                  </button>
+
+                  <button
+                    onClick={() => setChangePasswordModalOpen(true)}
+                    className="flex items-center gap-2 px-2.5 py-2 lg:px-3 lg:py-2 bg-qimtek-bg-secondary hover:bg-qimtek-bg-surface border border-qimtek-border hover:border-[#82c91e]/50 text-qimtek-text-secondary hover:text-[#82c91e] rounded-lg transition-all duration-200"
+                    title="Change Password"
+                  >
+                    <KeyRound className="w-5 h-5 lg:w-4 lg:h-4" />
+                    <span className="hidden lg:inline text-sm font-medium">Password</span>
+                  </button>
+
+                  <button
+                    onClick={logout}
+                    className="flex items-center gap-2 px-2.5 py-2 lg:px-3 lg:py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/50 text-red-500 hover:text-red-400 rounded-lg transition-all duration-200"
+                    title="Logout"
+                  >
+                    <LogOut className="w-5 h-5 lg:w-4 lg:h-4" />
+                    <span className="hidden lg:inline text-sm font-medium">Logout</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="flex items-center gap-2 px-4 py-2 bg-qimtek-bg-secondary rounded-lg border border-qimtek-border text-qimtek-text-secondary hover:text-[#82c91e] hover:border-[#82c91e]/30 transition-all duration-200"
+              >
+                <LogIn className="w-4 h-4" />
+                <span className="text-sm font-medium">Login</span>
+              </Link>
+            )}
+          </div>
+          <h1 className="sr-only">QimteK Hooks - Webhook Inspection Tool</h1>
+        </div>
+      </div>
+
       <div className={cn(
         "container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-7xl flex-1",
         isSearchFocused && isMobile && "pb-2"
       )}>
-        {/* Header */}
-        <div className="mb-4 sm:mb-6 lg:mb-8 slide-enter">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4 sm:mb-6">
-            <Logo size="xl" />
-            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-center sm:justify-end">
-              {/* Auth Section */}
-              {isAuthenticated ? (
-                <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-                  {/* User Info */}
-                  <div className="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-qimtek-bg-secondary rounded-lg border border-qimtek-border">
-                    <User className="w-4 h-4 text-qimtek-text-secondary" />
-                    <span className="text-sm text-qimtek-text-secondary hidden sm:inline">
-                      {user?.email}
-                    </span>
-                    {isAdmin && (
-                      <span className="px-2 py-0.5 bg-[#82c91e]/20 text-[#82c91e] rounded text-xs font-semibold">
-                        Admin
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-1.5 sm:gap-2">
-                    {isAdmin && (
-                      <Link
-                        to="/admin/users"
-                        className="flex items-center gap-2 px-2.5 sm:px-3 py-2 bg-qimtek-bg-secondary hover:bg-qimtek-bg-surface border border-qimtek-border hover:border-[#82c91e]/50 text-qimtek-text-secondary hover:text-[#82c91e] rounded-lg transition-all duration-200"
-                        title="Manage Users"
-                      >
-                        <Shield className="w-4 h-4" />
-                        <span className="hidden lg:inline text-sm font-medium">Users</span>
-                      </Link>
-                    )}
-
-                    <button
-                      onClick={() => setMfaModalOpen(true)}
-                      className="flex items-center gap-2 px-2.5 sm:px-3 py-2 bg-qimtek-bg-secondary hover:bg-qimtek-bg-surface border border-qimtek-border hover:border-[#82c91e]/50 text-qimtek-text-secondary hover:text-[#82c91e] rounded-lg transition-all duration-200"
-                      title="2FA Setup"
-                    >
-                      <Shield className="w-4 h-4" />
-                      <span className="hidden lg:inline text-sm font-medium">2FA</span>
-                    </button>
-
-                    <button
-                      onClick={() => setChangePasswordModalOpen(true)}
-                      className="flex items-center gap-2 px-2.5 sm:px-3 py-2 bg-qimtek-bg-secondary hover:bg-qimtek-bg-surface border border-qimtek-border hover:border-[#82c91e]/50 text-qimtek-text-secondary hover:text-[#82c91e] rounded-lg transition-all duration-200"
-                      title="Change Password"
-                    >
-                      <Lock className="w-4 h-4" />
-                      <span className="hidden lg:inline text-sm font-medium">Password</span>
-                    </button>
-
-                    <button
-                      onClick={logout}
-                      className="flex items-center gap-2 px-2.5 sm:px-3 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/50 text-red-500 hover:text-red-400 rounded-lg transition-all duration-200"
-                      title="Logout"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span className="hidden sm:inline text-sm font-medium">Logout</span>
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <Link
-                  to="/login"
-                  className="flex items-center gap-2 px-4 py-2 bg-qimtek-bg-secondary rounded-lg border border-qimtek-border text-qimtek-text-secondary hover:text-[#82c91e] hover:border-[#82c91e]/30 transition-all duration-200"
-                >
-                  <LogIn className="w-4 h-4" />
-                  <span className="text-sm font-medium">Login</span>
-                </Link>
-              )}
-            </div>
-          </div>
-          <h1 className="sr-only">QimteK Hooks - Webhook Inspection Tool</h1>
-          <p className="text-qimtek-text-secondary text-sm sm:text-base">
-            Generate temporary webhook URLs to capture and inspect HTTP requests
-          </p>
-        </div>
+        <p className="text-qimtek-text-secondary text-sm sm:text-base mb-6 text-center lg:text-left">
+          Generate temporary webhook URLs to capture and inspect HTTP requests
+        </p>
 
         {/* Connection Status */}
         <div className="mb-4 sm:mb-6 slide-enter" style={{ animationDelay: '0.1s' }}>
@@ -642,6 +646,6 @@ export default function Home() {
         isOpen={mfaModalOpen}
         onClose={() => setMfaModalOpen(false)}
       />
-    </div>
+    </div >
   );
 }
