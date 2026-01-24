@@ -30,9 +30,9 @@ export default function Footer() {
       {/* Decorative gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#82c91e]/5 via-transparent to-transparent pointer-events-none" />
 
-      <div className="w-full px-2 sm:px-4 lg:px-6 py-2 relative z-10">
+      <div className="w-full px-0 py-2 relative z-10">
         {/* Main Footer Content */}
-        <div className="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 mb-10 sm:mb-12">
+        <div className="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 mb-10 sm:mb-12 px-2 sm:px-4 lg:px-6">
           {/* Brand Section */}
           <div className="lg:col-span-1 space-y-4">
             <div className="flex items-center gap-3 mb-4">
@@ -180,7 +180,7 @@ export default function Footer() {
 
         {/* Bottom Bar */}
         <div className="border-qimtek-border">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 sm:px-4 lg:px-6">
             {/* Copyright */}
             <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center sm:text-left">
               <p className="text-xs sm:text-sm text-qimtek-text-secondary">
@@ -215,7 +215,7 @@ export default function Footer() {
               {/* Visitor Stats */}
               <div
                 className={cn(
-                  'hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-lg',
+                  'inline-flex items-center gap-2 px-4 py-2 rounded-lg',
                   'bg-qimtek-bg-secondary border border-qimtek-border',
                   'text-sm text-qimtek-text-secondary',
                   'font-medium select-none mr-2'

@@ -298,33 +298,29 @@ export default function AdminUsers() {
     <div className="min-h-screen bg-qimtek-bg text-qimtek-text font-sans selection:bg-[#82c91e] selection:text-black flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-qimtek-bg/80 backdrop-blur-md border-b border-qimtek-border">
-        <div className="w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link to="/" className="text-qimtek-text-secondary hover:text-qimtek-text transition-colors">
+        <div className="w-full px-0 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-4 px-2 sm:px-4 lg:px-6">
+            <Link
+              to="/"
+              className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-qimtek-bg-secondary border border-qimtek-border hover:border-[#82c91e]/50 hover:text-[#82c91e] transition-all duration-200"
+              title="Return to Dashboard"
+            >
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <Logo className="h-8" />
-            <span className="px-2 py-1 bg-[#82c91e]/10 text-[#82c91e] text-xs rounded border border-[#82c91e]/20 font-mono">
+            <Logo className="h-6 sm:h-8" />
+            <span className="hidden sm:inline-block px-2 py-1 bg-[#82c91e]/10 text-[#82c91e] text-xs rounded border border-[#82c91e]/20 font-mono">
               ADMIN PANEL
             </span>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 px-2 sm:px-4 lg:px-6">
             <button
               onClick={() => setCreateModalOpen(true)}
-              className="flex items-center gap-2 px-2.5 py-2 sm:px-3 sm:py-2 bg-[#82c91e] hover:bg-[#6ba017] text-black rounded-lg transition-colors text-sm font-semibold"
+              className="flex items-center gap-2 px-2.5 py-2 sm:px-3 sm:py-2 bg-[#82c91e] hover:bg-[#6ba017] text-black rounded-lg transition-colors text-sm font-semibold shadow-lg shadow-[#82c91e]/10"
               title="New User"
             >
               <UserPlus className="w-5 h-5 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">New User</span>
-            </button>
-            <button
-              onClick={() => setMfaModalOpen(true)}
-              className="flex items-center gap-2 px-2.5 py-2 sm:px-3 sm:py-2 bg-qimtek-bg-secondary hover:bg-qimtek-bg-surface border border-qimtek-border hover:border-[#82c91e]/50 text-qimtek-text-secondary hover:text-[#82c91e] rounded-lg transition-all duration-200"
-              title="2FA Setup"
-            >
-              <Shield className="w-5 h-5 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline text-sm font-medium">2FA</span>
             </button>
             <button
               onClick={fetchUsers}
