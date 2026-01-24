@@ -323,6 +323,14 @@ export default function AdminUsers() {
               <span className="hidden sm:inline">New User</span>
             </button>
             <button
+              onClick={() => setMfaModalOpen(true)}
+              className="flex items-center gap-2 px-2.5 py-2 sm:px-3 sm:py-2 bg-qimtek-bg-secondary hover:bg-qimtek-bg-surface border border-qimtek-border hover:border-[#82c91e]/50 text-qimtek-text-secondary hover:text-[#82c91e] rounded-lg transition-all duration-200"
+              title="2FA Setup"
+            >
+              <ShieldCheck className="w-5 h-5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">2FA</span>
+            </button>
+            <button
               onClick={fetchUsers}
               disabled={loading}
               className="p-2.5 sm:p-2 text-qimtek-text-secondary hover:text-qimtek-text hover:bg-qimtek-bg-secondary rounded-lg transition-colors border border-transparent hover:border-qimtek-border"
