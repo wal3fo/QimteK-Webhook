@@ -1,11 +1,10 @@
-
 /**
  * User Management Routes (Admin Only)
  */
 
 import { Router, type Request, type Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { ensureDb } from '../db.js';
+import { supabase } from '../lib/supabase.js';
 import { authenticate, requireAdmin, hashPassword } from '../utils/auth.js';
 
 const router = Router();
@@ -55,19 +54,16 @@ router.post('/', authenticate, requireAdmin, async (req: Request, res: Response)
       return;
     }
 
-    const database = await ensureDb();
     const normalizedEmail = email.toLowerCase();
 
     // Check if user already exists
-    const existingUser = database.prepare(`
-      SELECT * FROM users WHERE email = ?
-    `).get(normalizedEmail);
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', normalizedEmail)
+      .single();
 
-    const userResult = await (existingUser instanceof Promise
-      ? existingUser
-      : Promise.resolve(existingUser));
-
-    if (userResult) {
+    if (existingUser) {
       res.status(409).json({
         success: false,
         error: 'User with this email already exists',
@@ -80,13 +76,19 @@ router.post('/', authenticate, requireAdmin, async (req: Request, res: Response)
 
     // Create user
     const userId = uuidv4();
-    const stmt = database.prepare(`
-      INSERT INTO users (id, email, password_hash, role, is_verified)
-      VALUES (?, ?, ?, ?, ?)
-    `);
 
-    const result = stmt.run(userId, normalizedEmail, passwordHash, role, 1);
-    await (result instanceof Promise ? result : Promise.resolve(result));
+    const { error: insertError } = await supabase
+      .from('users')
+      .insert({
+        id: userId,
+        email: normalizedEmail,
+        password_hash: passwordHash,
+        role,
+        is_verified: true,
+        created_at: new Date().toISOString()
+      });
+
+    if (insertError) throw insertError;
 
     res.status(201).json({
       success: true,
@@ -112,36 +114,40 @@ router.post('/', authenticate, requireAdmin, async (req: Request, res: Response)
  */
 router.get('/', authenticate, requireAdmin, async (req: Request, res: Response): Promise<void> => {
   try {
-    const database = await ensureDb();
-
     // Get all users (exclude password hash)
-    const usersResult = database.prepare(`
-      SELECT id, email, role, created_at, mfa_enabled
-      FROM users
-      ORDER BY created_at DESC
-    `).all();
+    const { data: usersList, error: usersError } = await supabase
+      .from('users')
+      .select('id, email, role, created_at, mfa_enabled')
+      .order('created_at', { ascending: false });
 
-    const usersList = await (usersResult instanceof Promise
-      ? usersResult
-      : Promise.resolve(usersResult));
+    if (usersError) throw usersError;
 
     // Get webhook count for each user
-    const users = await Promise.all(usersList.map(async (user: any) => {
-      // Count active webhooks
-      const countResult = database.prepare(`
-        SELECT COUNT(*) as count 
-        FROM webhooks 
-        WHERE user_id = ? AND is_active = 1 AND expires_at > datetime('now')
-      `).get(user.id);
+    // We can use a join or separate queries. For simplicity and since we have the list, 
+    // we can use a group by query on webhooks table instead of N+1 queries.
 
-      const countData = await (countResult instanceof Promise 
-        ? countResult 
-        : Promise.resolve(countResult));
-      
-      return {
-        ...user,
-        webhook_count: countData ? countData.count : 0
-      };
+    // Get all active webhook counts grouped by user_id
+    // Supabase doesn't support "group by" easily with select count in one go via JS client without RPC or views.
+    // So we might stick to Promise.all for now if the user base is small, OR fetch all webhooks and aggregate in memory.
+    // Given it's "Admin Only" and likely not millions of users, Promise.all is okay-ish, but let's try to be better.
+    // Fetching all active webhooks (just user_id) might be lighter.
+
+    const { data: webhooks } = await supabase
+      .from('webhooks')
+      .select('user_id')
+      .eq('is_active', true)
+      .gt('expires_at', new Date().toISOString());
+
+    const webhookCounts: Record<string, number> = {};
+    if (webhooks) {
+      webhooks.forEach(wh => {
+        webhookCounts[wh.user_id] = (webhookCounts[wh.user_id] || 0) + 1;
+      });
+    }
+
+    const users = (usersList || []).map((user: any) => ({
+      ...user,
+      webhook_count: webhookCounts[user.id] || 0
     }));
 
     res.json({
@@ -175,18 +181,19 @@ router.delete('/:id', authenticate, requireAdmin, async (req: Request, res: Resp
       return;
     }
 
-    const database = await ensureDb();
+    // Delete user (Cascading delete should handle webhooks if configured in DB, 
+    // but we can manually delete webhooks first to be safe or if foreign keys aren't set up for cascade)
 
-    // Delete user
-    const stmt = database.prepare('DELETE FROM users WHERE id = ?');
-    const result = stmt.run(id);
-    await (result instanceof Promise ? result : Promise.resolve(result));
+    // Check if we need to manually delete webhooks
+    // Assuming Supabase foreign keys might not be set to CASCADE.
+    await supabase.from('webhooks').delete().eq('user_id', id);
 
-    // Also delete user's webhooks (optional but good practice)
-    // The DB might have CASCADE delete, but let's be safe for JSON DB
-    const deleteWebhooks = database.prepare('DELETE FROM webhooks WHERE user_id = ?');
-    const webhookResult = deleteWebhooks.run(id);
-    await (webhookResult instanceof Promise ? webhookResult : Promise.resolve(webhookResult));
+    const { error: deleteError } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) throw deleteError;
 
     res.json({
       success: true,
@@ -227,11 +234,12 @@ router.patch('/:id/role', authenticate, requireAdmin, async (req: Request, res: 
       return;
     }
 
-    const database = await ensureDb();
+    const { error } = await supabase
+      .from('users')
+      .update({ role })
+      .eq('id', id);
 
-    const stmt = database.prepare('UPDATE users SET role = ? WHERE id = ?');
-    const result = stmt.run(role, id);
-    await (result instanceof Promise ? result : Promise.resolve(result));
+    if (error) throw error;
 
     res.json({
       success: true,

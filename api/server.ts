@@ -8,7 +8,6 @@ import dotenv from 'dotenv';
 import { createServer } from 'http';
 
 // Manual fallback for loading .env in production if dotenv/config failed to find it
-// (Replit production mode sometimes skips .env loading)
 if (!process.env.SUPABASE_URL) {
   const envPath = path.join(process.cwd(), '.env');
   console.log('⚠️ Environment variables missing. Attempting manual .env load from:', envPath);
@@ -26,61 +25,66 @@ if (!process.env.SUPABASE_URL) {
 }
 
 import app from './app.js';
-import { initDb } from './db.js';
+import { initializeDatabase } from './lib/database-init.js';
 import { startCleanupJob } from './utils/cleanup.js';
 
 // Debug Environment
 console.log('🔧 Server Startup Environment Check:');
 console.log('   NODE_ENV:', process.env.NODE_ENV);
-console.log('   DB_PATH:', process.env.DB_PATH);
 console.log('   SUPABASE_URL:', process.env.SUPABASE_URL ? '✅ Set' : '❌ Missing');
 console.log('   SUPABASE_KEY:', process.env.SUPABASE_KEY ? '✅ Set' : '❌ Missing');
 
-
 /**
- * Initialize database (async)
+ * Initialize database and start server
  */
-initDb().catch((err) => {
-  console.error('Failed to initialize database:', err);
-  process.exit(1);
-});
+const startServer = async () => {
+  try {
+    await initializeDatabase();
 
-/**
- * Start cleanup job for expired webhooks (runs every hour)
- */
-startCleanupJob(60);
+    /**
+     * Start cleanup job for expired webhooks (runs every hour)
+     */
+    startCleanupJob(60);
 
-/**
- * Create HTTP server
- */
-const server = createServer(app);
+    /**
+     * Create HTTP server
+     */
+    const server = createServer(app);
 
-/**
- * start server with port
- */
-const PORT = process.env.PORT || 3001;
+    /**
+     * start server with port
+     */
+    const PORT = process.env.PORT || 3001;
 
-server.listen(PORT, () => {
-  console.log(`Server ready on port ${PORT}`);
-});
+    server.listen(PORT, () => {
+      console.log(`Server ready on port ${PORT}`);
+    });
 
-/**
- * close server
- */
-process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received');
-  server.close(() => {
-    console.log('Server closed');
-    process.exit(0);
-  });
-});
+    /**
+     * close server
+     */
+    process.on('SIGTERM', () => {
+      console.log('SIGTERM signal received');
+      server.close(() => {
+        console.log('Server closed');
+        process.exit(0);
+      });
+    });
 
-process.on('SIGINT', () => {
-  console.log('SIGINT signal received');
-  server.close(() => {
-    console.log('Server closed');
-    process.exit(0);
-  });
-});
+    process.on('SIGINT', () => {
+      console.log('SIGINT signal received');
+      server.close(() => {
+        console.log('Server closed');
+        process.exit(0);
+      });
+    });
+
+  } catch (err) {
+    console.error('Failed to initialize database:', err);
+    process.exit(1);
+  }
+};
+
+startServer();
 
 export default app;

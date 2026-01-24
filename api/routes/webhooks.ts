@@ -7,12 +7,12 @@
  * 3. Get individual request details
  * 4. Delete webhooks
  * 
- * All webhook data is stored in-memory (JSON) or SQLite database.
+ * All webhook data is stored in Supabase (PostgreSQL).
  */
 
 import { Router, type Request, type Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { ensureDb } from '../db.js';
+import { supabase } from '../lib/supabase.js';
 import { authenticate } from '../utils/auth.js';
 import { getPlans, type PlanConfig } from '../utils/plan-storage.js';
 
@@ -21,13 +21,6 @@ const router = Router();
 /**
  * Generate a new webhook URL
  * POST /api/webhooks/generate
- * 
- * Creates a unique, hard-to-guess webhook endpoint.
- * Each webhook has an expiration time (default: 60 minutes).
- * Webhooks are linked to the authenticated user.
- * 
- * Requires: Authentication
- * Returns: { token, url, expiresAt }
  */
 router.post('/generate', authenticate, async (req: Request, res: Response): Promise<void> => {
   try {
@@ -43,24 +36,21 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
       return;
     }
 
-    const database = await ensureDb();
-
     // Check webhook limits
     console.log(`Checking limits for user ${user.id} (${user.role})`);
-    const countResult = database.prepare(`
-      SELECT COUNT(*) as count 
-      FROM webhooks 
-      WHERE user_id = ? AND is_active = 1
-    `).get(user.id);
+    
+    const { count, error: countError } = await supabase
+      .from('webhooks')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('is_active', true);
 
-    console.log('Count result:', countResult);
-
-    if (!countResult) {
-      console.error('Count query returned no result (undefined)');
+    if (countError) {
+      console.error('Count query failed', countError);
       throw new Error('Database query failed to return count');
     }
 
-    const currentCount = (countResult as any).count;
+    const currentCount = count || 0;
     console.log(`Current count: ${currentCount}`);
 
     const plans = getPlans();
@@ -101,7 +91,12 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
       }
 
       // Check uniqueness
-      const existing = database.prepare('SELECT token FROM webhooks WHERE token = ?').get(cleanAlias);
+      const { data: existing } = await supabase
+        .from('webhooks')
+        .select('token')
+        .eq('token', cleanAlias)
+        .single();
+        
       if (existing) {
         res.status(409).json({
           success: false,
@@ -132,13 +127,17 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
     const webhookUrl = `${baseUrl}/api/webhook/${token}`;
 
     // Store webhook in database (linked to user)
-    const stmt = database.prepare(`
-      INSERT INTO webhooks (token, user_id, name, expires_at, is_active)
-      VALUES (?, ?, ?, ?, 1)
-    `);
+    const { error: insertError } = await supabase
+      .from('webhooks')
+      .insert({
+        token,
+        user_id: user.id,
+        name: name || null,
+        expires_at: expiresAt.toISOString(),
+        is_active: true
+      });
 
-    const result = stmt.run(token, user.id, name || null, expiresAt.toISOString());
-    await (result instanceof Promise ? result : Promise.resolve(result));
+    if (insertError) throw insertError;
 
     res.status(201).json({
       success: true,
@@ -159,46 +158,33 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
 /**
  * List all webhooks for the authenticated user
  * GET /api/webhooks
- * 
- * Returns all webhooks belonging to the current user.
- * 
- * Requires: Authentication
  */
 router.get('/', authenticate, async (req: Request, res: Response): Promise<void> => {
   try {
     const user = (req as any).user;
-    const database = await ensureDb();
 
     // Get all webhooks for this user
-    const webhooksResult = database.prepare(`
-      SELECT token, name, created_at, expires_at, is_active
-      FROM webhooks 
-      WHERE user_id = ? AND is_active = 1
-      ORDER BY created_at DESC
-    `).all(user.id);
+    const { data: webhooks, error } = await supabase
+      .from('webhooks')
+      .select('token, name, created_at, expires_at, is_active')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
 
-    const webhooks = await (webhooksResult instanceof Promise
-      ? webhooksResult
-      : Promise.resolve(webhooksResult)) as Array<{
-        token: string;
-        name?: string;
-        created_at: string;
-        expires_at: string;
-        is_active: number;
-      }>;
+    if (error) throw error;
 
     // Build URLs for each webhook
     const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol;
     const host = (req.headers['x-forwarded-host'] as string) || req.get('host');
     const baseUrl = process.env.BASE_URL || `${protocol}://${host}`;
 
-    const webhooksWithUrls = webhooks.map(wh => ({
+    const webhooksWithUrls = (webhooks || []).map(wh => ({
       token: wh.token,
       name: wh.name,
       url: `${baseUrl}/api/webhook/${wh.token}`,
       createdAt: wh.created_at,
       expiresAt: wh.expires_at,
-      isActive: wh.is_active === 1,
+      isActive: wh.is_active,
     }));
 
     res.json({
@@ -217,41 +203,24 @@ router.get('/', authenticate, async (req: Request, res: Response): Promise<void>
 /**
  * Get a single request by ID
  * GET /api/webhooks/requests/:id
- * 
- * Returns full request details including headers, body, query params.
- * Used by UI to display request details when user clicks on a request.
- * Only returns requests for webhooks owned by the authenticated user.
- * 
- * Requires: Authentication
  */
 router.get('/requests/:id', authenticate, async (req: Request, res: Response): Promise<void> => {
   try {
     const user = (req as any).user;
     const { id } = req.params;
-    const database = await ensureDb();
 
     // Get request and verify it belongs to a webhook owned by the user
-    const requestResult = database.prepare(`
-      SELECT r.* FROM requests r
-      INNER JOIN webhooks w ON r.webhook_token = w.token
-      WHERE r.id = ? AND w.user_id = ?
-    `).get(id, user.id);
+    const { data: request, error } = await supabase
+      .from('requests')
+      .select(`
+        *,
+        webhooks!inner(user_id)
+      `)
+      .eq('id', id)
+      .eq('webhooks.user_id', user.id)
+      .single();
 
-    const request = await (requestResult instanceof Promise
-      ? requestResult
-      : Promise.resolve(requestResult)) as {
-        id: string;
-        webhook_token: string;
-        method: string;
-        url: string;
-        headers: string;
-        body: string | null;
-        query: string | null;
-        timestamp: string;
-        ip_address: string | null;
-      } | undefined;
-
-    if (!request) {
+    if (error || !request) {
       res.status(404).json({
         success: false,
         error: 'Request not found or access denied',
@@ -299,32 +268,21 @@ router.get('/requests/:id', authenticate, async (req: Request, res: Response): P
 /**
  * Get all requests for a webhook
  * GET /api/webhooks/:token/requests
- * 
- * Returns list of captured requests for a webhook, sorted newest first.
- * Used by UI to display the request list.
- * 
- * Query params:
- * - limit: Max number of requests to return (default: 100)
- * - offset: Pagination offset (default: 0)
  */
 router.get('/:token/requests', async (req: Request, res: Response): Promise<void> => {
   try {
     const { token } = req.params;
     const { limit = 100, offset = 0 } = req.query;
 
-    const database = await ensureDb();
-
     // Verify webhook exists and is active
-    const webhookResult = database.prepare(`
-      SELECT * FROM webhooks 
-      WHERE token = ? AND is_active = 1
-    `).get(token);
+    const { data: webhook, error: webhookError } = await supabase
+      .from('webhooks')
+      .select('*')
+      .eq('token', token)
+      .eq('is_active', true)
+      .single();
 
-    const webhook = await (webhookResult instanceof Promise
-      ? webhookResult
-      : Promise.resolve(webhookResult)) as { token: string; expires_at: string; is_active: number } | undefined;
-
-    if (!webhook) {
+    if (webhookError || !webhook) {
       res.status(404).json({
         success: false,
         error: 'Webhook not found, expired, or access denied',
@@ -333,34 +291,22 @@ router.get('/:token/requests', async (req: Request, res: Response): Promise<void
     }
 
     // Get requests, sorted newest first
-    const requestsResult = database.prepare(`
-      SELECT * FROM requests 
-      WHERE webhook_token = ? 
-      ORDER BY timestamp DESC 
-      LIMIT ? OFFSET ?
-    `).all(token, limit, offset);
+    const { data: requests, error: requestsError } = await supabase
+      .from('requests')
+      .select('*')
+      .eq('webhook_token', token)
+      .order('timestamp', { ascending: false })
+      .range(Number(offset), Number(offset) + Number(limit) - 1);
 
-    const requests = await (requestsResult instanceof Promise
-      ? requestsResult
-      : Promise.resolve(requestsResult)) as Array<{
-        id: string;
-        webhook_token: string;
-        method: string;
-        url: string;
-        headers: string;
-        body: string | null;
-        query: string | null;
-        timestamp: string;
-        ip_address: string | null;
-      }>;
+    if (requestsError) throw requestsError;
 
     // Get total count for pagination
-    const totalResult = database.prepare(`
-      SELECT COUNT(*) as count FROM requests WHERE webhook_token = ?
-    `).get(token);
-    const total = await (totalResult instanceof Promise
-      ? totalResult
-      : Promise.resolve(totalResult)) as { count: number };
+    const { count, error: countError } = await supabase
+      .from('requests')
+      .select('*', { count: 'exact', head: true })
+      .eq('webhook_token', token);
+      
+    if (countError) throw countError;
 
     // Parse JSON fields
     const parseJsonField = (field: string | object | null): any => {
@@ -376,7 +322,7 @@ router.get('/:token/requests', async (req: Request, res: Response): Promise<void
       return field;
     };
 
-    const parsedRequests = requests.map(req => ({
+    const parsedRequests = (requests || []).map(req => ({
       id: req.id,
       webhook_token: req.webhook_token,
       method: req.method,
@@ -391,7 +337,7 @@ router.get('/:token/requests', async (req: Request, res: Response): Promise<void
     res.json({
       success: true,
       requests: parsedRequests,
-      total: total.count,
+      total: count || 0,
     });
   } catch (error) {
     console.error('Error fetching requests:', error);
@@ -405,33 +351,21 @@ router.get('/:token/requests', async (req: Request, res: Response): Promise<void
 /**
  * Get webhook info
  * GET /api/webhooks/:token
- * 
- * Returns basic webhook metadata (token, expiration, active status).
- * Only returns webhooks owned by the authenticated user.
- * 
- * Requires: Authentication
  */
 router.get('/:token', authenticate, async (req: Request, res: Response): Promise<void> => {
   try {
     const user = (req as any).user;
     const { token } = req.params;
-    const database = await ensureDb();
 
-    const webhookResult = database.prepare(`
-      SELECT * FROM webhooks 
-      WHERE token = ? AND user_id = ? AND is_active = 1
-    `).get(token, user.id);
+    const { data: webhook, error } = await supabase
+      .from('webhooks')
+      .select('*')
+      .eq('token', token)
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .single();
 
-    const webhook = await (webhookResult instanceof Promise
-      ? webhookResult
-      : Promise.resolve(webhookResult)) as {
-        token: string;
-        created_at: string;
-        expires_at: string;
-        is_active: number
-      } | undefined;
-
-    if (!webhook) {
+    if (error || !webhook) {
       res.status(404).json({
         success: false,
         error: 'Webhook not found, expired, or access denied',
@@ -445,7 +379,7 @@ router.get('/:token', authenticate, async (req: Request, res: Response): Promise
         token: webhook.token,
         created_at: webhook.created_at,
         expires_at: webhook.expires_at,
-        is_active: webhook.is_active === 1,
+        is_active: webhook.is_active,
       },
     });
   } catch (error) {
@@ -460,24 +394,22 @@ router.get('/:token', authenticate, async (req: Request, res: Response): Promise
 /**
  * Delete a webhook and all its requests
  * DELETE /api/webhooks/:token
- * 
- * Permanently removes the webhook and all associated request data.
- * Only allows deletion of webhooks owned by the authenticated user.
- * 
- * Requires: Authentication
  */
 router.delete('/:token', authenticate, async (req: Request, res: Response): Promise<void> => {
   try {
     const user = (req as any).user;
     const { token } = req.params;
-    const database = await ensureDb();
 
     // Only delete if webhook belongs to the user
-    const stmt = database.prepare('DELETE FROM webhooks WHERE token = ? AND user_id = ?');
-    const result = stmt.run(token, user.id);
-    const finalResult = await (result instanceof Promise ? result : result);
+    const { error, count } = await supabase
+      .from('webhooks')
+      .delete({ count: 'exact' })
+      .eq('token', token)
+      .eq('user_id', user.id);
 
-    if (finalResult.changes === 0) {
+    if (error) throw error;
+
+    if (count === 0) {
       res.status(404).json({
         success: false,
         error: 'Webhook not found or access denied',
