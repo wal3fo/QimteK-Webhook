@@ -5,6 +5,7 @@ export interface User {
   email: string;
   role: 'Administrator' | 'Professional' | 'user';
   created_at?: string;
+  mfa_enabled?: boolean;
 }
 
 interface AuthContextType {

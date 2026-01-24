@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, memo, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Copy, Check, Trash2, ExternalLink, Filter, Search, Download, Clock, Globe, X, LogIn, LogOut, User, Shield, Lock, Users, CircleUser, ShieldCheck, KeyRound } from 'lucide-react';
+import { Copy, Check, Trash2, ExternalLink, Filter, Search, Download, Clock, Globe, X, LogIn, LogOut, User, Shield, Lock, Users, CircleUser, ShieldCheck, Briefcase } from 'lucide-react';
 import { useWebhook } from '@/hooks/useWebhook';
 import { useAuth } from '@/hooks/useAuth';
 import { cn, METHOD_COLORS, METHODS } from '@/lib/utils';
@@ -123,6 +123,17 @@ export default function Home() {
   const [mfaModalOpen, setMfaModalOpen] = useState(false);
   const [webhookName, setWebhookName] = useState('');
 
+  // Calculate max webhooks based on role
+  const maxWebhooks = useMemo(() => {
+    if (!user) return 1;
+    switch (user.role) {
+      case 'Administrator': return 99999;
+      case 'Professional': return 5;
+      case 'user':
+      default: return 1;
+    }
+  }, [user]);
+
   // Detect mobile device
   useEffect(() => {
     const checkMobile = () => {
@@ -224,30 +235,47 @@ export default function Home() {
     <div className="min-h-screen bg-qimtek-bg page-enter flex flex-col">
       {/* Header */}
       <div className="w-full px-0 py-4 sm:py-6 lg:py-8 slide-enter border-b border-qimtek-border">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 sm:px-4 lg:px-6">
+        <div className="flex flex-row items-center justify-between gap-4 px-2 sm:px-4 lg:px-6">
           <Logo size="xl" />
-          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-center sm:justify-end">
+          <div className="flex items-center gap-2 sm:gap-3 w-auto justify-end">
             {/* Auth Section */}
             {isAuthenticated ? (
-              <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-                {/* User Info */}
-                <div className="relative flex items-center gap-2 px-2.5 py-2 lg:px-3 lg:py-2 bg-qimtek-bg-secondary rounded-lg border border-qimtek-border group">
+              <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-3">
+                {/* User Info - Clickable for Password Change */}
+                <button
+                  onClick={() => setChangePasswordModalOpen(true)}
+                  className="relative flex items-center gap-2 px-2.5 py-2 lg:px-3 lg:py-2 bg-qimtek-bg-secondary hover:bg-qimtek-bg-surface border border-qimtek-border hover:border-[#82c91e]/50 text-qimtek-text-secondary hover:text-[#82c91e] rounded-lg transition-all duration-200 group cursor-pointer"
+                  title="Change Password"
+                >
                   <CircleUser className="w-5 h-5 lg:w-4 lg:h-4" />
                   <span className="text-sm hidden lg:inline">
                     {user?.email}
                   </span>
-                  {isAdmin && (
-                    <span className="px-2 py-0.5 bg-[#82c91e]/20 text-[#82c91e] rounded text-xs font-semibold hidden lg:inline-block">
-                      Admin
-                    </span>
-                  )}
-                  {isAdmin && (
-                    <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#82c91e] lg:hidden ring-2 ring-qimtek-bg-secondary" title="Admin"></span>
-                  )}
-                </div>
+
+                  <span className={cn(
+                    "px-2 py-0.5 rounded text-xs font-semibold hidden lg:inline-flex items-center gap-1 border",
+                    user?.role === 'Administrator'
+                      ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
+                      : user?.role === 'Professional'
+                        ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                        : "bg-[#82c91e]/10 text-[#82c91e] border-[#82c91e]/20"
+                  )}>
+                    {user?.role === 'Administrator' ? <Shield className="w-3 h-3" /> :
+                      user?.role === 'Professional' ? <Briefcase className="w-3 h-3" /> :
+                        <User className="w-3 h-3" />}
+                    {user?.role === 'Administrator' ? 'ADMIN' : user?.role === 'Professional' ? 'PRO' : 'USER'}
+                  </span>
+
+                  <span className={cn(
+                    "absolute top-1 right-1 w-2 h-2 rounded-full lg:hidden ring-2 ring-qimtek-bg-secondary",
+                    user?.role === 'Administrator' ? "bg-purple-500" :
+                      user?.role === 'Professional' ? "bg-blue-500" :
+                        "bg-[#82c91e]"
+                  )} title={user?.role}></span>
+                </button>
 
                 {/* Actions */}
-                <div className="flex items-center gap-1.5 sm:gap-2">
+                <div className="contents sm:flex sm:items-center sm:gap-2">
                   {isAdmin && (
                     <Link
                       to="/admin/users"
@@ -261,20 +289,22 @@ export default function Home() {
 
                   <button
                     onClick={() => setMfaModalOpen(true)}
-                    className="flex items-center gap-2 px-2.5 py-2 lg:px-3 lg:py-2 bg-qimtek-bg-secondary hover:bg-qimtek-bg-surface border border-qimtek-border hover:border-[#82c91e]/50 text-qimtek-text-secondary hover:text-[#82c91e] rounded-lg transition-all duration-200"
-                    title="2FA Setup"
+                    className={cn(
+                      "flex items-center gap-2 px-2.5 py-2 lg:px-3 lg:py-2 rounded-lg transition-all duration-200",
+                      user?.mfa_enabled
+                        ? "bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 hover:border-orange-500/50 text-orange-500 hover:text-orange-400"
+                        : "bg-qimtek-bg-secondary hover:bg-qimtek-bg-surface border border-qimtek-border hover:border-[#82c91e]/50 text-qimtek-text-secondary hover:text-[#82c91e]"
+                    )}
+                    title={user?.mfa_enabled ? "Disable 2FA" : "Enable 2FA"}
                   >
-                    <ShieldCheck className="w-5 h-5 lg:w-4 lg:h-4" />
-                    <span className="hidden lg:inline text-sm font-medium">2FA</span>
-                  </button>
-
-                  <button
-                    onClick={() => setChangePasswordModalOpen(true)}
-                    className="flex items-center gap-2 px-2.5 py-2 lg:px-3 lg:py-2 bg-qimtek-bg-secondary hover:bg-qimtek-bg-surface border border-qimtek-border hover:border-[#82c91e]/50 text-qimtek-text-secondary hover:text-[#82c91e] rounded-lg transition-all duration-200"
-                    title="Change Password"
-                  >
-                    <KeyRound className="w-5 h-5 lg:w-4 lg:h-4" />
-                    <span className="hidden lg:inline text-sm font-medium">Password</span>
+                    {user?.mfa_enabled ? (
+                      <ShieldCheck className="w-5 h-5 lg:w-4 lg:h-4" />
+                    ) : (
+                      <Shield className="w-5 h-5 lg:w-4 lg:h-4" />
+                    )}
+                    <span className="hidden lg:inline text-sm font-medium">
+                      {user?.mfa_enabled ? "Disable 2FA" : "Enable 2FA"}
+                    </span>
                   </button>
 
                   <button
@@ -309,8 +339,8 @@ export default function Home() {
           Generate temporary webhook URLs to capture and inspect HTTP requests
         </p>
 
-        {/* Connection Status */}
-        <div className="mb-4 sm:mb-6 slide-enter" style={{ animationDelay: '0.1s' }}>
+        {/* Connection Status & Webhook Usage */}
+        <div className="mb-4 sm:mb-6 slide-enter flex flex-wrap items-center gap-3" style={{ animationDelay: '0.1s' }}>
           <div className={cn(
             'inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm border transition-all duration-300',
             selectedWebhook
@@ -342,6 +372,19 @@ export default function Home() {
                 : 'No webhook'}
             </span>
           </div>
+
+          {/* Webhook Usage Badge */}
+          {isAuthenticated && (
+            <div className={cn(
+              'inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm border transition-all duration-300',
+              webhooks.length >= maxWebhooks
+                ? 'bg-red-900/30 text-red-300 border-red-700/50'
+                : 'bg-blue-900/30 text-blue-300 border-blue-700/50'
+            )}>
+              <span className="hidden sm:inline text-opacity-80">Used:</span>
+              <span className="font-mono font-medium">{webhooks.length} / {maxWebhooks >= 99999 ? 'Unlimited' : maxWebhooks}</span>
+            </div>
+          )}
         </div>
 
         {/* Webhook Generator */}
@@ -479,7 +522,9 @@ export default function Home() {
                     </div>
                     <div className="flex items-center justify-between mt-2">
                       <p className="text-xs sm:text-sm text-qimtek-text-tertiary">
-                        Expires: {selectedWebhook.expiresAt ? format(new Date(selectedWebhook.expiresAt), 'PPp') : 'N/A'}
+                        Expires: {selectedWebhook.expiresAt && new Date(selectedWebhook.expiresAt).getFullYear() > 2100
+                          ? 'Never'
+                          : (selectedWebhook.expiresAt ? format(new Date(selectedWebhook.expiresAt), 'PPp') : 'N/A')}
                       </p>
                       <button
                         onClick={() => setShowGenerateModal(true)}

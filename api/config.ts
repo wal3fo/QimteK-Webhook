@@ -5,7 +5,7 @@
  */
 
 export const WEBHOOK_LIMITS = {
-  USER: 1,          // Ordinary users
-  PROFESSIONAL: 10, // Professional users
-  ADMIN: 100,       // Administrators
+  USER: 1,          // Free users
+  PROFESSIONAL: 5,  // Pro users
+  ADMIN: 99999,     // Administrators (Unlimited)
 };

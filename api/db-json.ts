@@ -253,6 +253,18 @@ class JsonDatabase {
           }
         }
 
+        // Handle UPDATE users SET mfa_secret = NULL, mfa_enabled = 0 WHERE id = ?
+        if (sql.includes('UPDATE users SET mfa_secret = NULL, mfa_enabled = 0 WHERE id = ?')) {
+          const id = params[0];
+          const userIndex = db.users.findIndex(u => u.id === id);
+
+          if (userIndex !== -1) {
+            delete db.users[userIndex].mfa_secret;
+            db.users[userIndex].mfa_enabled = false;
+            changes = 1;
+          }
+        }
+
         // Handle DELETE FROM users
         if (sql.includes('DELETE FROM users WHERE id = ?')) {
           const id = params[0];
@@ -411,13 +423,9 @@ class JsonDatabase {
           const user = db.users.find(u => u.id === id);
           if (!user) return undefined;
 
-          // Return user without password hash
-          return {
-            id: user.id,
-            email: user.email,
-            role: user.role,
-            created_at: user.created_at,
-          };
+          // Return full user object (including mfa_enabled and password_hash)
+          // The API layer is responsible for filtering sensitive fields before sending to client
+          return { ...user };
         }
 
         // Handle SELECT COUNT(*) FROM requests WHERE webhook_token = ?
@@ -590,11 +598,6 @@ class JsonDatabase {
     // Handle CREATE TABLE - just ensure db file exists
     if (sql.includes('CREATE TABLE')) {
       ensureDbFile();
-      // After creating tables, initialize admin account
-      // This is done asynchronously to avoid blocking
-      import('./utils/init-admin.js').then(({ initAdminAccount }) => {
-        initAdminAccount().catch(console.error);
-      }).catch(console.error);
     }
   }
 

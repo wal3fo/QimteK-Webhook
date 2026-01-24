@@ -121,9 +121,28 @@ router.get('/', authenticate, requireAdmin, async (req: Request, res: Response):
       ORDER BY created_at DESC
     `).all();
 
-    const users = await (usersResult instanceof Promise
+    const usersList = await (usersResult instanceof Promise
       ? usersResult
       : Promise.resolve(usersResult));
+
+    // Get webhook count for each user
+    const users = await Promise.all(usersList.map(async (user: any) => {
+      // Count active webhooks
+      const countResult = database.prepare(`
+        SELECT COUNT(*) as count 
+        FROM webhooks 
+        WHERE user_id = ? AND is_active = 1 AND expires_at > datetime('now')
+      `).get(user.id);
+
+      const countData = await (countResult instanceof Promise 
+        ? countResult 
+        : Promise.resolve(countResult));
+      
+      return {
+        ...user,
+        webhook_count: countData ? countData.count : 0
+      };
+    }));
 
     res.json({
       success: true,

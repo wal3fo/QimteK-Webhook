@@ -32,14 +32,14 @@ export default function WebhookSelector({ webhooks, selectedWebhook, onSelect }:
       <label className="block text-sm font-medium text-qimtek-text-secondary mb-2">
         Select Webhook ({webhooks.length} total)
       </label>
-      
+
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           "w-full flex items-center justify-between px-4 py-3 bg-qimtek-bg-secondary border rounded-xl text-left transition-all duration-200",
-          isOpen 
-            ? "border-[#82c91e] ring-1 ring-[#82c91e]/50" 
+          isOpen
+            ? "border-[#82c91e] ring-1 ring-[#82c91e]/50"
             : "border-qimtek-border hover:border-[#82c91e]/50"
         )}
       >
@@ -84,8 +84,8 @@ export default function WebhookSelector({ webhooks, selectedWebhook, onSelect }:
                   }}
                   className={cn(
                     "w-full px-4 py-3 flex items-start gap-3 text-left transition-colors border-b border-qimtek-border/50 last:border-0",
-                    isSelected 
-                      ? "bg-[#82c91e]/10" 
+                    isSelected
+                      ? "bg-[#82c91e]/10"
                       : "hover:bg-qimtek-bg-secondary"
                   )}
                 >
@@ -93,7 +93,7 @@ export default function WebhookSelector({ webhooks, selectedWebhook, onSelect }:
                     "mt-1 w-2 h-2 rounded-full flex-shrink-0",
                     isSelected ? "bg-[#82c91e]" : "bg-qimtek-border"
                   )} />
-                  
+
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <span className={cn(
@@ -104,15 +104,17 @@ export default function WebhookSelector({ webhooks, selectedWebhook, onSelect }:
                       </span>
                       {isSelected && <Check className="w-4 h-4 text-[#82c91e] flex-shrink-0" />}
                     </div>
-                    
+
                     <div className="text-xs text-qimtek-text-secondary font-mono break-all mb-1.5 opacity-80">
                       {wh.url}
                     </div>
-                    
+
                     <div className="flex items-center gap-3 text-[10px] text-qimtek-text-tertiary uppercase tracking-wider font-medium">
                       <div className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        {wh.expiresAt ? format(new Date(wh.expiresAt), 'MMM d, HH:mm') : 'N/A'}
+                        {wh.expiresAt && new Date(wh.expiresAt).getFullYear() > 2100
+                          ? 'Never'
+                          : (wh.expiresAt ? format(new Date(wh.expiresAt), 'MMM d, HH:mm') : 'N/A')}
                       </div>
                     </div>
                   </div>

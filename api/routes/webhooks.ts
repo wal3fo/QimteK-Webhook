@@ -81,13 +81,8 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
     // Calculate expiration time
     const expiresAt = new Date();
 
-    // Policy: Administrator and Professional have valid lifetime (100 years),
-    // Users have fixed 24h expiration
-    if (user.role === 'Administrator' || user.role === 'Professional') {
-      expiresAt.setFullYear(expiresAt.getFullYear() + 100);
-    } else {
-      expiresAt.setHours(expiresAt.getHours() + 24);
-    }
+    // Policy: All users have valid lifetime (100 years) - No expiration
+    expiresAt.setFullYear(expiresAt.getFullYear() + 100);
 
     // Build webhook URL
     // Handles both local development and production (behind proxy)

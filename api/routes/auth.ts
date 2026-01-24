@@ -331,6 +331,49 @@ router.post('/mfa/enable', authenticate, async (req: Request, res: Response): Pr
 });
 
 /**
+ * Disable MFA
+ * POST /api/auth/mfa/disable
+ */
+router.post('/mfa/disable', authenticate, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = (req as any).user;
+    const { password } = req.body;
+
+    // Optional: Verify password before disabling for extra security
+    // For now we trust the authenticated session, but checking password is good practice
+    if (password) {
+       const database = await ensureDb();
+       const userResult = database.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
+       const dbUser = await (userResult instanceof Promise ? userResult : Promise.resolve(userResult));
+       const isValid = await comparePassword(password, dbUser.password_hash);
+       if (!isValid) {
+         res.status(401).json({ success: false, error: 'Invalid password' });
+         return;
+       }
+    }
+
+    const database = await ensureDb();
+    const stmt = database.prepare(`
+      UPDATE users SET mfa_secret = NULL, mfa_enabled = 0 WHERE id = ?
+    `);
+
+    const result = stmt.run(user.id);
+    await (result instanceof Promise ? result : Promise.resolve(result));
+
+    res.json({
+      success: true,
+      message: 'MFA disabled successfully'
+    });
+  } catch (error) {
+    console.error('Error disabling MFA:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to disable MFA',
+    });
+  }
+});
+
+/**
  * Change Password
  * POST /api/auth/change-password
  */

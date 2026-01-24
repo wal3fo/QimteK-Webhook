@@ -10,7 +10,6 @@ import Footer from '@/components/Footer';
 import ConfirmModal from '@/components/ConfirmModal';
 import CreateUserModal from '@/components/CreateUserModal';
 import EditRoleModal from '@/components/EditRoleModal';
-import MfaSetupModal from '@/components/MfaSetupModal';
 import { DataTable, Column } from '@/components/DataTable';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -21,7 +20,18 @@ interface UserData {
   role: 'Administrator' | 'Professional' | 'user';
   created_at: string;
   mfa_enabled?: boolean;
+  webhook_count?: number;
 }
+
+// Helper to get max webhooks based on role
+const getMaxWebhooks = (role: string) => {
+  switch (role) {
+    case 'Administrator': return 99999;
+    case 'Professional': return 5;
+    case 'user':
+    default: return 1;
+  }
+};
 
 export default function AdminUsers() {
   const navigate = useNavigate();
@@ -192,6 +202,20 @@ export default function AdminUsers() {
     }
   };
 
+  const roleCounts = useMemo(() => {
+    const counts = {
+      Administrator: 0,
+      Professional: 0,
+      user: 0
+    };
+    users.forEach(user => {
+      if (counts[user.role] !== undefined) {
+        counts[user.role]++;
+      }
+    });
+    return counts;
+  }, [users]);
+
   const columns = useMemo<Column<UserData>[]>(() => [
     {
       key: 'email',
@@ -217,29 +241,54 @@ export default function AdminUsers() {
       sortable: true,
       filterable: true,
       align: 'center',
-      render: (userData) => (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (userData.id !== user?.id) openRoleModal(userData);
-          }}
-          disabled={userData.id === user?.id}
-          className={cn(
-            "px-2 py-1 rounded-md text-xs font-medium border flex items-center gap-1.5 transition-all w-fit mx-auto",
-            userData.role === 'Administrator'
-              ? "bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20"
-              : userData.role === 'Professional'
-                ? "bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20"
-                : "bg-[#82c91e]/10 text-[#82c91e] border-[#82c91e]/20 hover:bg-[#82c91e]/20",
-            userData.id === user?.id && "opacity-50 cursor-not-allowed"
-          )}
-        >
-          {userData.role === 'Administrator' ? <Shield className="w-3 h-3" /> :
-            userData.role === 'Professional' ? <Briefcase className="w-3 h-3" /> :
-              <User className="w-3 h-3" />}
-          {userData.role.toUpperCase()}
-        </button>
-      )
+      render: (userData) => {
+        return (
+          <div className="flex justify-center">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (userData.id !== user?.id) openRoleModal(userData);
+              }}
+              disabled={userData.id === user?.id}
+              className={cn(
+                "px-2 py-1 rounded-md text-xs font-medium border flex items-center gap-1.5 transition-all w-fit",
+                userData.role === 'Administrator'
+                  ? "bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20"
+                  : userData.role === 'Professional'
+                    ? "bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20"
+                    : "bg-[#82c91e]/10 text-[#82c91e] border-[#82c91e]/20 hover:bg-[#82c91e]/20",
+                userData.id === user?.id && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              {userData.role === 'Administrator' ? <Shield className="w-3 h-3" /> :
+                userData.role === 'Professional' ? <Briefcase className="w-3 h-3" /> :
+                  <User className="w-3 h-3" />}
+              {userData.role.toUpperCase()}
+            </button>
+          </div>
+        );
+      }
+    },
+    {
+      key: 'usage',
+      header: 'Usage',
+      align: 'center',
+      render: (userData) => {
+        const maxWebhooks = getMaxWebhooks(userData.role);
+        const webhookCount = userData.webhook_count || 0;
+
+        return (
+          <div className={cn(
+            'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] border transition-all duration-300',
+            webhookCount >= maxWebhooks
+              ? 'bg-red-900/30 text-red-300 border-red-700/50'
+              : 'bg-blue-900/30 text-blue-300 border-blue-700/50'
+          )}>
+            <span className="opacity-80">Used:</span>
+            <span className="font-mono font-medium">{webhookCount} / {maxWebhooks >= 99999 ? 'Unlimited' : maxWebhooks}</span>
+          </div>
+        );
+      }
     },
     {
       key: 'mfa_enabled',
@@ -313,6 +362,25 @@ export default function AdminUsers() {
             </span>
           </div>
 
+          <div className="hidden md:flex items-center gap-2">
+            <div className="px-2 py-1 rounded-md text-xs font-medium border flex items-center gap-1.5 bg-purple-500/10 text-purple-400 border-purple-500/20">
+              <Shield className="w-3 h-3" />
+              <span className="hidden lg:inline">ADMINISTRATOR:</span>
+              <span className="lg:hidden">ADMIN:</span>
+              {roleCounts.Administrator}
+            </div>
+            <div className="px-2 py-1 rounded-md text-xs font-medium border flex items-center gap-1.5 bg-blue-500/10 text-blue-400 border-blue-500/20">
+              <Briefcase className="w-3 h-3" />
+              <span className="hidden lg:inline">PROFESSIONAL:</span>
+              <span className="lg:hidden">PRO:</span>
+              {roleCounts.Professional}
+            </div>
+            <div className="px-2 py-1 rounded-md text-xs font-medium border flex items-center gap-1.5 bg-[#82c91e]/10 text-[#82c91e] border-[#82c91e]/20">
+              <User className="w-3 h-3" />
+              USER: {roleCounts.user}
+            </div>
+          </div>
+
           <div className="flex items-center gap-2 sm:gap-3 px-2 sm:px-4 lg:px-6">
             <button
               onClick={() => setCreateModalOpen(true)}
@@ -321,14 +389,6 @@ export default function AdminUsers() {
             >
               <UserPlus className="w-5 h-5 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">New User</span>
-            </button>
-            <button
-              onClick={() => setMfaModalOpen(true)}
-              className="flex items-center gap-2 px-2.5 py-2 sm:px-3 sm:py-2 bg-qimtek-bg-secondary hover:bg-qimtek-bg-surface border border-qimtek-border hover:border-[#82c91e]/50 text-qimtek-text-secondary hover:text-[#82c91e] rounded-lg transition-all duration-200"
-              title="2FA Setup"
-            >
-              <ShieldCheck className="w-5 h-5 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">2FA</span>
             </button>
             <button
               onClick={fetchUsers}
@@ -398,11 +458,6 @@ export default function AdminUsers() {
         onConfirm={handleRoleUpdate}
         currentRole={userToEditRole?.role || 'user'}
         userEmail={userToEditRole?.email || ''}
-      />
-
-      <MfaSetupModal
-        isOpen={mfaModalOpen}
-        onClose={() => setMfaModalOpen(false)}
       />
     </div>
   );

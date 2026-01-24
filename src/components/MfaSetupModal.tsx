@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Shield, Check, Copy, Loader2 } from 'lucide-react';
+import { X, Shield, Check, Copy, Loader2, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -14,8 +14,8 @@ export default function MfaSetupModal({
   isOpen,
   onClose
 }: MfaSetupModalProps) {
-  const { token } = useAuth();
-  const [step, setStep] = useState<'initial' | 'setup' | 'verify' | 'success'>('initial');
+  const { user, token, checkSession } = useAuth();
+  const [step, setStep] = useState<'initial' | 'setup' | 'verify' | 'success' | 'disable_confirm' | 'disable_success'>('initial');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [secret, setSecret] = useState<string>('');
@@ -25,11 +25,12 @@ export default function MfaSetupModal({
   // Reset state when opening
   useEffect(() => {
     if (isOpen) {
-      setStep('initial');
+      setStep(user?.mfa_enabled ? 'disable_confirm' : 'initial');
       setLoading(false);
       setError(null);
       setVerificationCode('');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const startSetup = async () => {
@@ -75,11 +76,40 @@ export default function MfaSetupModal({
 
       if (data.success) {
         setStep('success');
+        checkSession(); // Refresh user state
         setTimeout(() => {
           onClose();
         }, 2000);
       } else {
         setError(data.error || 'Invalid verification code');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const disableMfa = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${API_URL}/auth/mfa/disable`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        setStep('disable_success');
+        checkSession(); // Refresh user state
+        setTimeout(() => {
+          onClose();
+        }, 2000);
+      } else {
+        setError(data.error || 'Failed to disable MFA');
       }
     } catch (err) {
       setError('An unexpected error occurred');
@@ -106,12 +136,21 @@ export default function MfaSetupModal({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-qimtek-border">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-purple-500/10 border border-purple-500/20">
-              <Shield className="w-5 h-5 text-purple-500" />
+            <div className={cn("p-2 rounded-lg border",
+              user?.mfa_enabled
+                ? "bg-green-500/10 border-green-500/20"
+                : "bg-purple-500/10 border-purple-500/20"
+            )}>
+              {user?.mfa_enabled
+                ? <ShieldCheck className="w-5 h-5 text-green-500" />
+                : <Shield className="w-5 h-5 text-purple-500" />
+              }
             </div>
             <div>
               <h2 className="text-lg font-semibold text-qimtek-text">Two-Factor Authentication</h2>
-              <p className="text-xs text-qimtek-text-secondary">Secure your account</p>
+              <p className="text-xs text-qimtek-text-secondary">
+                {user?.mfa_enabled ? 'MFA is currently enabled' : 'Secure your account'}
+              </p>
             </div>
           </div>
           <button
@@ -136,6 +175,29 @@ export default function MfaSetupModal({
                 className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Setup MFA'}
+              </button>
+            </div>
+          )}
+
+          {step === 'disable_confirm' && (
+            <div className="space-y-4">
+              <div className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg flex items-start gap-3">
+                <ShieldAlert className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-orange-400">
+                  Disabling Two-Factor Authentication (2FA) will reduce the security of your account. Once disabled, you will only need your password to log in.
+                </div>
+              </div>
+
+              <p className="text-qimtek-text-secondary">
+                Are you sure you want to disable Two-Factor Authentication?
+              </p>
+
+              <button
+                onClick={disableMfa}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Disable 2FA'}
               </button>
             </div>
           )}
@@ -195,6 +257,18 @@ export default function MfaSetupModal({
               <h3 className="text-lg font-medium text-qimtek-text mb-2">MFA Enabled!</h3>
               <p className="text-qimtek-text-secondary">
                 Your account is now secured with two-factor authentication.
+              </p>
+            </div>
+          )}
+
+          {step === 'disable_success' && (
+            <div className="flex flex-col items-center py-6 text-center animate-fadeIn">
+              <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center mb-4">
+                <ShieldAlert className="w-6 h-6 text-red-500" />
+              </div>
+              <h3 className="text-lg font-medium text-qimtek-text mb-2">MFA Disabled</h3>
+              <p className="text-qimtek-text-secondary">
+                Two-factor authentication has been disabled for your account.
               </p>
             </div>
           )}
