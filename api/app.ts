@@ -96,8 +96,8 @@ app.use((error: Error, req: Request, res: Response, _next: NextFunction) => {
 const distPath = path.join(__dirname, '../../dist')
 const hasDist = fs.existsSync(path.join(distPath, 'index.html'))
 
-// Serve static files if in production OR if dist exists and we are not in explicit development mode
-if (process.env.NODE_ENV === 'production' || (hasDist && process.env.NODE_ENV !== 'development')) {
+// Serve static files if in production OR if dist exists (fallback for local preview)
+if (process.env.NODE_ENV === 'production' || hasDist) {
   console.log(`Serving static files from: ${distPath}`)
   app.use(express.static(distPath))
 
