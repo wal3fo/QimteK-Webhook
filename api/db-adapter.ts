@@ -45,7 +45,37 @@ export async function initDb(): Promise<void> {
       DB_PATH: process.env.DB_PATH,
     });
 
-    // Priority 1: Try better-sqlite3 (works everywhere, preferred for local dev)
+    // Priority 1: Try Supabase (if credentials exist)
+    if (process.env.SUPABASE_URL && process.env.SUPABASE_KEY) {
+      try {
+        console.log('📦 Initializing Supabase...');
+        const { initSupabaseDb, supabaseDb } = await import('./db-supabase.js');
+        await initSupabaseDb();
+        db = supabaseDb;
+        console.log('✅ Using Supabase database');
+
+        // Verify migration
+        const supabase = db as any;
+        if (typeof supabase.hasTable === 'function') {
+          const hasUsers = await supabase.hasTable('users');
+          if (!hasUsers) {
+            console.log('⚠️ Supabase tables missing. Attempting to apply schema...');
+            await createSchema(db);
+          } else {
+            console.log('✅ Supabase schema verified (users table exists)');
+          }
+        }
+
+        // Initialize admin account after schema creation
+        const { initAdminAccount } = await import('./utils/init-admin.js');
+        await initAdminAccount();
+        return;
+      } catch (error: any) {
+        console.log('⚠️  Supabase initialization failed, falling back:', error.message);
+      }
+    }
+
+    // Priority 2: Try better-sqlite3 (works everywhere, preferred for local dev)
     try {
       const Database = (await import('better-sqlite3')).default;
       const dbPath = process.env.DB_PATH || path.join(cwd, 'webhook.db');
