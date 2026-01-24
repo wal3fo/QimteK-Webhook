@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Trash2, Shield, User, RefreshCw, AlertTriangle, UserPlus, Briefcase } from 'lucide-react';
+import { ArrowLeft, Trash2, Shield, User, RefreshCw, AlertTriangle, UserPlus, Briefcase, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -10,6 +10,7 @@ import Footer from '@/components/Footer';
 import ConfirmModal from '@/components/ConfirmModal';
 import CreateUserModal from '@/components/CreateUserModal';
 import EditRoleModal from '@/components/EditRoleModal';
+import MfaSetupModal from '@/components/MfaSetupModal';
 import { DataTable, Column } from '@/components/DataTable';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -33,6 +34,7 @@ export default function AdminUsers() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [roleModalOpen, setRoleModalOpen] = useState(false);
+  const [mfaModalOpen, setMfaModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<UserData | null>(null);
   const [userToEditRole, setUserToEditRole] = useState<UserData | null>(null);
 
@@ -296,7 +298,7 @@ export default function AdminUsers() {
     <div className="min-h-screen bg-qimtek-bg text-qimtek-text font-sans selection:bg-[#82c91e] selection:text-black flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-qimtek-bg/80 backdrop-blur-md border-b border-qimtek-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div className="w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link to="/" className="text-qimtek-text-secondary hover:text-qimtek-text transition-colors">
               <ArrowLeft className="w-5 h-5" />
@@ -307,18 +309,28 @@ export default function AdminUsers() {
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => setCreateModalOpen(true)}
-              className="flex items-center gap-2 px-2.5 sm:px-3 py-2 bg-[#82c91e] hover:bg-[#6ba017] text-black rounded-lg transition-colors text-sm font-semibold"
+              className="flex items-center gap-2 px-2.5 py-2 sm:px-3 sm:py-2 bg-[#82c91e] hover:bg-[#6ba017] text-black rounded-lg transition-colors text-sm font-semibold"
+              title="New User"
             >
-              <UserPlus className="w-4 h-4" />
+              <UserPlus className="w-5 h-5 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">New User</span>
+            </button>
+            <button
+              onClick={() => setMfaModalOpen(true)}
+              className="flex items-center gap-2 px-2.5 py-2 sm:px-3 sm:py-2 bg-qimtek-bg-secondary hover:bg-qimtek-bg-surface border border-qimtek-border hover:border-[#82c91e]/50 text-qimtek-text-secondary hover:text-[#82c91e] rounded-lg transition-all duration-200"
+              title="2FA Setup"
+            >
+              <Shield className="w-5 h-5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline text-sm font-medium">2FA</span>
             </button>
             <button
               onClick={fetchUsers}
               disabled={loading}
-              className="p-2 text-qimtek-text-secondary hover:text-qimtek-text hover:bg-qimtek-bg-secondary rounded-lg transition-colors"
+              className="p-2.5 sm:p-2 text-qimtek-text-secondary hover:text-qimtek-text hover:bg-qimtek-bg-secondary rounded-lg transition-colors border border-transparent hover:border-qimtek-border"
+              title="Refresh Users"
             >
               <RefreshCw className={cn("w-5 h-5", loading && "animate-spin")} />
             </button>
@@ -327,7 +339,7 @@ export default function AdminUsers() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 w-full px-2 sm:px-4 lg:px-6 py-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold mb-2 text-qimtek-text">User Management</h1>
@@ -382,6 +394,11 @@ export default function AdminUsers() {
         onConfirm={handleRoleUpdate}
         currentRole={userToEditRole?.role || 'user'}
         userEmail={userToEditRole?.email || ''}
+      />
+
+      <MfaSetupModal
+        isOpen={mfaModalOpen}
+        onClose={() => setMfaModalOpen(false)}
       />
     </div>
   );
