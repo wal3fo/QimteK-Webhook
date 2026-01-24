@@ -190,6 +190,37 @@ async function createSchema(database: DatabaseAdapter): Promise<void> {
     // Ignore error
   }
 
+  // Migration: Add verification columns to users
+  try {
+    const migration = database.prepare('ALTER TABLE users ADD COLUMN is_verified BOOLEAN DEFAULT 1');
+    const migrationResult = migration.run();
+    if (migrationResult instanceof Promise) {
+      await migrationResult;
+    }
+  } catch (error) {
+    // Ignore error
+  }
+
+  try {
+    const migration = database.prepare('ALTER TABLE users ADD COLUMN verification_token TEXT');
+    const migrationResult = migration.run();
+    if (migrationResult instanceof Promise) {
+      await migrationResult;
+    }
+  } catch (error) {
+    // Ignore error
+  }
+
+  try {
+    const migration = database.prepare('ALTER TABLE users ADD COLUMN verification_token_expires_at DATETIME');
+    const migrationResult = migration.run();
+    if (migrationResult instanceof Promise) {
+      await migrationResult;
+    }
+  } catch (error) {
+    // Ignore error
+  }
+
   console.log('✅ Database schema initialized');
 }
 

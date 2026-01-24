@@ -34,6 +34,9 @@ interface User {
   role: 'Administrator' | 'Professional' | 'user';
   mfa_secret?: string;
   mfa_enabled?: boolean;
+  is_verified?: boolean;
+  verification_token?: string;
+  verification_token_expires_at?: string;
   created_at: string;
 }
 
@@ -210,6 +213,9 @@ class JsonDatabase {
           const email = params[1];
           const passwordHash = params[2];
           const role = params[3] || 'user';
+          const isVerified = params[4] !== undefined ? (params[4] === 1 || params[4] === true) : false; // Default to false if not provided
+          const verificationToken = params[5];
+          const verificationTokenExpiresAt = params[6];
 
           // Check for duplicate email (case-insensitive)
           if (db.users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
@@ -221,11 +227,26 @@ class JsonDatabase {
             email,
             password_hash: passwordHash,
             role: role as 'Administrator' | 'Professional' | 'user',
+            is_verified: isVerified,
+            verification_token: verificationToken,
+            verification_token_expires_at: verificationTokenExpiresAt,
             created_at: new Date().toISOString(),
           };
 
           db.users.push(user);
           changes = 1;
+        }
+
+        // Handle UPDATE users SET is_verified = 1, verification_token = NULL, verification_token_expires_at = NULL WHERE id = ?
+        if (sql.includes('UPDATE users SET is_verified = 1')) {
+          const id = params[0];
+          const userIndex = db.users.findIndex(u => u.id === id);
+          if (userIndex !== -1) {
+            db.users[userIndex].is_verified = true;
+            db.users[userIndex].verification_token = undefined;
+            db.users[userIndex].verification_token_expires_at = undefined;
+            changes = 1;
+          }
         }
 
         // Handle UPDATE users SET role
@@ -426,6 +447,13 @@ class JsonDatabase {
           // Return full user object (including mfa_enabled and password_hash)
           // The API layer is responsible for filtering sensitive fields before sending to client
           return { ...user };
+        }
+
+        // Handle SELECT FROM users WHERE verification_token = ?
+        if (sql.includes('SELECT') && sql.includes('users') && sql.includes('verification_token = ?')) {
+          const token = params[0];
+          const user = db.users.find(u => u.verification_token === token);
+          return user || undefined;
         }
 
         // Handle SELECT COUNT(*) FROM requests WHERE webhook_token = ?

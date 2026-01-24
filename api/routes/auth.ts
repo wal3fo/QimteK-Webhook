@@ -105,6 +105,72 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
 });
 
 /**
+ * Verify email
+ * GET /api/auth/verify-email
+ */
+router.get('/verify-email', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { token } = req.query;
+
+    if (!token || typeof token !== 'string') {
+      res.status(400).json({
+        success: false,
+        error: 'Invalid verification token',
+      });
+      return;
+    }
+
+    const database = await ensureDb();
+
+    // Find user with this token
+    const userResult = database.prepare(`
+      SELECT * FROM users WHERE verification_token = ?
+    `).get(token);
+
+    const user = await (userResult instanceof Promise
+      ? userResult
+      : Promise.resolve(userResult));
+
+    if (!user) {
+      res.status(400).json({
+        success: false,
+        error: 'Invalid or expired verification token',
+      });
+      return;
+    }
+
+    // Check if token expired
+    if (new Date(user.verification_token_expires_at) < new Date()) {
+      res.status(400).json({
+        success: false,
+        error: 'Verification token has expired',
+      });
+      return;
+    }
+
+    // Update user status
+    const updateStmt = database.prepare(`
+      UPDATE users 
+      SET is_verified = 1, verification_token = NULL, verification_token_expires_at = NULL 
+      WHERE id = ?
+    `);
+
+    const result = updateStmt.run(user.id);
+    await (result instanceof Promise ? result : Promise.resolve(result));
+
+    // Redirect to login with success message
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    res.redirect(`${clientUrl}/login?verified=true`);
+  } catch (error) {
+    console.error('Error verifying email:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to verify email',
+    });
+  }
+});
+
+/**
  * Login
  * POST /api/auth/login
  */
@@ -219,7 +285,7 @@ router.get('/me', authenticate, async (req: Request, res: Response): Promise<voi
 
     const database = await ensureDb();
     const userResult = database.prepare(`
-      SELECT id, email, role, created_at, mfa_enabled FROM users WHERE id = ?
+      SELECT id, email, role, created_at, mfa_enabled, is_verified FROM users WHERE id = ?
     `).get(user.id);
 
     const dbUser = await (userResult instanceof Promise
@@ -230,6 +296,7 @@ router.get('/me', authenticate, async (req: Request, res: Response): Promise<voi
         role: string;
         created_at: string;
         mfa_enabled: boolean;
+        is_verified: boolean;
       } | undefined;
 
     if (!dbUser) {

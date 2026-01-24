@@ -381,8 +381,7 @@ export default function Home() {
                 ? 'bg-red-900/30 text-red-300 border-red-700/50'
                 : 'bg-blue-900/30 text-blue-300 border-blue-700/50'
             )}>
-              <span className="hidden sm:inline text-opacity-80">Used:</span>
-              <span className="font-mono font-medium">{webhooks.length} / {maxWebhooks >= 99999 ? 'Unlimited' : maxWebhooks}</span>
+              <span className="font-mono font-medium">{webhooks.length}/{maxWebhooks >= 99999 ? 'Unlimited' : maxWebhooks}</span>
             </div>
           )}
         </div>
