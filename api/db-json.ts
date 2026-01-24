@@ -50,10 +50,16 @@ interface Database {
 function getDbPath(): string {
   const cwd = process.cwd();
 
-  // Use DB_PATH if explicitly set
-  if (process.env.DB_PATH) {
-    console.log(`✅ Using explicit DB_PATH: ${process.env.DB_PATH}`);
+  // Use DB_PATH if explicitly set, BUT ignore it if it looks like a SQLite file (.db)
+  // This prevents the JSON adapter from corrupting the SQLite file or failing to read it
+  if (process.env.DB_PATH && !process.env.DB_PATH.endsWith('.db')) {
+    console.log(`✅ Using explicit DB_PATH for JSON: ${process.env.DB_PATH}`);
     return process.env.DB_PATH;
+  }
+
+  // If DB_PATH points to a .db file, warn and fallback to default json file
+  if (process.env.DB_PATH && process.env.DB_PATH.endsWith('.db')) {
+    console.warn(`⚠️  DB_PATH (${process.env.DB_PATH}) points to a SQLite file. Ignoring for JSON adapter to avoid corruption.`);
   }
 
   // Try to load from .env if not set (fallback)
@@ -61,8 +67,8 @@ function getDbPath(): string {
     const envPath = path.join(process.cwd(), '.env');
     if (fs.existsSync(envPath)) {
       const envConfig = dotenv.parse(fs.readFileSync(envPath));
-      if (envConfig.DB_PATH) {
-        console.log(`✅ Using DB_PATH from .env: ${envConfig.DB_PATH}`);
+      if (envConfig.DB_PATH && !envConfig.DB_PATH.endsWith('.db')) {
+        console.log(`✅ Using DB_PATH from .env for JSON: ${envConfig.DB_PATH}`);
         return envConfig.DB_PATH;
       }
     }
@@ -70,9 +76,9 @@ function getDbPath(): string {
     // Ignore error
   }
 
-  // For local development, use current working directory
+  // Default for JSON database
   const localPath = path.join(cwd, 'webhook-data.json');
-  console.log(`✅ Using database path: ${localPath} (cwd: ${cwd})`);
+  console.log(`✅ Using default JSON database path: ${localPath} (cwd: ${cwd})`);
   return localPath;
 }
 

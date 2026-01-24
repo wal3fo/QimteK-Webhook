@@ -263,8 +263,9 @@ class SupabaseDatabase {
 
   async hasTable(tableName: string): Promise<boolean> {
     const { error } = await this.client.from(tableName).select('id').limit(1);
-    // code 42P01 means undefined_table
-    if (error && error.code === '42P01') {
+    // code 42P01 means undefined_table (Postgres)
+    // code PGRST205 means table not found in schema cache (PostgREST)
+    if (error && (error.code === '42P01' || error.code === 'PGRST205')) {
       return false;
     }
     return true;

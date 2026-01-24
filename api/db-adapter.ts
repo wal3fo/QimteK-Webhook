@@ -74,7 +74,11 @@ export async function initDb(): Promise<void> {
         return;
       } catch (error: any) {
         console.log('⚠️  Supabase initialization failed, falling back:', error.message);
+        // FORCE EXIT: If Supabase fails, do not fallback to local DB if user requested only Supabase
+        // throw new Error('Supabase initialization failed');
       }
+    } else {
+      console.warn('⚠️  Supabase credentials missing! Check your .env file.');
     }
 
     // Priority 2: Try better-sqlite3 (works everywhere, preferred for local dev)
@@ -147,6 +151,11 @@ async function createSchema(database: DatabaseAdapter): Promise<void> {
       email TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'user',
+      mfa_secret TEXT,
+      mfa_enabled BOOLEAN DEFAULT 0,
+      is_verified BOOLEAN DEFAULT 1,
+      verification_token TEXT,
+      verification_token_expires_at DATETIME,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 

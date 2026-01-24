@@ -9,11 +9,19 @@ import { createServer } from 'http';
 
 // Manual fallback for loading .env in production if dotenv/config failed to find it
 // (Replit production mode sometimes skips .env loading)
-if (!process.env.SUPABASE_URL && fs.existsSync(path.join(process.cwd(), '.env'))) {
-  console.log('⚠️ Environment variables missing. Manually loading .env file...');
-  const envConfig = dotenv.parse(fs.readFileSync(path.join(process.cwd(), '.env')));
-  for (const k in envConfig) {
-    process.env[k] = envConfig[k];
+if (!process.env.SUPABASE_URL) {
+  const envPath = path.join(process.cwd(), '.env');
+  console.log('⚠️ Environment variables missing. Attempting manual .env load from:', envPath);
+
+  if (fs.existsSync(envPath)) {
+    console.log('✅ Found .env file. Parsing...');
+    const envConfig = dotenv.parse(fs.readFileSync(envPath));
+    for (const k in envConfig) {
+      process.env[k] = envConfig[k];
+    }
+    console.log('✅ .env file loaded manually.');
+  } else {
+    console.error('❌ .env file NOT FOUND at:', envPath);
   }
 }
 
