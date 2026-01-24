@@ -22,7 +22,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+import { API_URL } from '@/config/api';
+
 const STORAGE_KEY = 'auth_token';
 
 export function AuthProvider({ children }: { children: ReactNode }) {

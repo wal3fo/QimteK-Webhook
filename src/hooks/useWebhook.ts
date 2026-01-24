@@ -23,19 +23,8 @@ export interface Webhook {
   is_active?: boolean;
 }
 
-// Use relative path in production, or use VITE_API_URL if set
-const getApiUrl = () => {
-  const envUrl = import.meta.env.VITE_API_URL;
-  if (!envUrl) return '/api';
+import { API_URL } from '@/config/api';
 
-  if (envUrl.includes('localhost') && import.meta.env.PROD) {
-    return '/api';
-  }
-
-  return envUrl;
-};
-
-const API_URL = getApiUrl();
 const WEBHOOK_STORAGE_KEY = 'last_selected_webhook_token';
 
 export function useWebhook() {
