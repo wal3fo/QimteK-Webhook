@@ -95,7 +95,7 @@ class SupabaseDatabase {
         if (sql.includes('DELETE FROM webhooks')) {
           if (sql.includes('WHERE token = ?') && sql.includes('user_id = ?')) {
             const [token, user_id] = params;
-            const { error } = await this.client.from('webhooks').delete().match({ token, user_id });
+            const { error } = await this.client.from('webhooks').delete().eq('token', token).eq('user_id', user_id);
             if (error) throw error;
             return { changes: 1 }; // Approximate
           }

@@ -93,7 +93,17 @@ app.use((error: Error, req: Request, res: Response, _next: NextFunction) => {
 /**
  * 404 handler and Static File Serving
  */
-const distPath = path.join(__dirname, '../../dist')
+// Determine dist path based on execution environment
+// Production (compiled): api/dist/app.js -> ../../dist
+// Development (tsx): api/app.ts -> ../dist
+const distPathProd = path.join(__dirname, '../../dist')
+const distPathDev = path.join(__dirname, '../dist')
+
+let distPath = distPathProd
+if (fs.existsSync(path.join(distPathDev, 'index.html'))) {
+  distPath = distPathDev
+}
+
 const hasDist = fs.existsSync(path.join(distPath, 'index.html'))
 
 // Serve static files if in production OR if dist exists (fallback for local preview)
