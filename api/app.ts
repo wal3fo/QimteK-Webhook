@@ -10,8 +10,8 @@ import express, {
 import cors from 'cors'
 import dotenv from 'dotenv'
 import path from 'path'
+import fs from 'fs'
 import { fileURLToPath } from 'url'
-
 import webhookRoutes from './routes/webhooks.js'
 import webhookReceiverRoutes from './routes/webhook-receiver.js'
 import authRoutes from './routes/auth.js'
@@ -88,11 +88,14 @@ app.use((error: Error, req: Request, res: Response, _next: NextFunction) => {
 })
 
 /**
- * Static frontend + 404 handling
+ * 404 handler and Static File Serving
  */
 const distPath = path.join(__dirname, '../../dist')
+const hasDist = fs.existsSync(path.join(distPath, 'index.html'))
 
-if (process.env.NODE_ENV === 'production') {
+// Serve static files if in production OR if dist exists and we are not in explicit development mode
+if (process.env.NODE_ENV === 'production' || (hasDist && process.env.NODE_ENV !== 'development')) {
+  console.log(`Serving static files from: ${distPath}`)
   app.use(express.static(distPath))
 
   app.get('*', (req: Request, res: Response) => {
