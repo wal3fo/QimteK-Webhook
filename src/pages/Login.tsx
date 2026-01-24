@@ -13,7 +13,7 @@ export default function Login() {
   const [showMfa, setShowMfa] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const { login, register, isAuthenticated } = useAuth();
+  const { login, register, isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -22,6 +22,17 @@ export default function Login() {
       navigate('/', { replace: true });
     }
   }, [isAuthenticated, navigate]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-qimtek-bg flex items-center justify-center px-4 py-12 page-enter">
+        <div className="text-qimtek-text-secondary flex flex-col sm:flex-row items-center gap-3">
+          <div className="w-5 h-5 border-2 border-[#82c91e] border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-sm sm:text-base">Checking session...</span>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

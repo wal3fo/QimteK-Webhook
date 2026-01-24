@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 
 export default function PricingCards() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
   const isFree = !user || user.role === 'user';
   const isProfessional = user?.role === 'Professional';
@@ -62,7 +62,9 @@ export default function PricingCards() {
           </li>
         </ul>
 
-        {!user ? (
+        {loading ? (
+          <div className="w-full h-10 bg-qimtek-bg-secondary animate-pulse rounded-lg border border-qimtek-border" />
+        ) : !user ? (
           <Link
             to="/login"
             className="block w-full py-2.5 px-4 bg-qimtek-bg-secondary hover:bg-qimtek-bg-tertiary border border-qimtek-border text-qimtek-text text-center rounded-lg transition-colors text-sm font-medium"
@@ -136,7 +138,9 @@ export default function PricingCards() {
           </li>
         </ul>
 
-        {isAdministrator ? (
+        {loading ? (
+          <div className="w-full h-10 bg-qimtek-bg-secondary animate-pulse rounded-lg border border-qimtek-border" />
+        ) : isAdministrator ? (
           null
         ) : isProfessional ? (
           <button

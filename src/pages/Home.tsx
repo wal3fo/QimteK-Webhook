@@ -111,7 +111,7 @@ RequestRow.displayName = 'RequestRow';
 export default function Home() {
   const navigate = useNavigate();
   const { webhooks, selectedWebhook, requests, loading, error, isConnected, generateWebhook, deleteWebhook, setSelectedWebhook } = useWebhook();
-  const { user, token, isAuthenticated, isAdmin, logout } = useAuth();
+  const { user, token, isAuthenticated, isAdmin, logout, loading: authLoading } = useAuth();
   const [copied, setCopied] = useState(false);
   const [methodFilter, setMethodFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -248,7 +248,9 @@ export default function Home() {
           <Logo size="xl" />
           <div className="flex items-center gap-2 sm:gap-3 w-auto justify-end">
             {/* Auth Section */}
-            {isAuthenticated ? (
+            {authLoading ? (
+              <div className="h-10 w-24 bg-qimtek-bg-secondary animate-pulse rounded-lg border border-qimtek-border" />
+            ) : isAuthenticated ? (
               <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-3">
                 {/* User Info - Clickable for Password Change */}
                 <button
@@ -396,7 +398,9 @@ export default function Home() {
         </div>
 
         {/* Webhook Generator */}
-        {!isAuthenticated ? (
+        {authLoading ? (
+          <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-5 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8 border border-qimtek-border h-64 animate-pulse" />
+        ) : !isAuthenticated ? (
           <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-5 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8 border border-qimtek-border card-enter">
             <div className="text-center">
               <h2 className="text-xl sm:text-2xl font-bold text-qimtek-text mb-3 sm:mb-4">
@@ -534,13 +538,15 @@ export default function Home() {
                           ? 'Never'
                           : (selectedWebhook.expiresAt ? format(new Date(selectedWebhook.expiresAt), 'PPp') : 'N/A')}
                       </p>
-                      <button
-                        onClick={() => setShowGenerateModal(true)}
-                        disabled={loading}
-                        className="text-xs sm:text-sm text-[#82c91e] hover:text-[#6ba017] font-medium transition-colors"
-                      >
-                        + Generate Another
-                      </button>
+                      {webhooks.length < maxWebhooks && (
+                        <button
+                          onClick={() => setShowGenerateModal(true)}
+                          disabled={loading}
+                          className="text-xs sm:text-sm text-[#82c91e] hover:text-[#6ba017] font-medium transition-colors"
+                        >
+                          + Generate Another
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
