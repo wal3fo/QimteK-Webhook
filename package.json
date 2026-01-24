@@ -5,13 +5,9 @@
   "type": "module",
   "scripts": {
     "client:dev": "vite",
-<<<<<<< HEAD
-    "build": "tsc -b && vite build && tsc -p tsconfig.json --outDir api/dist",
-=======
     "build:server": "tsc -p api/tsconfig.json",
     "build": "npm run build:server && vite build",
     "start": "node api/dist/server.js",
->>>>>>> 4bab2fa6b2ace1c9331f8f52b83c46374bddccdd
     "lint": "eslint .",
     "preview": "vite preview",
     "check": "tsc --noEmit",
