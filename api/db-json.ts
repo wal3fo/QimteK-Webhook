@@ -4,6 +4,7 @@
  */
 import fs from 'fs';
 import path from 'path';
+import dotenv from 'dotenv';
 
 interface Webhook {
   token: string;
@@ -54,11 +55,9 @@ function getDbPath(): string {
 
   // Try to load from .env if not set (fallback)
   try {
-    const fs = require('fs');
-    const path = require('path');
     const envPath = path.join(process.cwd(), '.env');
     if (fs.existsSync(envPath)) {
-      const envConfig = require('dotenv').parse(fs.readFileSync(envPath));
+      const envConfig = dotenv.parse(fs.readFileSync(envPath));
       if (envConfig.DB_PATH) {
         console.log(`✅ Using DB_PATH from .env: ${envConfig.DB_PATH}`);
         return envConfig.DB_PATH;

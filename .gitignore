@@ -31,7 +31,10 @@ dist-ssr
 *.db
 *.db-shm
 *.db-wal
+webhook-data.json
+visitor-stats.json
 
 # Build outputs
 build
 out
+api/dist
