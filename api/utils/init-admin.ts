@@ -67,11 +67,11 @@ export async function initAdminAccount(): Promise<void> {
     const passwordHash = await hashPassword(ADMIN_PASSWORD);
 
     const stmt = database.prepare(`
-      INSERT INTO users (id, email, password_hash, role)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO users (id, email, password_hash, role, is_verified)
+      VALUES (?, ?, ?, ?, ?)
     `);
 
-    const result = stmt.run(adminId, ADMIN_EMAIL, passwordHash, 'Administrator');
+    const result = stmt.run(adminId, ADMIN_EMAIL, passwordHash, 'Administrator', 1);
     await (result instanceof Promise ? result : Promise.resolve(result));
 
     console.log('✅ Admin account created successfully');

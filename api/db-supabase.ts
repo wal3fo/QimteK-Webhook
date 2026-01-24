@@ -27,19 +27,28 @@ class SupabaseDatabase {
       run: async (...params: any[]) => {
         // Users Table Operations
         if (sql.includes('INSERT INTO users')) {
-          const [id, email, password_hash, role = 'user', is_verified = false, verification_token, verification_token_expires_at] = params;
-          const { error } = await this.client.from('users').insert({
-            id,
-            email,
-            password_hash,
-            role,
-            is_verified: is_verified ? true : false,
-            verification_token,
-            verification_token_expires_at,
-            created_at: new Date().toISOString()
-          });
-          if (error) throw error;
-          return { changes: 1 };
+          // Parse columns from SQL dynamically
+          const match = sql.match(/INSERT INTO users \((.*?)\)/i);
+          if (match) {
+            const columns = match[1].split(',').map(c => c.trim());
+            const data: any = {};
+            columns.forEach((col, index) => {
+              data[col] = params[index];
+            });
+
+            // Add defaults if missing
+            if (!data.created_at) data.created_at = new Date().toISOString();
+            if (!data.role) data.role = 'user';
+            if (data.is_verified === undefined) data.is_verified = false;
+
+            // Fix boolean for Supabase
+            if (data.is_verified === 1) data.is_verified = true;
+            if (data.is_verified === 0) data.is_verified = false;
+
+            const { error } = await this.client.from('users').insert(data);
+            if (error) throw error;
+            return { changes: 1 };
+          }
         }
 
         if (sql.includes('UPDATE users SET is_verified = 1')) {

@@ -81,11 +81,11 @@ router.post('/', authenticate, requireAdmin, async (req: Request, res: Response)
     // Create user
     const userId = uuidv4();
     const stmt = database.prepare(`
-      INSERT INTO users (id, email, password_hash, role)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO users (id, email, password_hash, role, is_verified)
+      VALUES (?, ?, ?, ?, ?)
     `);
 
-    const result = stmt.run(userId, normalizedEmail, passwordHash, role);
+    const result = stmt.run(userId, normalizedEmail, passwordHash, role, 1);
     await (result instanceof Promise ? result : Promise.resolve(result));
 
     res.status(201).json({
