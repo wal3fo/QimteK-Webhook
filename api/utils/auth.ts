@@ -9,8 +9,7 @@ import jwt from 'jsonwebtoken';
 import { type Request, type Response, type NextFunction } from 'express';
 import { generateSecret, verify, generateURI } from 'otplib';
 import QRCode from 'qrcode';
-
-import { ensureDb } from '../db.js';
+import { supabase } from '../lib/supabase.js';
 
 // JWT secret - use environment variable or fallback (should be set in production)
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -111,12 +110,13 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
 
     // Verify user exists in database and get latest role
     try {
-      const database = await ensureDb();
-      const user = database.prepare('SELECT * FROM users WHERE id = ?').get(payload.id) as any;
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', payload.id)
+        .single();
 
-      const userResult = await (user instanceof Promise ? user : Promise.resolve(user));
-
-      if (!userResult) {
+      if (error || !user) {
         res.status(401).json({
           success: false,
           error: 'User no longer exists',
@@ -126,9 +126,9 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
 
       // Attach latest user info to request object
       (req as any).user = {
-        id: userResult.id,
-        email: userResult.email,
-        role: userResult.role
+        id: user.id,
+        email: user.email,
+        role: user.role
       };
 
       next();

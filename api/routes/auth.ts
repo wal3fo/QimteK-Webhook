@@ -6,7 +6,7 @@
 
 import { Router, type Request, type Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { ensureDb } from '../db.js';
+import { supabase } from '../lib/supabase.js';
 import { hashPassword, comparePassword, generateToken, authenticate, generateMfaSecret, generateQrCode, verifyMfaToken } from '../utils/auth.js';
 
 const router = Router();
@@ -47,18 +47,14 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const database = await ensureDb();
-
     // Check if user already exists
-    const existingUser = database.prepare(`
-      SELECT * FROM users WHERE email = ?
-    `).get(email);
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('email')
+      .eq('email', email)
+      .maybeSingle();
 
-    const userResult = await (existingUser instanceof Promise
-      ? existingUser
-      : Promise.resolve(existingUser));
-
-    if (userResult) {
+    if (existingUser) {
       res.status(409).json({
         success: false,
         error: 'User with this email already exists',
@@ -71,13 +67,20 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
 
     // Create user
     const userId = uuidv4();
-    const stmt = database.prepare(`
-      INSERT INTO users (id, email, password_hash, role)
-      VALUES (?, ?, ?, 'user')
-    `);
 
-    const result = stmt.run(userId, email.toLowerCase(), passwordHash);
-    await (result instanceof Promise ? result : Promise.resolve(result));
+    const { error: insertError } = await supabase
+      .from('users')
+      .insert({
+        id: userId,
+        email: email.toLowerCase(),
+        password_hash: passwordHash,
+        role: 'user',
+        created_at: new Date().toISOString()
+      });
+
+    if (insertError) {
+      throw insertError;
+    }
 
     // Generate token
     const token = generateToken({
@@ -120,18 +123,14 @@ router.get('/verify-email', async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    const database = await ensureDb();
-
     // Find user with this token
-    const userResult = database.prepare(`
-      SELECT * FROM users WHERE verification_token = ?
-    `).get(token);
+    const { data: user, error: fetchError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('verification_token', token)
+      .single();
 
-    const user = await (userResult instanceof Promise
-      ? userResult
-      : Promise.resolve(userResult));
-
-    if (!user) {
+    if (fetchError || !user) {
       res.status(400).json({
         success: false,
         error: 'Invalid or expired verification token',
@@ -140,7 +139,7 @@ router.get('/verify-email', async (req: Request, res: Response): Promise<void> =
     }
 
     // Check if token expired
-    if (new Date(user.verification_token_expires_at) < new Date()) {
+    if (user.verification_token_expires_at && new Date(user.verification_token_expires_at) < new Date()) {
       res.status(400).json({
         success: false,
         error: 'Verification token has expired',
@@ -149,14 +148,18 @@ router.get('/verify-email', async (req: Request, res: Response): Promise<void> =
     }
 
     // Update user status
-    const updateStmt = database.prepare(`
-      UPDATE users 
-      SET is_verified = 1, verification_token = NULL, verification_token_expires_at = NULL 
-      WHERE id = ?
-    `);
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({
+        is_verified: true,
+        verification_token: null,
+        verification_token_expires_at: null
+      })
+      .eq('id', user.id);
 
-    const result = updateStmt.run(user.id);
-    await (result instanceof Promise ? result : Promise.resolve(result));
+    if (updateError) {
+      throw updateError;
+    }
 
     // Redirect to login with success message
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
@@ -188,26 +191,15 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const database = await ensureDb();
-
     // Find user by email
-    const userResult = database.prepare(`
-      SELECT * FROM users WHERE email = ?
-    `).get(email.toLowerCase());
+    const { data: user, error: fetchError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email.toLowerCase())
+      .single();
 
-    const user = await (userResult instanceof Promise
-      ? userResult
-      : Promise.resolve(userResult)) as {
-        id: string;
-        email: string;
-        password_hash: string;
-        role: string;
-        mfa_enabled: boolean;
-        mfa_secret: string;
-      } | undefined;
-
-    if (!user) {
-      console.log('User not found:', email);
+    if (fetchError || !user) {
+      console.log('User not found or error:', email);
       res.status(401).json({
         success: false,
         error: 'Invalid email or password',
@@ -283,23 +275,13 @@ router.get('/me', authenticate, async (req: Request, res: Response): Promise<voi
   try {
     const user = (req as any).user;
 
-    const database = await ensureDb();
-    const userResult = database.prepare(`
-      SELECT id, email, role, created_at, mfa_enabled, is_verified FROM users WHERE id = ?
-    `).get(user.id);
+    const { data: dbUser, error } = await supabase
+      .from('users')
+      .select('id, email, role, created_at, mfa_enabled, is_verified')
+      .eq('id', user.id)
+      .single();
 
-    const dbUser = await (userResult instanceof Promise
-      ? userResult
-      : Promise.resolve(userResult)) as {
-        id: string;
-        email: string;
-        role: string;
-        created_at: string;
-        mfa_enabled: boolean;
-        is_verified: boolean;
-      } | undefined;
-
-    if (!dbUser) {
+    if (error || !dbUser) {
       res.status(404).json({
         success: false,
         error: 'User not found',
@@ -376,13 +358,15 @@ router.post('/mfa/enable', authenticate, async (req: Request, res: Response): Pr
       return;
     }
 
-    const database = await ensureDb();
-    const stmt = database.prepare(`
-      UPDATE users SET mfa_secret = ?, mfa_enabled = 1 WHERE id = ?
-    `);
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({
+        mfa_secret: secret,
+        mfa_enabled: true
+      })
+      .eq('id', user.id);
 
-    const result = stmt.run(secret, user.id);
-    await (result instanceof Promise ? result : Promise.resolve(result));
+    if (updateError) throw updateError;
 
     res.json({
       success: true,
@@ -406,12 +390,18 @@ router.post('/mfa/disable', authenticate, async (req: Request, res: Response): P
     const user = (req as any).user;
     const { password } = req.body;
 
-    // Optional: Verify password before disabling for extra security
-    // For now we trust the authenticated session, but checking password is good practice
     if (password) {
-      const database = await ensureDb();
-      const userResult = database.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
-      const dbUser = await (userResult instanceof Promise ? userResult : Promise.resolve(userResult));
+      const { data: dbUser, error } = await supabase
+        .from('users')
+        .select('password_hash')
+        .eq('id', user.id)
+        .single();
+
+      if (error || !dbUser) {
+        res.status(404).json({ success: false, error: 'User not found' });
+        return;
+      }
+
       const isValid = await comparePassword(password, dbUser.password_hash);
       if (!isValid) {
         res.status(401).json({ success: false, error: 'Invalid password' });
@@ -419,13 +409,15 @@ router.post('/mfa/disable', authenticate, async (req: Request, res: Response): P
       }
     }
 
-    const database = await ensureDb();
-    const stmt = database.prepare(`
-      UPDATE users SET mfa_secret = NULL, mfa_enabled = 0 WHERE id = ?
-    `);
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({
+        mfa_secret: null,
+        mfa_enabled: false
+      })
+      .eq('id', user.id);
 
-    const result = stmt.run(user.id);
-    await (result instanceof Promise ? result : Promise.resolve(result));
+    if (updateError) throw updateError;
 
     res.json({
       success: true,
@@ -465,21 +457,14 @@ router.post('/change-password', authenticate, async (req: Request, res: Response
       return;
     }
 
-    const database = await ensureDb();
-
     // Get user with password hash
-    const userResult = database.prepare(`
-      SELECT * FROM users WHERE id = ?
-    `).get(user.id);
+    const { data: dbUser, error } = await supabase
+      .from('users')
+      .select('id, password_hash')
+      .eq('id', user.id)
+      .single();
 
-    const dbUser = await (userResult instanceof Promise
-      ? userResult
-      : Promise.resolve(userResult)) as {
-        id: string;
-        password_hash: string;
-      } | undefined;
-
-    if (!dbUser) {
+    if (error || !dbUser) {
       res.status(404).json({
         success: false,
         error: 'User not found',
@@ -501,12 +486,12 @@ router.post('/change-password', authenticate, async (req: Request, res: Response
     const newPasswordHash = await hashPassword(newPassword);
 
     // Update password
-    const stmt = database.prepare(`
-      UPDATE users SET password_hash = ? WHERE id = ?
-    `);
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ password_hash: newPasswordHash })
+      .eq('id', user.id);
 
-    const result = stmt.run(newPasswordHash, user.id);
-    await (result instanceof Promise ? result : Promise.resolve(result));
+    if (updateError) throw updateError;
 
     res.json({
       success: true,

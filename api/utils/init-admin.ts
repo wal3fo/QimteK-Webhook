@@ -4,7 +4,7 @@
  * Creates the default admin account on first database initialization
  */
 
-import { ensureDb } from '../db.js';
+import { supabase } from '../lib/supabase.js';
 import { hashPassword } from './auth.js';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -16,16 +16,18 @@ const ADMIN_PASSWORD = 'benjaber';
  */
 export async function initAdminAccount(): Promise<void> {
   try {
-    const database = await ensureDb();
-
     // Check for duplicate admin accounts and clean them up
-    const existingAdmins = database.prepare(`
-      SELECT * FROM users WHERE lower(email) = ?
-    `).all(ADMIN_EMAIL);
+    // Supabase doesn't support case-insensitive unique constraint by default on email unless configured
+    // so we search case-insensitive
+    const { data: adminResults, error } = await supabase
+      .from('users')
+      .select('*')
+      .ilike('email', ADMIN_EMAIL);
 
-    const adminResults = await (existingAdmins instanceof Promise
-      ? existingAdmins
-      : Promise.resolve(existingAdmins));
+    if (error) {
+      console.error('❌ Failed to check for admin account:', error);
+      return;
+    }
 
     if (adminResults && adminResults.length > 0) {
       // Sort by creation time (oldest first)
@@ -41,9 +43,7 @@ export async function initAdminAccount(): Promise<void> {
         for (let i = 1; i < sortedAdmins.length; i++) {
           const dup = sortedAdmins[i];
           console.log(`   Deleting duplicate admin: ${dup.id} (${dup.email})`);
-          const deleteStmt = database.prepare('DELETE FROM users WHERE id = ?');
-          const deleteResult = deleteStmt.run(dup.id);
-          await (deleteResult instanceof Promise ? deleteResult : Promise.resolve(deleteResult));
+          await supabase.from('users').delete().eq('id', dup.id);
         }
         console.log('✅ Duplicate admin accounts removed.');
       }
@@ -52,9 +52,10 @@ export async function initAdminAccount(): Promise<void> {
       if (primaryAdmin.role !== 'Administrator') {
         console.log('🔄 Updating admin role to Administrator and resetting password');
         const passwordHash = await hashPassword(ADMIN_PASSWORD);
-        const updateStmt = database.prepare('UPDATE users SET role = ?, password_hash = ? WHERE id = ?');
-        const updateResult = updateStmt.run('Administrator', passwordHash, primaryAdmin.id);
-        await (updateResult instanceof Promise ? updateResult : Promise.resolve(updateResult));
+        await supabase
+          .from('users')
+          .update({ role: 'Administrator', password_hash: passwordHash })
+          .eq('id', primaryAdmin.id);
         console.log('✅ Admin role updated to Administrator and password reset');
       } else {
         console.log('✅ Admin account already exists and is valid');
@@ -66,13 +67,21 @@ export async function initAdminAccount(): Promise<void> {
     const adminId = uuidv4();
     const passwordHash = await hashPassword(ADMIN_PASSWORD);
 
-    const stmt = database.prepare(`
-      INSERT INTO users (id, email, password_hash, role, is_verified)
-      VALUES (?, ?, ?, ?, ?)
-    `);
+    const { error: insertError } = await supabase
+      .from('users')
+      .insert({
+        id: adminId,
+        email: ADMIN_EMAIL,
+        password_hash: passwordHash,
+        role: 'Administrator',
+        is_verified: true,
+        created_at: new Date().toISOString()
+      });
 
-    const result = stmt.run(adminId, ADMIN_EMAIL, passwordHash, 'Administrator', 1);
-    await (result instanceof Promise ? result : Promise.resolve(result));
+    if (insertError) {
+      console.error('❌ Failed to create admin account:', insertError);
+      return;
+    }
 
     console.log('✅ Admin account created successfully');
     console.log(`   Email: ${ADMIN_EMAIL}`);

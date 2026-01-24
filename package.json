@@ -17,7 +17,6 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.91.1",
     "bcryptjs": "^3.0.3",
-    "better-sqlite3": "^11.10.0",
     "clsx": "^2.1.1",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
@@ -38,7 +37,6 @@
   "devDependencies": {
     "@eslint/js": "^9.25.0",
     "@types/bcryptjs": "^2.4.6",
-    "@types/better-sqlite3": "^7.6.12",
     "@types/cors": "^2.8.19",
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.10",

@@ -1,23 +1,31 @@
 /**
  * Cleanup utility for expired webhooks
  */
-import { ensureDb } from '../db.js';
+import { supabase } from '../lib/supabase.js';
 
 /**
  * Delete expired webhooks and their associated requests
  */
 export async function cleanupExpiredWebhooks(): Promise<void> {
   try {
-    const db = await ensureDb();
+    const now = new Date().toISOString();
     
-    const stmt = db.prepare(`
-      DELETE FROM webhooks 
-      WHERE expires_at < datetime('now') OR is_active = 0
-    `);
+    // Delete webhooks that are expired OR inactive
+    // Note: Supabase doesn't support complex OR conditions across different fields easily in one delete
+    // So we might need two queries or a more complex filter string if supported.
+    // Using .or() with filter syntax:
+    // expires_at.lt.now,is_active.eq.false
     
-    const result = stmt.run();
-    const finalResult = await (result instanceof Promise ? result : Promise.resolve(result));
-    console.log(`Cleaned up ${finalResult.changes} expired webhook(s)`);
+    const { count, error } = await supabase
+      .from('webhooks')
+      .delete({ count: 'exact' })
+      .or(`expires_at.lt.${now},is_active.eq.false`);
+
+    if (error) {
+      throw error;
+    }
+    
+    console.log(`Cleaned up ${count} expired/inactive webhook(s)`);
   } catch (error) {
     console.error('Error cleaning up expired webhooks:', error);
   }

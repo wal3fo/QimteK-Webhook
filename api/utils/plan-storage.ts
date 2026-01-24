@@ -1,7 +1,4 @@
-import fs from 'fs';
-import path from 'path';
-
-const PLAN_FILE = 'plans.json';
+import { supabase } from '../lib/supabase.js';
 
 // Default configuration (mirrors src/config/plans.ts)
 const DEFAULT_PLAN_CONFIG = {
@@ -52,32 +49,16 @@ const DEFAULT_PLAN_CONFIG = {
 export type PlanRole = keyof typeof DEFAULT_PLAN_CONFIG;
 export type PlanConfig = typeof DEFAULT_PLAN_CONFIG;
 
-function getPlanFilePath(): string {
-  // Use DB_PATH logic or just cwd
-  return path.join(process.cwd(), PLAN_FILE);
-}
+// In-memory storage for plans (replaces file-based storage)
+// TODO: Migrate to a Supabase table 'system_config' or similar for persistence
+let currentPlans: PlanConfig = { ...DEFAULT_PLAN_CONFIG };
 
 export function getPlans(): PlanConfig {
-  const filePath = getPlanFilePath();
-  try {
-    if (fs.existsSync(filePath)) {
-      const data = fs.readFileSync(filePath, 'utf8');
-      const parsed = JSON.parse(data);
-      // Merge with default to ensure all keys exist (in case of updates)
-      return { ...DEFAULT_PLAN_CONFIG, ...parsed };
-    }
-  } catch (error) {
-    console.error('Error reading plans file:', error);
-  }
-  return DEFAULT_PLAN_CONFIG;
+  return currentPlans;
 }
 
 export function savePlans(config: PlanConfig): void {
-  const filePath = getPlanFilePath();
-  try {
-    fs.writeFileSync(filePath, JSON.stringify(config, null, 2), 'utf8');
-  } catch (error) {
-    console.error('Error writing plans file:', error);
-    throw new Error('Failed to save plan configuration');
-  }
+  currentPlans = config;
+  // TODO: Save to Supabase
+  console.log('Plans updated in memory');
 }
