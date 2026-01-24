@@ -57,15 +57,6 @@ router.all('/:token', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Check if expired
-    if (new Date(webhook.expires_at) < new Date()) {
-      res.status(410).json({
-        success: false,
-        error: 'Webhook expired',
-      });
-      return;
-    }
-
     // Check if active
     // Handle both boolean (JSON DB) and integer (SQLite) values
     const isActive = typeof webhook.is_active === 'boolean'

@@ -50,7 +50,7 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
     const countResult = database.prepare(`
       SELECT COUNT(*) as count 
       FROM webhooks 
-      WHERE user_id = ? AND is_active = 1 AND expires_at > datetime('now')
+      WHERE user_id = ? AND is_active = 1
     `).get(user.id);
 
     console.log('Count result:', countResult);
@@ -133,7 +133,7 @@ router.get('/', authenticate, async (req: Request, res: Response): Promise<void>
     const webhooksResult = database.prepare(`
       SELECT token, name, created_at, expires_at, is_active
       FROM webhooks 
-      WHERE user_id = ? AND is_active = 1 AND expires_at > datetime('now')
+      WHERE user_id = ? AND is_active = 1
       ORDER BY created_at DESC
     `).all(user.id);
 
@@ -277,7 +277,7 @@ router.get('/:token/requests', async (req: Request, res: Response): Promise<void
     // Verify webhook exists and is active
     const webhookResult = database.prepare(`
       SELECT * FROM webhooks 
-      WHERE token = ? AND is_active = 1 AND expires_at > datetime('now')
+      WHERE token = ? AND is_active = 1
     `).get(token);
 
     const webhook = await (webhookResult instanceof Promise
@@ -379,7 +379,7 @@ router.get('/:token', authenticate, async (req: Request, res: Response): Promise
 
     const webhookResult = database.prepare(`
       SELECT * FROM webhooks 
-      WHERE token = ? AND user_id = ? AND is_active = 1 AND expires_at > datetime('now')
+      WHERE token = ? AND user_id = ? AND is_active = 1
     `).get(token, user.id);
 
     const webhook = await (webhookResult instanceof Promise
