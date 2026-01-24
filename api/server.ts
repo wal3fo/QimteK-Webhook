@@ -2,10 +2,32 @@
  * Local development server entry file
  */
 import 'dotenv/config'; // Load env vars before anything else
+import fs from 'fs';
+import path from 'path';
+import dotenv from 'dotenv';
 import { createServer } from 'http';
+
+// Manual fallback for loading .env in production if dotenv/config failed to find it
+// (Replit production mode sometimes skips .env loading)
+if (!process.env.SUPABASE_URL && fs.existsSync(path.join(process.cwd(), '.env'))) {
+  console.log('⚠️ Environment variables missing. Manually loading .env file...');
+  const envConfig = dotenv.parse(fs.readFileSync(path.join(process.cwd(), '.env')));
+  for (const k in envConfig) {
+    process.env[k] = envConfig[k];
+  }
+}
+
 import app from './app.js';
 import { initDb } from './db.js';
 import { startCleanupJob } from './utils/cleanup.js';
+
+// Debug Environment
+console.log('🔧 Server Startup Environment Check:');
+console.log('   NODE_ENV:', process.env.NODE_ENV);
+console.log('   DB_PATH:', process.env.DB_PATH);
+console.log('   SUPABASE_URL:', process.env.SUPABASE_URL ? '✅ Set' : '❌ Missing');
+console.log('   SUPABASE_KEY:', process.env.SUPABASE_KEY ? '✅ Set' : '❌ Missing');
+
 
 /**
  * Initialize database (async)
