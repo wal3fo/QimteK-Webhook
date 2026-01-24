@@ -14,7 +14,7 @@ import { Router, type Request, type Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { ensureDb } from '../db.js';
 import { authenticate } from '../utils/auth.js';
-import { WEBHOOK_LIMITS } from '../config.js';
+import { getPlans, type PlanConfig } from '../utils/plan-storage.js';
 
 const router = Router();
 
@@ -33,7 +33,7 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
   try {
     const user = (req as any).user;
     // Default expiration: 60 minutes
-    const { expiresIn = 60, name } = req.body;
+    const { expiresIn = 60, name, alias } = req.body;
 
     if (!name || !name.trim()) {
       res.status(400).json({
@@ -63,9 +63,10 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
     const currentCount = (countResult as any).count;
     console.log(`Current count: ${currentCount}`);
 
-    let limit = WEBHOOK_LIMITS.USER;
-    if (user.role === 'Administrator') limit = WEBHOOK_LIMITS.ADMIN;
-    else if (user.role === 'Professional') limit = WEBHOOK_LIMITS.PROFESSIONAL;
+    const plans = getPlans();
+    const userRole = user.role as keyof PlanConfig;
+    const plan = plans[userRole] || plans.user;
+    const limit = plan.maxWebhooks;
 
     if (currentCount >= limit) {
       res.status(403).json({
@@ -76,13 +77,52 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
     }
 
     // Generate unique token (UUID without dashes for shorter URL)
-    const token = uuidv4().replace(/-/g, '');
+    let token = uuidv4().replace(/-/g, '');
+
+    // Custom Alias Logic
+    if (alias && alias.trim()) {
+      if (!plan.features.customAliases) {
+        res.status(403).json({
+          success: false,
+          error: 'Custom aliases are available only on Professional plan'
+        });
+        return;
+      }
+
+      const cleanAlias = alias.trim();
+      // Validate alias format (alphanumeric, hyphens, underscores, 3-50 chars)
+      const aliasRegex = /^[a-zA-Z0-9_-]{3,50}$/;
+      if (!aliasRegex.test(cleanAlias)) {
+        res.status(400).json({
+          success: false,
+          error: 'Invalid alias format. Use 3-50 alphanumeric characters, hyphens, or underscores.'
+        });
+        return;
+      }
+
+      // Check uniqueness
+      const existing = database.prepare('SELECT token FROM webhooks WHERE token = ?').get(cleanAlias);
+      if (existing) {
+        res.status(409).json({
+          success: false,
+          error: 'Alias already taken'
+        });
+        return;
+      }
+
+      token = cleanAlias;
+    }
 
     // Calculate expiration time
     const expiresAt = new Date();
 
-    // Policy: All users have valid lifetime (100 years) - No expiration
-    expiresAt.setFullYear(expiresAt.getFullYear() + 100);
+    if (plan.webhookExpirationHours > 0) {
+      // Set expiration based on plan (e.g., 72 hours for Free)
+      expiresAt.setHours(expiresAt.getHours() + plan.webhookExpirationHours);
+    } else {
+      // Policy: Infinite lifetime (100 years) - No expiration
+      expiresAt.setFullYear(expiresAt.getFullYear() + 100);
+    }
 
     // Build webhook URL
     // Handles both local development and production (behind proxy)

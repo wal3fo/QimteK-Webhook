@@ -1,12 +1,7 @@
-/**
- * Project Configuration
- * 
- * Centralized configuration for the application.
- */
-
 export const PLAN_CONFIG = {
   user: {
     maxWebhooks: 3,
+    webhookExpirationHours: 72,
     retentionHours: 24,
     features: {
       customAliases: false,
@@ -20,6 +15,7 @@ export const PLAN_CONFIG = {
   },
   Professional: {
     maxWebhooks: 10,
+    webhookExpirationHours: 0,
     retentionHours: 0, // 0 means infinite/permanent
     features: {
       customAliases: true,
@@ -33,6 +29,7 @@ export const PLAN_CONFIG = {
   },
   Administrator: {
     maxWebhooks: 99999,
+    webhookExpirationHours: 0,
     retentionHours: 0,
     features: {
       customAliases: true,
@@ -46,8 +43,4 @@ export const PLAN_CONFIG = {
   }
 };
 
-export const WEBHOOK_LIMITS = {
-  USER: PLAN_CONFIG.user.maxWebhooks,
-  PROFESSIONAL: PLAN_CONFIG.Professional.maxWebhooks,
-  ADMIN: PLAN_CONFIG.Administrator.maxWebhooks,
-};
+export type PlanRole = keyof typeof PLAN_CONFIG;

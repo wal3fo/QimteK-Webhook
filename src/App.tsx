@@ -6,6 +6,7 @@ const Home = lazy(() => import("@/pages/Home"));
 const RequestDetails = lazy(() => import("@/pages/RequestDetails"));
 const Login = lazy(() => import("@/pages/Login"));
 const AdminUsers = lazy(() => import("@/pages/AdminUsers"));
+const AdminPlans = lazy(() => import("@/pages/AdminPlans"));
 
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
@@ -55,6 +56,14 @@ export default function App() {
               element={
                 <ProtectedRoute requireAdmin>
                   <AdminUsers />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/plans"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <AdminPlans />
                 </ProtectedRoute>
               }
             />

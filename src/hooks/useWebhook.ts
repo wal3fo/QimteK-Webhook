@@ -143,7 +143,7 @@ export function useWebhook() {
   }, [selectedWebhook, isAuthenticated, fetchRequests]);
 
   // Generate new webhook
-  const generateWebhook = useCallback(async (expiresIn: number = 60, name?: string) => {
+  const generateWebhook = useCallback(async (expiresIn: number = 60, name?: string, alias?: string) => {
     if (!authToken) {
       setError('Please login to generate webhooks');
       return;
@@ -155,7 +155,7 @@ export function useWebhook() {
       const response = await fetch(`${API_URL}/webhooks/generate`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ expiresIn, name }),
+        body: JSON.stringify({ expiresIn, name, alias }),
       });
 
       if (!response.ok) {

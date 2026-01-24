@@ -168,10 +168,18 @@ export default function Home() {
   };
 
   // Memoized handlers
-  const handleGenerate = useCallback(async (arg?: any) => {
-    const nameToUse = typeof arg === 'string' ? arg : webhookName;
-    await generateWebhook(60, nameToUse);
+  const handleGenerate = useCallback(async (nameArg?: string | any, aliasArg?: string) => {
+    let nameToUse = webhookName;
+    let aliasToUse: string | undefined = undefined;
+
+    if (typeof nameArg === 'string') {
+      nameToUse = nameArg;
+      aliasToUse = aliasArg;
+    }
+
+    await generateWebhook(60, nameToUse, aliasToUse);
     setWebhookName('');
+    setShowGenerateModal(false);
   }, [generateWebhook, webhookName]);
 
   const handleCopy = useCallback(async () => {
@@ -389,31 +397,28 @@ export default function Home() {
 
         {/* Webhook Generator */}
         {!isAuthenticated ? (
-          <>
-            <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-5 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8 border border-qimtek-border card-enter">
-              <div className="text-center">
-                <h2 className="text-xl sm:text-2xl font-bold text-qimtek-text mb-3 sm:mb-4">
-                  Login Required
-                </h2>
-                <p className="text-sm sm:text-base text-qimtek-text-secondary mb-6">
-                  Please login to generate and manage webhook URLs
-                </p>
-                <Link
-                  to="/login"
-                  className={cn(
-                    'inline-flex items-center gap-2 px-6 sm:px-8 py-3.5 sm:py-3.5 bg-[#82c91e] text-black rounded-xl font-semibold',
-                    'hover:bg-[#6ba017] transition-all duration-200 hover:scale-105 active:scale-95',
-                    'shadow-lg hover:shadow-xl hover:shadow-[#82c91e]/30',
-                    'text-sm sm:text-base touch-manipulation'
-                  )}
-                >
-                  <LogIn className="w-5 h-5" />
-                  Go to Login
-                </Link>
-              </div>
+          <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-5 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8 border border-qimtek-border card-enter">
+            <div className="text-center">
+              <h2 className="text-xl sm:text-2xl font-bold text-qimtek-text mb-3 sm:mb-4">
+                Login Required
+              </h2>
+              <p className="text-sm sm:text-base text-qimtek-text-secondary mb-6">
+                Please login to generate and manage webhook URLs
+              </p>
+              <Link
+                to="/login"
+                className={cn(
+                  'inline-flex items-center gap-2 px-6 sm:px-8 py-3.5 sm:py-3.5 bg-[#82c91e] text-black rounded-xl font-semibold',
+                  'hover:bg-[#6ba017] transition-all duration-200 hover:scale-105 active:scale-95',
+                  'shadow-lg hover:shadow-xl hover:shadow-[#82c91e]/30',
+                  'text-sm sm:text-base touch-manipulation'
+                )}
+              >
+                <LogIn className="w-5 h-5" />
+                Go to Login
+              </Link>
             </div>
-            <PricingCards />
-          </>
+          </div>
         ) : webhooks.length === 0 ? (
           <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-5 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8 border border-qimtek-border card-enter">
             <div className="text-center">

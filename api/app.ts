@@ -17,6 +17,8 @@ import webhookReceiverRoutes from './routes/webhook-receiver.js'
 import authRoutes from './routes/auth.js'
 import userRoutes from './routes/users.js'
 import visitorRoutes from './routes/visitor.js'
+import planRoutes from './routes/plans.js'
+
 
 // Load environment variables
 if (process.env.NODE_ENV !== 'production') {
@@ -64,6 +66,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/visitor', visitorRoutes)
+app.use('/api/plans', planRoutes)
 app.use('/api/webhooks', webhookRoutes)
 
 // Health check

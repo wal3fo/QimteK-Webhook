@@ -382,6 +382,14 @@ export default function AdminUsers() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 px-2 sm:px-4 lg:px-6">
+            <Link
+              to="/admin/plans"
+              className="flex items-center gap-2 px-2.5 py-2 sm:px-3 sm:py-2 bg-qimtek-bg-secondary hover:bg-qimtek-bg-tertiary text-qimtek-text border border-qimtek-border rounded-lg transition-colors text-sm font-semibold"
+              title="Configure Plans"
+            >
+              <Shield className="w-5 h-5 sm:w-4 sm:4" />
+              <span className="hidden sm:inline">Plans</span>
+            </Link>
             <button
               onClick={() => setCreateModalOpen(true)}
               className="flex items-center gap-2 px-2.5 py-2 sm:px-3 sm:py-2 bg-[#82c91e] hover:bg-[#6ba017] text-black rounded-lg transition-colors text-sm font-semibold shadow-lg shadow-[#82c91e]/10"

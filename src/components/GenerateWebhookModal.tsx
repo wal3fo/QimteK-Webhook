@@ -1,24 +1,38 @@
-import { useState } from 'react';
-import { X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+import { PLAN_CONFIG } from '@/config/plans';
 
 interface GenerateWebhookModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onGenerate: (name: string) => Promise<void>;
+  onGenerate: (name: string, alias?: string) => Promise<void>;
   loading?: boolean;
 }
 
 export default function GenerateWebhookModal({ isOpen, onClose, onGenerate, loading }: GenerateWebhookModalProps) {
   const [name, setName] = useState('');
+  const [alias, setAlias] = useState('');
+  const { user } = useAuth();
+
+  const userRole = (user?.role || 'user') as keyof typeof PLAN_CONFIG;
+  const canCreateAlias = PLAN_CONFIG[userRole].features.customAliases;
+
+  // Reset when opening
+  useEffect(() => {
+    if (isOpen) {
+      setName('');
+      setAlias('');
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onGenerate(name);
-    setName('');
-    onClose();
+    await onGenerate(name, alias);
+    // onClose is handled by parent or useEffect
   };
 
   return (
@@ -50,6 +64,36 @@ export default function GenerateWebhookModal({ isOpen, onClose, onGenerate, load
                   autoFocus
                   required
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-qimtek-text-secondary mb-1">
+                  Custom Alias (Optional)
+                  {!canCreateAlias && <span className="text-xs text-qimtek-text-tertiary ml-2">(Pro feature)</span>}
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={alias}
+                    onChange={(e) => setAlias(e.target.value)}
+                    placeholder={canCreateAlias ? "e.g., my-custom-hook" : "Upgrade to customize URL"}
+                    className={cn(
+                      "w-full px-4 py-2 bg-qimtek-bg-secondary border border-qimtek-border rounded-lg text-qimtek-text focus:outline-none focus:ring-2 focus:ring-[#82c91e]/50",
+                      !canCreateAlias && "opacity-50 cursor-not-allowed pr-10"
+                    )}
+                    disabled={!canCreateAlias}
+                    pattern="[a-zA-Z0-9_-]{3,50}"
+                    title="3-50 alphanumeric characters, hyphens, or underscores"
+                  />
+                  {!canCreateAlias && (
+                    <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-qimtek-text-tertiary" />
+                  )}
+                </div>
+                {canCreateAlias && (
+                  <p className="text-xs text-qimtek-text-tertiary mt-1">
+                    Your URL will be: /api/webhook/{alias || '...'}
+                  </p>
+                )}
               </div>
 
               <div className="flex gap-3 mt-6">
