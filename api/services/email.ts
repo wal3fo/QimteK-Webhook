@@ -1,36 +1,67 @@
 import nodemailer from 'nodemailer';
-import { generateToken } from '../utils/auth.js';
-
-// Create reusable transporter object using the default SMTP transport
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
 
 const APP_NAME = 'QimteK Webhook';
 const FROM_EMAIL = process.env.SMTP_FROM || '"QimteK Support" <noreply@qimtek.ma>';
 const BASE_URL = process.env.CLIENT_URL || 'http://localhost:5173';
+
+// Helper to get transporter - lazy initialization to handle async test account creation
+let transporter: nodemailer.Transporter | null = null;
+
+async function getTransporter() {
+  if (transporter) return transporter;
+
+  // Use configured SMTP if available
+  if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+    transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+    return transporter;
+  }
+
+  // Fallback to Ethereal (fake SMTP) for development
+  console.log('⚠️ SMTP not configured. Creating Ethereal test account...');
+  try {
+    const testAccount = await nodemailer.createTestAccount();
+    transporter = nodemailer.createTransport({
+      host: testAccount.smtp.host,
+      port: testAccount.smtp.port,
+      secure: testAccount.smtp.secure,
+      auth: {
+        user: testAccount.user,
+        pass: testAccount.pass,
+      },
+    });
+    console.log('✅ Ethereal test account created successfully');
+    console.log('👤 User:', testAccount.user);
+    console.log('🔑 Pass:', testAccount.pass);
+    return transporter;
+  } catch (err) {
+    console.error('❌ Failed to create Ethereal account:', err);
+    return null;
+  }
+}
 
 /**
  * Send verification email to new user
  */
 export async function sendVerificationEmail(email: string, token: string): Promise<boolean> {
   const verificationUrl = `${BASE_URL}/verify-email?token=${token}`;
+  const mailTransporter = await getTransporter();
 
-  // If SMTP is not configured, just log the link (for development)
-  if (!process.env.SMTP_HOST || !process.env.SMTP_USER) {
-    console.log('⚠️ SMTP not configured. Verification email skipped.');
+  if (!mailTransporter) {
+    console.log('⚠️ Email service unavailable. Verification email skipped.');
     console.log(`📨 Verification Link for ${email}: ${verificationUrl}`);
-    return true; // Return true so registration isn't blocked in dev
+    return true; // Return true so registration isn't blocked
   }
 
   try {
-    const info = await transporter.sendMail({
+    const info = await mailTransporter.sendMail({
       from: FROM_EMAIL,
       to: email,
       subject: `Verify your email for ${APP_NAME}`,
@@ -51,6 +82,12 @@ export async function sendVerificationEmail(email: string, token: string): Promi
     });
 
     console.log('✅ Verification email sent: %s', info.messageId);
+
+    // If using Ethereal (no SMTP_HOST configured), log the preview URL
+    if (!process.env.SMTP_HOST) {
+      console.log('🔗 Preview URL: %s', nodemailer.getTestMessageUrl(info));
+    }
+
     return true;
   } catch (error) {
     console.error('❌ Error sending verification email:', error);
