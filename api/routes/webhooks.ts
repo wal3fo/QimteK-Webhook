@@ -91,13 +91,18 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
       }
 
       // Check uniqueness
-      const { data: existing } = await supabase
-        .from('webhooks')
-        .select('token')
-        .eq('token', cleanAlias)
-        .single();
-        
-      if (existing) {
+    const { data: existing, error: checkError } = await supabase
+      .from('webhooks')
+      .select('token')
+      .eq('token', cleanAlias)
+      .maybeSingle(); // Use maybeSingle to avoid error if not found
+
+    if (checkError) {
+      console.error('Error checking alias uniqueness:', checkError);
+      throw checkError;
+    }
+      
+    if (existing) {
         res.status(409).json({
           success: false,
           error: 'Alias already taken'
