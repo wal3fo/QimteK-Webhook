@@ -12,6 +12,8 @@ import CreateUserModal from '@/components/CreateUserModal';
 import EditRoleModal from '@/components/EditRoleModal';
 import { DataTable, Column } from '@/components/DataTable';
 
+import { PLAN_CONFIG } from '@/config/plans';
+
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 interface UserData {
@@ -23,22 +25,13 @@ interface UserData {
   webhook_count?: number;
 }
 
-// Helper to get max webhooks based on role
-const getMaxWebhooks = (role: string) => {
-  switch (role) {
-    case 'Administrator': return 99999;
-    case 'Professional': return 5;
-    case 'user':
-    default: return 1;
-  }
-};
-
 export default function AdminUsers() {
   const navigate = useNavigate();
   const { user, token, isAuthenticated, isAdmin, loading: authLoading } = useAuth();
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dynamicPlans, setDynamicPlans] = useState<any>(null);
 
   // Modal state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -51,6 +44,29 @@ export default function AdminUsers() {
   useEffect(() => {
     // Auth check is now handled by ProtectedRoute
   }, []);
+
+  // Fetch dynamic plans
+  useEffect(() => {
+    const fetchPlans = async () => {
+      if (!token) return;
+      try {
+        const response = await fetch(`${API_URL}/plans`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data) {
+            setDynamicPlans(result.data);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch dynamic plans:', err);
+      }
+    };
+    fetchPlans();
+  }, [token]);
 
   const fetchUsers = useCallback(async () => {
     if (!token) return;
@@ -269,7 +285,12 @@ export default function AdminUsers() {
       header: 'Usage',
       align: 'center',
       render: (userData) => {
-        const maxWebhooks = getMaxWebhooks(userData.role);
+        // Use dynamic plans if available, otherwise fallback to static config
+        const plans = dynamicPlans || PLAN_CONFIG;
+        // @ts-ignore
+        const plan = plans[userData.role] || plans['user'];
+        const maxWebhooks = plan?.maxWebhooks || 1;
+
         const webhookCount = userData.webhook_count || 0;
 
         return (
@@ -336,7 +357,7 @@ export default function AdminUsers() {
         ) : null
       )
     }
-  ], [user, openRoleModal]);
+  ], [user, openRoleModal, dynamicPlans]);
 
   return (
     <div className="min-h-screen bg-qimtek-bg text-qimtek-text font-mono selection:bg-[#82c91e] selection:text-black flex flex-col">

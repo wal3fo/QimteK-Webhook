@@ -13,6 +13,8 @@ import ChangePasswordModal from '@/components/ChangePasswordModal';
 import MfaSetupModal from '@/components/MfaSetupModal';
 import PricingCards from '@/components/PricingCards';
 
+import { PLAN_CONFIG } from '@/config/plans';
+
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export default function Home() {
@@ -26,17 +28,41 @@ export default function Home() {
   const [mfaModalOpen, setMfaModalOpen] = useState(false);
   const [webhookName, setWebhookName] = useState('');
   const [isMobile, setIsMobile] = useState(false);
+  const [dynamicPlans, setDynamicPlans] = useState<any>(null);
+
+  // Fetch dynamic plans
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const response = await fetch(`${API_URL}/plans`);
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data) {
+            setDynamicPlans(result.data);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch dynamic plans:', err);
+      }
+    };
+    fetchPlans();
+  }, []);
 
   // Calculate max webhooks based on role
   const maxWebhooks = useMemo(() => {
     if (!user) return 1;
-    switch (user.role) {
-      case 'Administrator': return 99999;
-      case 'Professional': return 5;
-      case 'user':
-      default: return 1;
-    }
-  }, [user]);
+    
+    // Use dynamic plans if available, otherwise fallback to static config
+    const plans = dynamicPlans || PLAN_CONFIG;
+    
+    // Handle case sensitivity or key mismatch if necessary
+    // API returns 'Professional', 'user', 'Administrator' usually
+    const role = user.role;
+    
+    // @ts-ignore - dynamic access
+    const plan = plans[role] || plans['user'];
+    return plan?.maxWebhooks || 1;
+  }, [user, dynamicPlans]);
 
   useEffect(() => {
     const checkMobile = () => {
