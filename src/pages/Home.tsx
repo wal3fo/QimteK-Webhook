@@ -7,6 +7,7 @@ import { cn, METHOD_COLORS, METHODS } from '@/lib/utils';
 import { format, isValid } from 'date-fns';
 import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
+import SEO from '@/components/SEO';
 import ConfirmModal from '@/components/ConfirmModal';
 import GenerateWebhookModal from '@/components/GenerateWebhookModal';
 import ChangePasswordModal from '@/components/ChangePasswordModal';
@@ -51,14 +52,14 @@ export default function Home() {
   // Calculate max webhooks based on role
   const maxWebhooks = useMemo(() => {
     if (!user) return 1;
-    
+
     // Use dynamic plans if available, otherwise fallback to static config
     const plans = dynamicPlans || PLAN_CONFIG;
-    
+
     // Handle case sensitivity or key mismatch if necessary
     // API returns 'Professional', 'user', 'Administrator' usually
     const role = user.role;
-    
+
     // @ts-ignore - dynamic access
     const plan = plans[role] || plans['user'];
     return plan?.maxWebhooks || 1;
@@ -91,6 +92,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-qimtek-bg page-enter flex flex-col">
+      <SEO />
       {/* Header */}
       <div className="w-full px-0 py-4 sm:py-6 lg:py-8 slide-enter border-b border-qimtek-border">
         <div className="flex flex-row items-center justify-between gap-4 px-2 sm:px-4 lg:px-6">

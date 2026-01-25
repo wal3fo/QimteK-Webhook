@@ -3,6 +3,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import Logo from '@/components/Logo';
+import SEO from '@/components/SEO';
 import { Mail, Lock, LogIn, UserPlus, ShieldCheck } from 'lucide-react';
 
 export default function Login() {
@@ -79,6 +80,10 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-qimtek-bg flex items-center justify-center px-4 py-12 page-enter font-mono">
+      <SEO
+        title={isLogin ? "Login" : "Register"}
+        description="Login to QimteK Hooks to manage your webhooks, view history, and access premium features."
+      />
       <div className="w-full max-w-md">
         {/* Logo and Title */}
         <div className="text-center mb-8 slide-enter">

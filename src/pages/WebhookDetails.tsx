@@ -91,14 +91,10 @@ export default function WebhookDetails() {
 
     // Stats
     const stats = useMemo(() => {
-        if (!requests) return { total: 0, success: 0, error: 0, avgTime: 0 };
-        const total = requests.length;
-        // Assuming success is 2xx status - but requests capture raw requests, not responses we sent.
-        // So "success" might mean "successfully captured". All captured are success?
-        // Or maybe we analyze the response code we sent? The system sends 200 OK.
-        // Let's just count total for now.
+        if (!requests) return { total: 0, lastActive: null };
+
         return {
-            total,
+            total: requests.length,
             lastActive: requests.length > 0 ? requests[0].timestamp : null
         };
     }, [requests]);

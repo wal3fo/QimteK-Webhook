@@ -4,6 +4,7 @@ import { ArrowLeft, Zap, Shield, Code, Terminal, Globe, Lock, Clock, Database, S
 import { cn } from '@/lib/utils';
 import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
+import SEO from '@/components/SEO';
 
 export default function Documentation() {
   const navigate = useNavigate();
@@ -55,6 +56,10 @@ export default function Documentation() {
 
   return (
     <div className="min-h-screen bg-qimtek-bg page-enter font-mono text-sm flex flex-col">
+      <SEO
+        title="Documentation"
+        description="Comprehensive documentation for QimteK Hooks. Learn how to generate webhooks, inspect requests, and integrate with your applications."
+      />
       {/* Header */}
       <div className="w-full px-0 py-4 sm:py-6 border-b border-qimtek-border bg-qimtek-bg/80 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto px-4 lg:px-6 flex items-center justify-between">
@@ -156,7 +161,7 @@ export default function Documentation() {
                     <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
                     <span className="w-3 h-3 rounded-full bg-green-500"></span>
                   </div>
-                  <p className="text-[#82c91e]">POST https://qimte-k-webhook--incengine.replit.app/api/webhook/9bc4533e...</p>
+                  <p className="text-[#82c91e]">POST {import.meta.env.VITE_SITE_URL}/api/webhook/9bc4533e...</p>
                 </div>
               </div>
 

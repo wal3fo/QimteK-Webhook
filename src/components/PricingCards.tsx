@@ -192,7 +192,7 @@ export default function PricingCards() {
                 Cancel ❌
               </button>
               <a
-                href={`https://www.paypal.com/paypalme/drgineer/${plans.Professional.price ?? 15}?currencyCode=USD`}
+                href={`${import.meta.env.VITE_PAYPAL_ME_URL}/${plans.Professional.price ?? 15}?currencyCode=USD`}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setShowPaymentModal(false)}

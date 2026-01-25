@@ -15,14 +15,14 @@ export default function Footer() {
       { name: 'API Documentation', href: '#docs' },
     ],
     company: [
-      { name: 'About QimteK', href: 'https://qimtek.ma', external: true },
-      { name: 'Our Mission', href: 'https://qimtek.ma', external: true },
-      { name: 'Contact Us', href: 'https://qimtek.ma', external: true },
+      { name: 'About QimteK', href: import.meta.env.VITE_COMPANY_URL, external: true },
+      { name: 'Our Mission', href: import.meta.env.VITE_COMPANY_URL, external: true },
+      { name: 'Contact Us', href: import.meta.env.VITE_COMPANY_URL, external: true },
     ],
     resources: [
-      { name: 'GitHub Repository', href: 'https://github.com/wal3fo', external: true },
+      { name: 'GitHub Repository', href: import.meta.env.VITE_GITHUB_URL, external: true },
       { name: 'Documentation', href: '#docs' },
-      { name: 'Support', href: 'https://www.paypal.com/paypalme/drgineer/5?currencyCode=USD', external: true },
+      { name: 'Support', href: import.meta.env.VITE_PAYPAL_URL, external: true },
     ],
   };
 
@@ -211,7 +211,7 @@ export default function Footer() {
                 <span>Documentation</span>
               </Link>
               <a
-                href="https://www.paypal.com/paypalme/drgineer/5?currencyCode=USD"
+                href={import.meta.env.VITE_PAYPAL_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={cn(
