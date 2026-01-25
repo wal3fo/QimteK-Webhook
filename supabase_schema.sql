@@ -86,6 +86,9 @@ CREATE POLICY "Users can insert own webhooks" ON public.webhooks FOR INSERT WITH
 CREATE POLICY "Users can update own webhooks" ON public.webhooks FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete own webhooks" ON public.webhooks FOR DELETE USING (auth.uid() = user_id);
 
+-- System Config: Read only for public/authenticated
+CREATE POLICY "Public read system config" ON public.system_config FOR SELECT USING (true);
+
 -- Requests: Webhook requests are publically inserted (by external services), but viewed only by webhook owner
 -- Public INSERT for requests (captured webhooks)
 CREATE POLICY "Public insert requests" ON public.requests FOR INSERT WITH CHECK (true);
@@ -97,9 +100,3 @@ CREATE POLICY "Users can view requests for their webhooks" ON public.requests FO
         AND w.user_id = auth.uid()
     )
 );
-
--- Visitor Sessions: Public read/write (for tracking)
-CREATE POLICY "Public access to visitor sessions" ON public.visitor_sessions FOR ALL USING (true) WITH CHECK (true);
-
--- System Config: Read only for public/authenticated? Or only Admin?
-CREATE POLICY "Public read system config" ON public.system_config FOR SELECT USING (true);

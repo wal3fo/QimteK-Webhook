@@ -2,11 +2,9 @@ import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import Logo from './Logo';
 import { Github, ExternalLink, Heart, Code, Zap, Shield, Users, TrendingUp, Book } from 'lucide-react';
-import { useVisitorCounter } from '@/hooks/useVisitorCounter';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
-  const { activeVisitors, maxActiveVisitors } = useVisitorCounter();
 
   const footerLinks = {
     product: [
@@ -226,21 +224,6 @@ export default function Footer() {
                 <Heart className="w-4 h-4 text-red-500" />
                 <span>Support Our Work</span>
               </a>
-
-              {/* Visitor Stats */}
-              <div
-                className={cn(
-                  'inline-flex items-center gap-2 px-4 py-2 rounded-lg',
-                  'bg-qimtek-bg-secondary border border-qimtek-border',
-                  'text-sm text-qimtek-text-secondary',
-                  'font-medium select-none mr-2'
-                )}
-                title="Current / Peak visitors">
-                <TrendingUp className="w-4 h-4 text-[#82c91e]" />
-                <span>
-                  {activeVisitors}/{maxActiveVisitors}
-                </span>
-              </div>
             </div>
           </div>
         </div>
