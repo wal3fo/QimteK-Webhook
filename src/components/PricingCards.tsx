@@ -149,7 +149,7 @@ export default function PricingCards() {
           </Link>
         ) : (
           <a
-            href="https://www.paypal.com/paypalme/drgineer/15?currencyCode=USD"
+            href={`https://www.paypal.com/paypalme/drgineer/${plans.Professional.price ?? 15}?currencyCode=USD`}
             target="_blank"
             rel="noopener noreferrer"
             className="block w-full py-2.5 px-4 bg-[#82c91e] hover:bg-[#6ba017] text-black text-center rounded-lg transition-colors text-sm font-semibold"
