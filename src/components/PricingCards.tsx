@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Check, X, Loader2 } from 'lucide-react';
+import { Check, X, Loader2, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
@@ -11,12 +11,20 @@ export default function PricingCards() {
   const { user, loading: authLoading } = useAuth();
   const [plans, setPlans] = useState(PLAN_CONFIG);
   const [loading, setLoading] = useState(true);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   useEffect(() => {
     async function fetchPlans() {
       try {
-        const res = await fetch(`${API_URL}/plans`);
+        const res = await fetch(`${API_URL}/plans`, {
+          cache: 'no-store',
+          headers: {
+            'Pragma': 'no-cache',
+            'Cache-Control': 'no-cache'
+          }
+        });
         const data = await res.json();
+        console.log('Fetched plans:', data); // Debug log
         if (data.success && data.data) {
           setPlans(data.data);
         }
@@ -148,16 +156,54 @@ export default function PricingCards() {
             Upgrade Now
           </Link>
         ) : (
-          <a
-            href={`https://www.paypal.com/paypalme/drgineer/${plans.Professional.price ?? 15}?currencyCode=USD`}
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={() => setShowPaymentModal(true)}
             className="block w-full py-2.5 px-4 bg-[#82c91e] hover:bg-[#6ba017] text-black text-center rounded-lg transition-colors text-sm font-semibold"
           >
             Upgrade Now
-          </a>
+          </button>
         )}
       </div>
+
+      {/* Payment Instruction Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-qimtek-bg-surface border border-qimtek-border rounded-xl max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center gap-3 mb-4 text-amber-400">
+              <AlertTriangle className="w-6 h-6" />
+              <h3 className="text-lg font-bold">Important Payment Instruction</h3>
+            </div>
+
+            <p className="text-qimtek-text-secondary mb-6 leading-relaxed">
+              To ensure instant delivery of your Professional plan, please make sure to use
+              <span className="text-qimtek-text font-semibold"> the same email address </span>
+              for the PayPal payment as your QimteK account email:
+            </p>
+
+            <div className="bg-qimtek-bg p-3 rounded-lg border border-qimtek-border mb-6 text-center">
+              <span className="font-mono text-[#82c91e]">{user?.email}</span>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="flex-1 py-2.5 px-4 bg-qimtek-bg-secondary hover:bg-qimtek-bg-tertiary border border-qimtek-border text-qimtek-text rounded-lg transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <a
+                href={`https://www.paypal.com/paypalme/drgineer/${plans.Professional.price ?? 15}?currencyCode=USD`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setShowPaymentModal(false)}
+                className="flex-1 py-2.5 px-4 bg-[#82c91e] hover:bg-[#6ba017] text-black text-center rounded-lg transition-colors font-bold flex items-center justify-center"
+              >
+                Proceed to PayPal
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
