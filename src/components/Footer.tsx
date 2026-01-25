@@ -26,7 +26,7 @@ export default function Footer() {
   };
 
   return (
-    <footer className="bg-qimtek-bg-surface border-t border-qimtek-border mt-auto relative overflow-hidden">
+    <footer className="bg-qimtek-bg-surface border-t border-qimtek-border mt-auto relative overflow-hidden font-mono">
       {/* Decorative gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#82c91e]/5 via-transparent to-transparent pointer-events-none" />
 

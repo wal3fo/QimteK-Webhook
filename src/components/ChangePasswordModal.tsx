@@ -66,9 +66,9 @@ export default function ChangePasswordModal({ isOpen, onClose, onConfirm }: Chan
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-qimtek-bg-surface rounded-xl shadow-lg border border-qimtek-border w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <div className="bg-qimtek-bg-surface rounded-xl shadow-lg border border-qimtek-border w-full max-w-md max-h-[90vh] overflow-y-auto font-mono">
         <div className="p-6 border-b border-qimtek-border flex justify-between items-center">
-          <h2 className="text-xl font-bold text-qimtek-text">Change Password</h2>
+          <h2 className="text-xl font-bold text-qimtek-text">🔒 Change Password</h2>
           <button
             onClick={onClose}
             className="p-2 rounded-full hover:bg-qimtek-bg-secondary transition-colors"
@@ -85,7 +85,7 @@ export default function ChangePasswordModal({ isOpen, onClose, onConfirm }: Chan
           )}
           <div>
             <label htmlFor="currentPassword" className="block text-sm font-medium text-qimtek-text-secondary mb-2">
-              Current Password
+              🔑 Current Password
             </label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-qimtek-text-tertiary" />
@@ -109,7 +109,7 @@ export default function ChangePasswordModal({ isOpen, onClose, onConfirm }: Chan
           </div>
           <div>
             <label htmlFor="newPassword" className="block text-sm font-medium text-qimtek-text-secondary mb-2">
-              New Password
+              ✨ New Password
             </label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-qimtek-text-tertiary" />

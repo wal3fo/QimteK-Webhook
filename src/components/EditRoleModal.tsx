@@ -88,7 +88,7 @@ export default function EditRoleModal({
     >
       <div
         className={cn(
-          'bg-qimtek-bg-surface rounded-xl shadow-2xl border border-qimtek-border',
+          'bg-qimtek-bg-surface rounded-xl shadow-2xl border border-qimtek-border font-mono',
           'w-full max-w-md transform transition-all duration-300',
           'animate-scaleIn'
         )}
@@ -105,7 +105,7 @@ export default function EditRoleModal({
                 id="role-modal-title"
                 className="text-lg sm:text-xl font-semibold text-qimtek-text"
               >
-                Change User Role
+                🛡️ Edit User Role
               </h3>
               <p className="text-sm text-qimtek-text-secondary">{userEmail}</p>
             </div>

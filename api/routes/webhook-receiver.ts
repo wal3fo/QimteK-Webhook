@@ -119,8 +119,24 @@ router.all('/:token', async (req: Request, res: Response): Promise<void> => {
     }
 
     // Get IP address
-    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
-    const ipAddress = Array.isArray(ip) ? ip[0] : ip;
+    let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+    
+    // Handle array case (Express might return array for multiple headers of same name)
+    if (Array.isArray(ip)) {
+      ip = ip[0];
+    }
+    
+    // Handle comma-separated list (X-Forwarded-For standard: client, proxy1, proxy2...)
+    if (typeof ip === 'string' && ip.includes(',')) {
+      ip = ip.split(',')[0].trim();
+    }
+    
+    // Normalize IPv6 localhost
+    if (ip === '::1') {
+      ip = '127.0.0.1';
+    }
+
+    const ipAddress = ip;
 
     // Store request in database
     const { error: insertError } = await supabase

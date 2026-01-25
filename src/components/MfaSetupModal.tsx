@@ -127,7 +127,7 @@ export default function MfaSetupModal({
     >
       <div
         className={cn(
-          'bg-qimtek-bg-surface rounded-xl shadow-2xl border border-qimtek-border',
+          'bg-qimtek-bg-surface rounded-xl shadow-2xl border border-qimtek-border font-mono',
           'w-full max-w-md transform transition-all duration-300',
           'animate-scaleIn'
         )}
@@ -147,7 +147,7 @@ export default function MfaSetupModal({
               }
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-qimtek-text">Two-Factor Authentication</h2>
+              <h2 className="text-lg font-semibold text-qimtek-text">🛡️ Two-Factor Authentication</h2>
               <p className="text-xs text-qimtek-text-secondary">
                 {user?.mfa_enabled ? 'MFA is currently enabled' : 'Secure your account'}
               </p>
@@ -174,7 +174,7 @@ export default function MfaSetupModal({
                 disabled={loading}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
               >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Setup MFA'}
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : '⚡ Setup MFA'}
               </button>
             </div>
           )}
@@ -197,7 +197,7 @@ export default function MfaSetupModal({
                 disabled={loading}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Disable 2FA'}
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : '🚫 Disable 2FA'}
               </button>
             </div>
           )}
@@ -254,7 +254,7 @@ export default function MfaSetupModal({
               <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center mb-4">
                 <Check className="w-6 h-6 text-green-500" />
               </div>
-              <h3 className="text-lg font-medium text-qimtek-text mb-2">MFA Enabled!</h3>
+              <h3 className="text-lg font-medium text-qimtek-text mb-2">🎉 MFA Enabled!</h3>
               <p className="text-qimtek-text-secondary">
                 Your account is now secured with two-factor authentication.
               </p>
@@ -266,7 +266,7 @@ export default function MfaSetupModal({
               <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center mb-4">
                 <ShieldAlert className="w-6 h-6 text-red-500" />
               </div>
-              <h3 className="text-lg font-medium text-qimtek-text mb-2">MFA Disabled</h3>
+              <h3 className="text-lg font-medium text-qimtek-text mb-2">🔓 MFA Disabled</h3>
               <p className="text-qimtek-text-secondary">
                 Two-factor authentication has been disabled for your account.
               </p>

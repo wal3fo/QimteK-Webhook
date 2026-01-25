@@ -78,7 +78,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-qimtek-bg flex items-center justify-center px-4 py-12 page-enter">
+    <div className="min-h-screen bg-qimtek-bg flex items-center justify-center px-4 py-12 page-enter font-mono">
       <div className="w-full max-w-md">
         {/* Logo and Title */}
         <div className="text-center mb-8 slide-enter">
@@ -245,7 +245,7 @@ export default function Login() {
                 </>
               ) : (
                 <>
-                  {showMfa ? 'Verify' : (isLogin ? 'Sign In' : 'Create Account')}
+                  {showMfa ? '✅ Verify' : (isLogin ? '🚀 Sign In' : '📝 Create Account')}
                 </>
               )}
             </button>

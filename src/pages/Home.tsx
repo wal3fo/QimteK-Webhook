@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, memo, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Copy, Check, Trash2, ExternalLink, Filter, Search, Download, Clock, Globe, X, LogIn, LogOut, User, Shield, Lock, Users, CircleUser, ShieldCheck, Briefcase } from 'lucide-react';
+import { Copy, Check, Trash2, ExternalLink, Filter, Search, Download, Clock, Globe, X, LogIn, LogOut, User, Shield, Lock, Users, CircleUser, ShieldCheck, Briefcase, Server } from 'lucide-react';
 import { useWebhook } from '@/hooks/useWebhook';
 import { useAuth } from '@/hooks/useAuth';
 import { cn, METHOD_COLORS, METHODS } from '@/lib/utils';
@@ -293,8 +293,8 @@ export default function Home() {
                       className="flex items-center gap-2 px-2.5 py-2 lg:px-3 lg:py-2 bg-qimtek-bg-secondary hover:bg-qimtek-bg-surface border border-qimtek-border hover:border-[#82c91e]/50 text-qimtek-text-secondary hover:text-[#82c91e] rounded-lg transition-all duration-200"
                       title="Manage Users"
                     >
-                      <Users className="w-5 h-5 lg:w-4 lg:h-4" />
-                      <span className="hidden lg:inline text-sm font-medium">Users</span>
+                      <Server className="w-5 h-5 lg:w-4 lg:h-4" />
+                      <span className="text-sm font-medium">SERVER ACCESS</span>
                     </Link>
                   )}
 
@@ -313,7 +313,7 @@ export default function Home() {
                     ) : (
                       <Shield className="w-5 h-5 lg:w-4 lg:h-4" />
                     )}
-                    <span className="hidden lg:inline text-sm font-medium">
+                    <span className="text-sm font-medium">
                       {user?.mfa_enabled ? "Disable 2FA" : "Enable 2FA"}
                     </span>
                   </button>
@@ -324,7 +324,7 @@ export default function Home() {
                     title="Logout"
                   >
                     <LogOut className="w-5 h-5 lg:w-4 lg:h-4" />
-                    <span className="hidden lg:inline text-sm font-medium">Logout</span>
+                    <span className="text-sm font-medium">Logout</span>
                   </button>
                 </div>
               </div>
@@ -369,18 +369,18 @@ export default function Home() {
             <span className="hidden sm:inline">
               {selectedWebhook
                 ? (isConnected
-                  ? 'Connected'
-                  : 'Active')
+                  ? '🔌 Connected'
+                  : '🟢 Active')
                 : isAuthenticated
-                  ? 'No webhooks - Click "Generate Webhook URL" to start'
+                  ? '📭 No webhooks - Click "Generate Webhook URL" to start'
                   : 'Please login to generate webhooks'}
             </span>
             <span className="sm:hidden">
               {selectedWebhook
                 ? (isConnected
-                  ? 'Connected'
-                  : 'Active')
-                : 'No webhook'}
+                  ? '🔌 Connected'
+                  : '🟢 Active')
+                : '📭 No webhook'}
             </span>
           </div>
 

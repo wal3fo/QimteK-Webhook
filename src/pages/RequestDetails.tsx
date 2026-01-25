@@ -144,7 +144,7 @@ export default function RequestDetails() {
   }
 
   return (
-    <div className="min-h-screen bg-qimtek-bg page-enter">
+    <div className="min-h-screen bg-qimtek-bg page-enter font-mono">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-6xl">
         {/* Header */}
         <div className="mb-4 sm:mb-6 slide-enter">
@@ -163,7 +163,7 @@ export default function RequestDetails() {
             </button>
           </div>
           <h2 className="text-2xl sm:text-3xl font-bold text-qimtek-text">
-            Request Details
+            🔍 Request Details
           </h2>
         </div>
 
@@ -171,7 +171,7 @@ export default function RequestDetails() {
         <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-4 sm:p-6 mb-4 sm:mb-6 border border-qimtek-border card-enter" style={{ animationDelay: '0.1s' }}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 sm:mb-6">
             <div>
-              <label className="text-xs sm:text-sm font-medium text-qimtek-text-secondary block mb-1">Method</label>
+              <label className="text-xs sm:text-sm font-medium text-qimtek-text-secondary block mb-1">📡 Method</label>
               <span
                 className={cn(
                   'px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors inline-block',
@@ -182,23 +182,23 @@ export default function RequestDetails() {
               </span>
             </div>
             <div>
-              <label className="text-xs sm:text-sm font-medium text-qimtek-text-secondary block mb-1">Timestamp</label>
+              <label className="text-xs sm:text-sm font-medium text-qimtek-text-secondary block mb-1">⏰ Timestamp</label>
               <p className="text-sm sm:text-base text-qimtek-text break-words">
                 {formattedTimestamp}
               </p>
             </div>
             <div>
-              <label className="text-xs sm:text-sm font-medium text-qimtek-text-secondary block mb-1">IP Address</label>
+              <label className="text-xs sm:text-sm font-medium text-qimtek-text-secondary block mb-1">🌐 IP Address</label>
               <p className="text-sm sm:text-base text-qimtek-text font-mono break-all">{request.ip_address || 'N/A'}</p>
             </div>
             <div>
-              <label className="text-xs sm:text-sm font-medium text-qimtek-text-secondary block mb-1">Request ID</label>
+              <label className="text-xs sm:text-sm font-medium text-qimtek-text-secondary block mb-1">🆔 Request ID</label>
               <p className="text-xs sm:text-sm font-mono text-qimtek-text break-all">{request.id}</p>
             </div>
           </div>
 
           <div className="mb-0 sm:mb-6">
-            <label className="text-xs sm:text-sm font-medium text-qimtek-text-secondary block mb-1">URL</label>
+            <label className="text-xs sm:text-sm font-medium text-qimtek-text-secondary block mb-1">🔗 URL</label>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <code className="flex-1 px-3 sm:px-4 py-2.5 sm:py-2.5 bg-qimtek-bg-secondary rounded-lg text-xs sm:text-sm break-all text-qimtek-text border border-qimtek-border transition-all font-mono overflow-x-auto min-w-0">
                 {request.url}
@@ -290,7 +290,7 @@ export default function RequestDetails() {
         {request.body && (
           <div className="bg-qimtek-bg-surface rounded-xl shadow-lg p-4 sm:p-6 border border-qimtek-border card-enter" style={{ animationDelay: '0.4s' }}>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
-              <h2 className="text-lg sm:text-xl font-semibold text-qimtek-text">Body</h2>
+              <h2 className="text-lg sm:text-xl font-semibold text-qimtek-text">📦 Body</h2>
               <button
                 onClick={() => copyJson(request.body, 'body')}
                 className={cn(

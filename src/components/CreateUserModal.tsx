@@ -81,7 +81,7 @@ export default function CreateUserModal({
     >
       <div
         className={cn(
-          'bg-qimtek-bg-surface rounded-xl shadow-2xl border border-qimtek-border',
+          'bg-qimtek-bg-surface rounded-xl shadow-2xl border border-qimtek-border font-mono',
           'w-full max-w-md transform transition-all duration-300',
           'animate-scaleIn'
         )}
@@ -97,7 +97,7 @@ export default function CreateUserModal({
               id="modal-title"
               className="text-lg sm:text-xl font-semibold text-qimtek-text"
             >
-              Create New User
+              ✨ Create New User
             </h3>
           </div>
           <button

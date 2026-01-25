@@ -74,7 +74,7 @@ export default function ConfirmModal({
     >
       <div
         className={cn(
-          'bg-qimtek-bg-surface rounded-xl shadow-2xl border border-qimtek-border',
+          'bg-qimtek-bg-surface rounded-xl shadow-2xl border border-qimtek-border font-mono',
           'w-full max-w-md transform transition-all duration-300',
           'animate-scaleIn'
         )}

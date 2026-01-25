@@ -344,7 +344,7 @@ export default function AdminUsers() {
   ], [user, openRoleModal]);
 
   return (
-    <div className="min-h-screen bg-qimtek-bg text-qimtek-text font-sans selection:bg-[#82c91e] selection:text-black flex flex-col">
+    <div className="min-h-screen bg-qimtek-bg text-qimtek-text font-mono selection:bg-[#82c91e] selection:text-black flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-qimtek-bg/80 backdrop-blur-md border-b border-qimtek-border">
         <div className="w-full px-0 h-16 flex items-center justify-between">
@@ -357,9 +357,6 @@ export default function AdminUsers() {
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <Logo className="h-6 sm:h-8" />
-            <span className="hidden sm:inline-block px-2 py-1 bg-[#82c91e]/10 text-[#82c91e] text-xs rounded border border-[#82c91e]/20 font-mono">
-              ADMIN PANEL
-            </span>
           </div>
 
           <div className="hidden md:flex items-center gap-2">
@@ -388,7 +385,7 @@ export default function AdminUsers() {
               title="Configure Plans"
             >
               <Shield className="w-5 h-5 sm:w-4 sm:4" />
-              <span className="hidden sm:inline">Plans</span>
+              <span>Plans</span>
             </Link>
             <button
               onClick={() => setCreateModalOpen(true)}
@@ -396,7 +393,7 @@ export default function AdminUsers() {
               title="New User"
             >
               <UserPlus className="w-5 h-5 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">New User</span>
+              <span>New User</span>
             </button>
             <button
               onClick={fetchUsers}
@@ -414,7 +411,7 @@ export default function AdminUsers() {
       <main className="flex-1 w-full px-2 sm:px-4 lg:px-6 py-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold mb-2 text-qimtek-text">User Management</h1>
+            <h1 className="text-2xl font-bold mb-2 text-qimtek-text">👥 User Management</h1>
             <p className="text-qimtek-text-secondary">Manage registered users and their roles.</p>
           </div>
         </div>

@@ -37,10 +37,10 @@ export default function GenerateWebhookModal({ isOpen, onClose, onGenerate, load
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-qimtek-bg-surface rounded-xl shadow-2xl border border-qimtek-border w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="bg-qimtek-bg-surface rounded-xl shadow-2xl border border-qimtek-border w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 font-mono">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-qimtek-text">Generate New Webhook</h2>
+            <h2 className="text-xl font-bold text-qimtek-text">🚀 Generate New Webhook</h2>
             <button
               onClick={onClose}
               className="p-2 hover:bg-qimtek-bg-secondary rounded-lg transition-colors text-qimtek-text-secondary hover:text-qimtek-text"
@@ -53,7 +53,7 @@ export default function GenerateWebhookModal({ isOpen, onClose, onGenerate, load
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-qimtek-text-secondary mb-1">
-                  Webhook Name
+                  🏷️ Webhook Name
                 </label>
                 <input
                   type="text"
@@ -68,7 +68,7 @@ export default function GenerateWebhookModal({ isOpen, onClose, onGenerate, load
 
               <div>
                 <label className="block text-sm font-medium text-qimtek-text-secondary mb-1">
-                  Custom Alias (Optional)
+                  🔗 Custom Alias (Optional)
                   {!canCreateAlias && <span className="text-xs text-qimtek-text-tertiary ml-2">(Pro feature)</span>}
                 </label>
                 <div className="relative">

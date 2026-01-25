@@ -62,11 +62,11 @@ export default function PricingCards() {
   }
 
   return (
-    <div className="grid md:grid-cols-2 gap-6 w-full mx-auto mt-12 mb-12">
+    <div className="grid md:grid-cols-2 gap-6 w-full mx-auto mt-12 mb-12 font-mono">
       {/* Free Plan */}
       <div className="bg-qimtek-bg-surface rounded-xl border border-qimtek-border p-6 flex flex-col hover:border-qimtek-border-hover transition-colors">
         <div className="mb-4">
-          <h3 className="text-xl font-bold text-qimtek-text">{plans.user.displayName || 'Free'}</h3>
+          <h3 className="text-4xl font-bold text-qimtek-text">{plans.user.displayName || 'Free'}</h3>
           <div className="mt-2 flex items-baseline gap-1">
             <span className="text-3xl font-bold text-qimtek-text">${plans.user.price ?? 0}</span>
             <span className="text-qimtek-text-secondary">/Lifetime</span>
@@ -111,12 +111,12 @@ export default function PricingCards() {
 
       {/* Professional Plan */}
       <div className="bg-qimtek-bg-surface rounded-xl border border-[#82c91e]/50 p-6 flex flex-col relative overflow-hidden shadow-lg shadow-[#82c91e]/5 hover:shadow-[#82c91e]/10 transition-all">
-        <div className="absolute top-0 right-0 bg-[#82c91e] text-black text-[10px] font-bold px-3 py-1 rounded-bl-lg tracking-wide">
-          POPULAR
+        <div className="absolute top-0 right-0 bg-[#82c91e] text-black text-2xl font-bold px-4 py-1.5 rounded-bl-xl tracking-wide shadow-sm">
+          🔥 POPULAR
         </div>
 
         <div className="mb-4">
-          <h3 className="text-xl font-bold text-qimtek-text">{plans.Professional.displayName || 'Professional'}</h3>
+          <h3 className="text-4xl font-bold text-qimtek-text">{plans.Professional.displayName || 'Professional'}</h3>
           <div className="mt-2 flex items-baseline gap-1">
             <span className="text-3xl font-bold text-qimtek-text">${plans.Professional.price ?? 15}</span>
             <span className="text-qimtek-text-secondary">/Lifetime</span>
@@ -167,21 +167,21 @@ export default function PricingCards() {
 
       {/* Payment Instruction Modal */}
       {showPaymentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm font-mono">
           <div className="bg-qimtek-bg-surface border border-qimtek-border rounded-xl max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
             <div className="flex items-center gap-3 mb-4 text-amber-400">
               <AlertTriangle className="w-6 h-6" />
-              <h3 className="text-lg font-bold">Important Payment Instruction</h3>
+              <h3 className="text-lg font-bold">⚠️ Important Payment Instruction</h3>
             </div>
 
             <p className="text-qimtek-text-secondary mb-6 leading-relaxed">
-              To ensure instant delivery of your Professional plan, please make sure to use
-              <span className="text-qimtek-text font-semibold"> the same email address </span>
+              To ensure instant delivery 🚀 of your Professional plan, please make sure to use
+              <span className="text-qimtek-text font-semibold"> the same email address 📧 </span>
               for the PayPal payment as your QimteK account email:
             </p>
 
             <div className="bg-qimtek-bg p-3 rounded-lg border border-qimtek-border mb-6 text-center">
-              <span className="font-mono text-[#82c91e]">{user?.email}</span>
+              <span className="font-mono text-[#82c91e] text-lg">{user?.email}</span>
             </div>
 
             <div className="flex gap-3">
@@ -189,16 +189,16 @@ export default function PricingCards() {
                 onClick={() => setShowPaymentModal(false)}
                 className="flex-1 py-2.5 px-4 bg-qimtek-bg-secondary hover:bg-qimtek-bg-tertiary border border-qimtek-border text-qimtek-text rounded-lg transition-colors font-medium"
               >
-                Cancel
+                Cancel ❌
               </button>
               <a
                 href={`https://www.paypal.com/paypalme/drgineer/${plans.Professional.price ?? 15}?currencyCode=USD`}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setShowPaymentModal(false)}
-                className="flex-1 py-2.5 px-4 bg-[#82c91e] hover:bg-[#6ba017] text-black text-center rounded-lg transition-colors font-bold flex items-center justify-center"
+                className="flex-1 py-2.5 px-4 bg-[#82c91e] hover:bg-[#6ba017] text-black text-center rounded-lg transition-colors font-bold flex items-center justify-center gap-2"
               >
-                Proceed to PayPal
+                Proceed to PayPal 💳
               </a>
             </div>
           </div>

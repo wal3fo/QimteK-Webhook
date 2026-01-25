@@ -173,7 +173,7 @@ export default function AdminPlans() {
         <div className="p-6 space-y-6">
           <div className="grid md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-medium text-qimtek-text-secondary mb-2">Display Name</label>
+              <label className="block text-sm font-medium text-qimtek-text-secondary mb-2">🏷️ Display Name</label>
               <input
                 type="text"
                 value={plan.displayName || ''}
@@ -183,7 +183,7 @@ export default function AdminPlans() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-qimtek-text-secondary mb-2">Price ($)</label>
+              <label className="block text-sm font-medium text-qimtek-text-secondary mb-2">💲 Price ($)</label>
               <input
                 type="number"
                 value={plan.price ?? 0}
@@ -192,7 +192,7 @@ export default function AdminPlans() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-qimtek-text-secondary mb-2">Description</label>
+              <label className="block text-sm font-medium text-qimtek-text-secondary mb-2">📝 Description</label>
               <input
                 type="text"
                 value={plan.description || ''}
@@ -232,7 +232,7 @@ export default function AdminPlans() {
             <div>
               <label className="block text-sm font-medium text-qimtek-text-secondary mb-2 flex items-center gap-2">
                 <Database className="w-4 h-4" />
-                Max Webhooks
+                🔢 Max Webhooks
               </label>
               <input
                 type="number"
@@ -244,7 +244,7 @@ export default function AdminPlans() {
           </div>
 
           <div className="border-t border-qimtek-border pt-4">
-            <h3 className="text-sm font-medium text-qimtek-text-secondary mb-4">Features</h3>
+            <h3 className="text-sm font-medium text-qimtek-text-secondary mb-4">✨ Features</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {Object.entries(plan.features).map(([key, value]) => (
                 <label key={key} className="flex items-center gap-3 p-2 rounded-lg hover:bg-qimtek-bg-secondary/50 cursor-pointer transition-colors">
@@ -270,7 +270,7 @@ export default function AdminPlans() {
   };
 
   return (
-    <div className="min-h-screen bg-qimtek-bg flex flex-col">
+    <div className="min-h-screen bg-qimtek-bg flex flex-col font-mono">
       <div className="flex-1 flex flex-col">
         {/* Header */}
         <header className="sticky top-0 z-40 w-full border-b border-qimtek-border bg-qimtek-bg/80 backdrop-blur-md">
@@ -281,9 +281,6 @@ export default function AdminPlans() {
               </Link>
               <div className="h-6 w-px bg-qimtek-border mx-2" />
               <Logo />
-              <div className="ml-4 px-3 py-1 bg-[#82c91e]/10 border border-[#82c91e]/20 rounded-full">
-                <span className="text-xs font-semibold text-[#82c91e] tracking-wide uppercase">Admin Area</span>
-              </div>
             </div>
 
             <div className="flex items-center gap-3">
@@ -295,12 +292,7 @@ export default function AdminPlans() {
                   saving && "cursor-wait"
                 )}
               >
-                {saving ? (
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4" />
-                )}
-                <span>Save Changes</span>
+                <span>💾 Save Changes</span>
               </button>
             </div>
           </div>
@@ -309,7 +301,7 @@ export default function AdminPlans() {
         <main className="flex-1 container mx-auto px-4 py-8">
           <div className="max-w-5xl mx-auto">
             <div className="mb-8">
-              <h1 className="text-2xl font-bold text-qimtek-text mb-2">Plan Configuration</h1>
+              <h1 className="text-2xl font-bold text-qimtek-text mb-2">⚙️ Plan Configuration</h1>
               <p className="text-qimtek-text-secondary">Manage limits, expiration policies, and feature access for each user tier.</p>
             </div>
 
