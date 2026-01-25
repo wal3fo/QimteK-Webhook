@@ -156,7 +156,7 @@ export default function Documentation() {
                     <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
                     <span className="w-3 h-3 rounded-full bg-green-500"></span>
                   </div>
-                  <p className="text-[#82c91e]">POST https://webhook.qimtek.ma/api/webhook/9bc4533e...</p>
+                  <p className="text-[#82c91e]">POST https://qimte-k-webhook--incengine.replit.app/api/webhook/9bc4533e...</p>
                 </div>
               </div>
 
