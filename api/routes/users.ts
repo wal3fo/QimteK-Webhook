@@ -120,7 +120,14 @@ router.get('/', authenticate, requireAdmin, async (req: Request, res: Response):
       .select('id, email, role, created_at, mfa_enabled')
       .order('created_at', { ascending: false });
 
-    if (usersError) throw usersError;
+    if (usersError) {
+      // Check for missing column error (Postgres code 42703)
+      if (usersError.code === '42703' || usersError.message.includes('column')) {
+        console.error('Schema mismatch: Missing columns in users table. Run the migration in supabase_schema.sql');
+        throw new Error('Database schema is outdated. Please run the latest migration.');
+      }
+      throw usersError;
+    }
 
     // Get webhook count for each user
     // We can use a join or separate queries. For simplicity and since we have the list, 
