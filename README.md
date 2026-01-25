@@ -1,59 +1,57 @@
 # QimteK Webhook
 
-A powerful, secure, and user-friendly webhook inspection and management tool. QimteK Webhook allows developers to generate unique webhook URLs, capture incoming requests in real-time, and inspect payloads with a modern interface.
+A powerful, secure, and user-friendly webhook inspection and management tool. QimteK Webhook allows developers to generate unique webhook URLs, capture incoming requests in real-time, and inspect payloads with a modern, responsive interface.
 
 ## 🚀 Features
 
 ### Core Functionality
-- **Webhook Management**: Generate unique webhook URLs with customizable names and expiration times.
-- **Real-time Inspection**: View incoming requests instantly via WebSocket integration without refreshing.
+- **Webhook Management**: Generate unique webhook URLs with customizable names.
+- **Real-time Inspection**: View incoming requests instantly.
 - **Detailed Request Analysis**: Inspect Headers, Body (JSON/Text), Query Parameters, IP addresses, and timestamps.
-- **Request History**: Automatically retains the last 100 requests per webhook to maintain performance.
-- **Search & Filter**: Quickly find specific webhooks by name or token.
+- **Smart Parsing**: Automatically handles various content types and detects JSON payloads.
+- **Visual Analytics**: Interactive charts for traffic monitoring (Requests per minute/hour).
+- **Optimized Performance**: "Summary" data fetching for fast chart rendering even with large datasets.
 
 ### 🔐 Security & Authentication
-- **Secure Authentication**: JWT-based session management with secure cookie/header handling.
-- **Multi-Factor Authentication (MFA)**: Optional 2FA support using TOTP (Google Authenticator, Authy) for enhanced account security.
-- **Session Validation**: Strict server-side validation ensures active sessions are terminated immediately if a user is deleted or roles change.
+- **Secure Authentication**: JWT-based session management.
 - **Role-Based Access Control (RBAC)**:
-  - **User**: Standard access (1 active webhook).
-  - **Professional**: Enhanced limits.
+  - **User**: Free tier with basic limits (3 Webhooks, 24h retention).
+  - **Professional**: Enhanced limits (10 Webhooks, Unlimited retention, Advanced features).
   - **Administrator**: Full system access and user management.
+- **Endpoint Protection**: Validates token existence and status before accepting data.
 
 ### 🛡️ Admin Panel
 - **User Management**: View, create, and delete user accounts.
-- **MFA Status**: Monitor which users have enabled 2FA.
-- **Duplicate Prevention**: Smart systems to prevent duplicate accounts (case-insensitive email enforcement).
+- **Plan Configuration**: Dynamically configure plan limits (Max Webhooks, Expiration, etc.) via the Admin Dashboard.
 - **System Stats**: Overview of total users and active webhooks.
 
-### 🏗️ Advanced Architecture
-- **Universal Database Adapter**: Automatically switches between **SQLite** (high performance) and **JSON File** (maximum compatibility) based on the environment.
-  - *Ideal for environments where compiling native SQLite bindings is difficult.*
-- **Endpoint Protection**: Webhook ingestion endpoints validate token existence, expiration, and active status before accepting data.
+### 📱 Modern UI/UX
+- **Responsive Design**: Fully optimized for mobile and desktop (including Pricing Cards and Dashboards).
+- **Dark Mode**: Built-in dark theme for comfortable viewing.
+- **Interactive Components**: Real-time charts, copy-to-clipboard, and intuitive navigation.
 
 ## 🛠️ Tech Stack
 
 ### Frontend
 - **React 18** (TypeScript)
 - **Vite** - Lightning-fast build tool
-- **Tailwind CSS** - Utility-first styling with Dark Mode
+- **Tailwind CSS** - Utility-first styling
+- **Recharts** - Data visualization
+- **Framer Motion** - Smooth animations
 - **React Router** - SPA Navigation
-- **Lucide React** - Beautiful iconography
-- **QRCode.react** - MFA setup integration
+- **Lucide React** - Modern iconography
 
 ### Backend
 - **Node.js & Express** - Robust API server
-- **WebSocket** - Real-time updates
-- **better-sqlite3** - High-performance native SQLite driver (Primary)
-- **LowDB / Custom JSON** - Fallback storage engine
-- **otplib** - TOTP generation and verification for MFA
-- **Bcrypt** - Secure password hashing
+- **Supabase (PostgreSQL)** - Scalable database and real-time capabilities
+- **Bcrypt & JWT** - Secure authentication
 
 ## 📦 Getting Started
 
 ### Prerequisites
 - Node.js (v18 or higher recommended)
 - npm or yarn
+- A **Supabase** project (for database)
 
 ### Installation
 
@@ -67,49 +65,67 @@ A powerful, secure, and user-friendly webhook inspection and management tool. Qi
    ```bash
    npm install
    ```
-   *Note: If you encounter errors with `better-sqlite3` on Windows, the system will automatically fall back to the JSON database adapter.*
 
-3. **Start the development server**
+3. **Environment Configuration**
+   Create a `.env` file in the root directory with the following variables:
+   ```env
+   # Backend Port (Optional, defaults to 3001)
+   PORT=5000
+
+   # Supabase Configuration (Required)
+   SUPABASE_URL=your_supabase_project_url
+   SUPABASE_ANON_KEY=your_supabase_anon_key
+   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+
+   # JWT Secret (Required for Auth)
+   JWT_SECRET=your_secure_random_string
+   ```
+
+4. **Start the development server**
    ```bash
    npm run dev
    ```
    This command runs both the frontend (Vite) and backend (Node/Express) concurrently.
 
    - **Frontend**: http://localhost:5173
-   - **Backend API**: http://localhost:3003
+   - **Backend API**: http://localhost:5000 (or your configured PORT)
 
 ## 📖 Usage Guide
 
-### Setting up MFA (2FA)
-1. Go to **Settings** or click the **2FA Setup** button in the dashboard.
-2. Scan the QR code with your authenticator app (Google Authenticator, etc.).
-3. Enter the 6-digit code to verify and enable MFA.
-4. On next login, you will be prompted to enter your code.
+### Creating a Webhook
+1. Log in to your dashboard.
+2. Click **"New Webhook"**.
+3. Give it a name (e.g., "Stripe Payment").
+4. Use the generated URL in your third-party service.
 
-### Managing Users (Admin Only)
-1. Navigate to the **Admin Panel** > **User Management**.
-2. Click **New User** to manually create an account.
-3. Use the trash icon to delete users (Action is irreversible).
-   - *Note: Deleting a user immediately invalidates their session and active webhooks.*
+### Inspecting Requests
+1. Click on a webhook card to view its details.
+2. The **Traffic** tab shows real-time request volume.
+3. The **Requests** list shows recent hits. Click one to see the full payload (Headers, Body, etc.).
+
+### Upgrading to Professional
+1. Go to the **Pricing** section.
+2. Click **"Upgrade Now"** on the Professional plan.
+3. Follow the payment instructions (PayPal) to unlock permanent retention and higher limits.
+
+### Admin Features
+1. Log in with an Administrator account.
+2. Navigate to **Admin Panel**.
+3. Manage users or adjust Plan Configurations (e.g., increase Free tier limits) directly from the UI.
 
 ## 🔌 API Endpoints
 
-### Authentication
-- `POST /api/auth/login` - Authenticate and receive token
-- `POST /api/auth/mfa/setup` - Initiate MFA setup
-- `POST /api/auth/mfa/enable` - Verify and enable MFA
+### Public
+- `POST /api/webhook/:token` - Ingest data (Protected by token validation)
+- `GET /api/plans` - Retrieve available plans
 
-### Webhooks
-- `GET /api/webhooks` - List active webhooks
-- `POST /api/webhooks/generate` - Create new webhook
-- `PUT /api/webhooks/:token` - Toggle status (Active/Inactive)
-- `DELETE /api/webhooks/:token` - Delete webhook
+### Protected (Auth Required)
+- `GET /api/webhooks` - List user's webhooks
+- `GET /api/webhook/:token` - Get webhook details (supports `?summary=true` for lighter payload)
+- `POST /api/webhooks` - Create a new webhook
+- `DELETE /api/webhooks/:token` - Delete a webhook
 
-### Users (Admin)
+### Admin Only
 - `GET /api/users` - List all users
-- `POST /api/users` - Create new user
-- `DELETE /api/users/:id` - Delete user
-
-## 📄 License
-
-Private Project. All rights reserved.
+- `POST /api/users` - Create a new user manually
+- `POST /api/plans/update` - Update plan configurations

@@ -1,128 +1,83 @@
 # Architecture Overview
 
-## Minimal Webhook Inspection Service
+## Webhook Inspection & Management Service
 
-This is a lightweight webhook inspection service that allows users to generate temporary webhook URLs, send HTTP requests to them, and inspect the received requests through a simple UI.
+QimteK Webhook is a robust, full-stack application designed to capture, inspect, and manage webhook requests. It leverages a modern tech stack with React for the frontend and Node.js/Express + Supabase for the backend.
 
 ## Core Components
 
-### 1. Webhook Generation
+### 1. Webhook Management
 - **Endpoint**: `POST /api/webhooks/generate`
-- **Purpose**: Creates a unique, hard-to-guess webhook URL
-- **Token**: UUID without dashes (32 characters)
-- **Expiration**: Default 60 minutes (configurable)
-- **Storage**: Stored in database with expiration timestamp
+- **Purpose**: Creates a unique, secure webhook URL.
+- **Token**: UUID based.
+- **Expiration**:
+  - **Free Tier**: 72 hours.
+  - **Professional/Admin**: Never expires (Permanent).
+- **Storage**: Supabase (PostgreSQL).
 
-### 2. Request Capture
+### 2. Request Ingestion (The "Receiver")
 - **Endpoint**: `ALL /api/webhook/:token`
-- **Purpose**: Captures incoming HTTP requests to webhook URLs
-- **Supports**: All HTTP methods (GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS, etc.)
+- **Purpose**: Captures incoming HTTP requests.
+- **Validation**:
+  1. Checks if token exists.
+  2. Checks if token is expired (Returns 410 Gone).
+  3. Checks if webhook is active (Returns 403 Forbidden).
 - **Captures**:
-  - HTTP method
-  - Headers (all headers)
-  - Query parameters
-  - Body (raw + parsed JSON when applicable)
-  - Source IP address
-  - Timestamp
+  - HTTP Method, URL, Headers, Body (JSON/Text/Form), Query Params.
+  - Source IP, Timestamp.
+  - Request Size (calculated for analytics).
 
-### 3. Request Storage
-- **Limit**: Maximum 100 requests per webhook (rolling buffer)
-- **Behavior**: When limit is exceeded, oldest requests are automatically deleted
-- **Storage Backend**: 
-  - SQLite (preferred, for local development)
-  - JSON file (fallback, works everywhere)
+### 3. Data Storage & Retention
+- **Database**: **Supabase (PostgreSQL)**.
+- **Retention Policy**:
+  - **Free Tier**: Last 24 hours (configurable).
+  - **Professional**: Unlimited retention.
+- **Cleanup Job**: A background cron-like job (`api/utils/cleanup.ts`) runs periodically to remove expired webhooks and old requests.
 
-### 4. Request Retrieval
-- **List Requests**: `GET /api/webhooks/:token/requests`
-  - Returns all captured requests for a webhook
-  - Sorted newest first
-  - Supports pagination (limit/offset)
-- **Get Single Request**: `GET /api/webhooks/requests/:id`
-  - Returns full request details including headers, body, query params
+### 4. Real-time Updates
+- **Mechanism**: **Polling** (Client-side).
+- **Interval**: Every 5 seconds.
+- **Optimization**: Uses `?summary=true` parameter to fetch lightweight request lists (excluding large bodies) for the dashboard, fetching full details only when a specific request is selected.
 
-### 5. Webhook Management
-- **Delete Webhook**: `DELETE /api/webhooks/:token`
-  - Permanently removes webhook and all associated requests
+### 5. Authentication & Security
+- **Auth System**: JWT (JSON Web Tokens) + Bcrypt for password hashing.
+- **MFA**: TOTP-based Two-Factor Authentication (optional).
+- **RBAC (Role-Based Access Control)**:
+  - Middleware checks `req.user.role` to authorize actions (e.g., Admin-only routes).
 
 ## Data Flow
 
+```mermaid
+sequenceDiagram
+    participant User
+    participant Frontend (React)
+    participant API (Express)
+    participant DB (Supabase)
+    participant External (Sender)
+
+    User->>Frontend: Creates Webhook
+    Frontend->>API: POST /webhooks/generate
+    API->>DB: Insert new Webhook
+    DB-->>API: Success
+    API-->>Frontend: Webhook URL
+
+    External->>API: POST /webhook/:token (Payload)
+    API->>DB: Validate Token & Store Request
+    DB-->>API: Saved
+    API-->>External: 200 OK
+
+    Frontend->>API: Poll /requests?summary=true
+    API->>DB: Select recent requests
+    DB-->>API: Data
+    API-->>Frontend: Update Dashboard Charts
 ```
-1. User generates webhook URL
-   POST /api/webhooks/generate
-   → Returns: { token, url, expiresAt }
 
-2. External service sends request to webhook URL
-   ANY /api/webhook/{token}
-   → Captures all request data
-   → Stores in database
-   → Returns success response
+## Scalability & Performance
+- **Database**: PostgreSQL handles concurrent writes and complex queries efficiently.
+- **Frontend Optimization**: `useMemo` is used for aggregating chart data to prevent UI blocking during rendering.
+- **Payload Management**: Large request bodies are only loaded on-demand.
 
-3. User views captured requests
-   GET /api/webhooks/{token}/requests
-   → Returns list of requests (newest first)
-
-4. User views request details
-   GET /api/webhooks/requests/{id}
-   → Returns full request details
-```
-
-## Storage Schema
-
-### Webhooks Table
-- `token` (TEXT, PRIMARY KEY): Unique webhook identifier
-- `created_at` (DATETIME): Creation timestamp
-- `expires_at` (DATETIME): Expiration timestamp
-- `is_active` (BOOLEAN): Active status
-
-### Requests Table
-- `id` (TEXT, PRIMARY KEY): Unique request identifier (UUID)
-- `webhook_token` (TEXT, FOREIGN KEY): Associated webhook token
-- `method` (TEXT): HTTP method (GET, POST, etc.)
-- `url` (TEXT): Full request URL
-- `headers` (JSON): Request headers
-- `body` (JSON): Request body (parsed when possible)
-- `query` (JSON): Query parameters
-- `timestamp` (DATETIME): Request timestamp
-- `ip_address` (TEXT): Source IP address
-
-## Request Limit Enforcement
-
-Each webhook maintains a rolling buffer of the last 100 requests. When a new request is captured:
-1. Request is inserted into database
-2. System checks if webhook has more than 100 requests
-3. If yes, deletes oldest requests beyond the limit
-4. Keeps only the most recent 100 requests
-
-This ensures:
-- Memory usage stays bounded
-- Most recent requests are always available
-- No manual cleanup required
-
-## Design Decisions
-
-### Why In-Memory/JSON Storage?
-- **Simplicity**: No external database dependencies
-- **Portability**: Works in any environment (local, serverless, etc.)
-- **Performance**: Fast for small to medium workloads
-- **Minimal Setup**: No database configuration needed
-
-### Why Rolling Buffer?
-- **Bounded Memory**: Prevents unbounded growth
-- **Recent Data Focus**: Most webhook testing needs recent requests
-- **Automatic Cleanup**: No manual intervention required
-
-### Why No Authentication?
-- **Simplicity**: Focus on core functionality
-- **Temporary URLs**: Hard-to-guess tokens provide basic security
-- **Short Lifespan**: Webhooks expire automatically
-
-## Limitations (By Design)
-
-- No user accounts or authentication
-- No webhook forwarding
-- No retries or delivery guarantees
-- No WebSocket live updates (polling only)
-- No long-term persistence
-- Maximum 100 requests per webhook
-
-These limitations keep the service minimal and focused on its core purpose: inspecting webhook requests.
+## Deployment
+- **Frontend**: Served via Vite (can be static hosting).
+- **Backend**: Node.js runtime.
+- **Environment**: Configuration via `.env` (Port, Database Credentials, JWT Secret).
