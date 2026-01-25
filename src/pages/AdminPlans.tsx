@@ -58,14 +58,19 @@ export default function AdminPlans() {
       }
 
       const data = await response.json();
+      console.log('Plans API response:', data);
+
       if (data.success) {
-        setPlans(data.data); // Note: API returns data in `data.data` or `data.plans`? logic below says data.plans in original code, but API route sends data: plans. Let's check API route again.
-        // API route: res.json({ success: true, data: plans });
-        // So it should be data.data.
-        // Original code had `setPlans(data.plans)`. This might have been a bug if the API response structure changed.
-        // I will use `data.data` based on the API code I read.
+        if (data.data) {
+          setPlans(data.data);
+        } else {
+          setError('API returned success but no data');
+        }
+      } else {
+        setError(data.error || 'Failed to load plans data');
       }
     } catch (err) {
+      console.error('Error fetching plans:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch plans');
     } finally {
       setLoading(false);
@@ -147,6 +152,14 @@ export default function AdminPlans() {
   const renderPlanCard = (role: keyof Plans, title: string, icon: React.ReactNode, borderColor: string, bgColor: string, textColor: string) => {
     if (!plans) return null;
     const plan = plans[role];
+
+    if (!plan) {
+      return (
+        <div className={`bg-qimtek-bg-surface rounded-xl border ${borderColor} p-6 text-center`}>
+          <p className="text-red-400">Error: Plan configuration for {role} is missing.</p>
+        </div>
+      );
+    }
 
     return (
       <div className={`bg-qimtek-bg-surface rounded-xl border ${borderColor} overflow-hidden`}>
@@ -292,7 +305,7 @@ export default function AdminPlans() {
                   'bg-qimtek-bg-secondary/50',
                   'text-qimtek-text'
                 )}
-                
+
                 {renderPlanCard(
                   'Professional',
                   'Professional Plan',
@@ -312,6 +325,15 @@ export default function AdminPlans() {
                 )}
               </div>
             ) : null}
+          </div>
+
+          {/* Debug Info - Remove in production */}
+          <div className="mt-8 p-4 bg-black/50 rounded text-xs font-mono text-gray-500 overflow-auto">
+            <p>DEBUG:</p>
+            <p>Loading: {String(loading)}</p>
+            <p>Plans: {plans ? 'Present' : 'Null'}</p>
+            <p>Keys: {plans ? Object.keys(plans).join(', ') : 'None'}</p>
+            <p>Error: {String(error)}</p>
           </div>
         </main>
         <Footer />
