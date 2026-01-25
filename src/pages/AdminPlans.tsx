@@ -168,7 +168,7 @@ export default function AdminPlans() {
       <div className={`bg-qimtek-bg-surface rounded-xl border ${borderColor} overflow-hidden`}>
         <div className={`p-4 border-b ${borderColor} ${bgColor} flex items-center gap-3`}>
           {icon}
-          <h2 className={`font-semibold ${textColor}`}>{title}</h2>
+          <h2 className={`font-semibold ${textColor}`}>{plan.displayName || title}</h2>
         </div>
         <div className="p-6 space-y-6">
           <div className="grid md:grid-cols-3 gap-6">
