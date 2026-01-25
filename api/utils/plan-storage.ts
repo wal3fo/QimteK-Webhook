@@ -49,16 +49,53 @@ const DEFAULT_PLAN_CONFIG = {
 export type PlanRole = keyof typeof DEFAULT_PLAN_CONFIG;
 export type PlanConfig = typeof DEFAULT_PLAN_CONFIG;
 
-// In-memory storage for plans (replaces file-based storage)
-// TODO: Migrate to a Supabase table 'system_config' or similar for persistence
-let currentPlans: PlanConfig = { ...DEFAULT_PLAN_CONFIG };
+// Cache
+let cachedPlans: PlanConfig | null = null;
+let lastFetch = 0;
+const CACHE_TTL = 60000; // 1 minute
 
-export function getPlans(): PlanConfig {
-  return currentPlans;
+export async function getPlans(): Promise<PlanConfig> {
+  const now = Date.now();
+  if (cachedPlans && (now - lastFetch < CACHE_TTL)) {
+    return cachedPlans;
+  }
+
+  try {
+    const { data } = await supabase
+      .from('system_config')
+      .select('value')
+      .eq('key', 'plan_config')
+      .maybeSingle();
+    
+    if (data?.value) {
+      cachedPlans = data.value;
+      lastFetch = now;
+      return cachedPlans as PlanConfig;
+    }
+  } catch (err) {
+    console.error('Failed to fetch plans from DB:', err);
+  }
+
+  // Fallback
+  if (!cachedPlans) {
+    cachedPlans = { ...DEFAULT_PLAN_CONFIG };
+  }
+  return cachedPlans;
 }
 
-export function savePlans(config: PlanConfig): void {
-  currentPlans = config;
-  // TODO: Save to Supabase
-  console.log('Plans updated in memory');
+export async function savePlans(config: PlanConfig): Promise<void> {
+  cachedPlans = config;
+  lastFetch = Date.now();
+  
+  const { error } = await supabase.from('system_config').upsert({
+    key: 'plan_config',
+    value: config,
+    updated_at: new Date().toISOString()
+  });
+
+  if (error) {
+    console.error('Failed to save plans to DB:', error);
+    throw error;
+  }
+  console.log('Plans updated in database');
 }

@@ -35,8 +35,8 @@ router.post('/heartbeat', (req: Request, res: Response) => {
 });
 
 // Stats - Get current counts
-router.get('/stats', (req: Request, res: Response) => {
-  const stats = visitorService.getStats();
+router.get('/stats', async (req: Request, res: Response) => {
+  const stats = await visitorService.getStats();
   // console.log('Visitor stats:', stats);
   res.json(stats);
 });

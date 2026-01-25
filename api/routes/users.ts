@@ -115,10 +115,26 @@ router.post('/', authenticate, requireAdmin, async (req: Request, res: Response)
 router.get('/', authenticate, requireAdmin, async (req: Request, res: Response): Promise<void> => {
   try {
     // Get all users (exclude password hash)
-    const { data: usersList, error: usersError } = await supabase
+    // Try with mfa_enabled first
+    let query = supabase
       .from('users')
       .select('id, email, role, created_at, mfa_enabled')
       .order('created_at', { ascending: false });
+
+    let { data: usersList, error: usersError } = await query;
+
+    // Fallback: If mfa_enabled column is missing, try without it
+    if (usersError && (usersError.code === '42703' || usersError.message.includes('column'))) {
+      console.warn('⚠️ Schema mismatch: mfa_enabled column missing. Retrying without it...');
+      const retryQuery = supabase
+        .from('users')
+        .select('id, email, role, created_at')
+        .order('created_at', { ascending: false });
+
+      const retryResult = await retryQuery;
+      usersList = retryResult.data as any[];
+      usersError = retryResult.error;
+    }
 
     if (usersError) {
       // Check for missing column error (Postgres code 42703)
@@ -139,17 +155,24 @@ router.get('/', authenticate, requireAdmin, async (req: Request, res: Response):
     // Given it's "Admin Only" and likely not millions of users, Promise.all is okay-ish, but let's try to be better.
     // Fetching all active webhooks (just user_id) might be lighter.
 
-    const { data: webhooks } = await supabase
-      .from('webhooks')
-      .select('user_id')
-      .eq('is_active', true)
-      .gt('expires_at', new Date().toISOString());
+    let webhookCounts: Record<string, number> = {};
+    try {
+      const { data: webhooks, error: webhookError } = await supabase
+        .from('webhooks')
+        .select('user_id')
+        .eq('is_active', true)
+        .gt('expires_at', new Date().toISOString());
 
-    const webhookCounts: Record<string, number> = {};
-    if (webhooks) {
-      webhooks.forEach(wh => {
-        webhookCounts[wh.user_id] = (webhookCounts[wh.user_id] || 0) + 1;
-      });
+      if (webhookError) throw webhookError;
+
+      if (webhooks) {
+        webhooks.forEach(wh => {
+          webhookCounts[wh.user_id] = (webhookCounts[wh.user_id] || 0) + 1;
+        });
+      }
+    } catch (webhookError) {
+      console.warn('Failed to fetch webhook counts (ignoring):', webhookError);
+      // Continue without counts
     }
 
     const users = (usersList || []).map((user: any) => ({
@@ -161,11 +184,23 @@ router.get('/', authenticate, requireAdmin, async (req: Request, res: Response):
       success: true,
       users,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching users:', error);
+
+    // Check for RLS/Permission errors
+    if (error.code === '42501') {
+      res.status(500).json({
+        success: false,
+        error: 'Database permission denied. Please add SUPABASE_SERVICE_ROLE_KEY to your .env file.',
+        details: error.message
+      });
+      return;
+    }
+
     res.status(500).json({
       success: false,
       error: 'Failed to fetch users',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });

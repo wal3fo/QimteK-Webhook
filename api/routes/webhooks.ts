@@ -38,7 +38,7 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
 
     // Check webhook limits
     console.log(`Checking limits for user ${user.id} (${user.role})`);
-    
+
     const { count, error: countError } = await supabase
       .from('webhooks')
       .select('*', { count: 'exact', head: true })
@@ -53,7 +53,7 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
     const currentCount = count || 0;
     console.log(`Current count: ${currentCount}`);
 
-    const plans = getPlans();
+    const plans = await getPlans();
     const userRole = user.role as keyof PlanConfig;
     const plan = plans[userRole] || plans.user;
     const limit = plan.maxWebhooks;
@@ -91,18 +91,18 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
       }
 
       // Check uniqueness
-    const { data: existing, error: checkError } = await supabase
-      .from('webhooks')
-      .select('token')
-      .eq('token', cleanAlias)
-      .maybeSingle(); // Use maybeSingle to avoid error if not found
+      const { data: existing, error: checkError } = await supabase
+        .from('webhooks')
+        .select('token')
+        .eq('token', cleanAlias)
+        .maybeSingle(); // Use maybeSingle to avoid error if not found
 
-    if (checkError) {
-      console.error('Error checking alias uniqueness:', checkError);
-      throw checkError;
-    }
-      
-    if (existing) {
+      if (checkError) {
+        console.error('Error checking alias uniqueness:', checkError);
+        throw checkError;
+      }
+
+      if (existing) {
         res.status(409).json({
           success: false,
           error: 'Alias already taken'
@@ -310,7 +310,7 @@ router.get('/:token/requests', async (req: Request, res: Response): Promise<void
       .from('requests')
       .select('*', { count: 'exact', head: true })
       .eq('webhook_token', token);
-      
+
     if (countError) throw countError;
 
     // Parse JSON fields

@@ -277,7 +277,7 @@ router.get('/me', authenticate, async (req: Request, res: Response): Promise<voi
 
     const { data: dbUser, error } = await supabase
       .from('users')
-      .select('id, email, role, created_at, mfa_enabled, is_verified')
+      .select('*') // Select all columns to avoid errors if specific columns are missing
       .eq('id', user.id)
       .single();
 
