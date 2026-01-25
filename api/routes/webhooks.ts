@@ -58,6 +58,8 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
     const plan = plans[userRole] || plans.user;
     const limit = plan.maxWebhooks;
 
+    console.log(`User Role: ${userRole}, Plan Limit: ${limit}, Current Count: ${currentCount}`);
+
     if (currentCount >= limit) {
       res.status(403).json({
         success: false,

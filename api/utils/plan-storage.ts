@@ -77,9 +77,12 @@ export async function getPlans(): Promise<PlanConfig> {
       .maybeSingle();
 
     if (data?.value) {
+      // console.log('Fetched plans from DB');
       cachedPlans = data.value;
       lastFetch = now;
       return cachedPlans as PlanConfig;
+    } else {
+      console.log('No plans found in DB, using defaults');
     }
   } catch (err) {
     console.error('Failed to fetch plans from DB:', err);
@@ -106,5 +109,6 @@ export async function savePlans(config: PlanConfig): Promise<void> {
     console.error('Failed to save plans to DB:', error);
     throw error;
   }
+
   console.log('Plans updated in database');
 }
