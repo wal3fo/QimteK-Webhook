@@ -1,5 +1,8 @@
 export const PLAN_CONFIG = {
   user: {
+    displayName: 'Free',
+    price: 0,
+    description: 'Perfect for testing and small projects',
     maxWebhooks: 3,
     webhookExpirationHours: 72,
     retentionHours: 24,
@@ -14,6 +17,9 @@ export const PLAN_CONFIG = {
     }
   },
   Professional: {
+    displayName: 'Professional',
+    price: 15,
+    description: 'For developers and teams',
     maxWebhooks: 10,
     webhookExpirationHours: 0,
     retentionHours: 0, // 0 means infinite/permanent
@@ -28,6 +34,9 @@ export const PLAN_CONFIG = {
     }
   },
   Administrator: {
+    displayName: 'Administrator',
+    price: 0,
+    description: 'Full system access',
     maxWebhooks: 99999,
     webhookExpirationHours: 0,
     retentionHours: 0,

@@ -3,6 +3,9 @@ import { supabase } from '../lib/supabase.js';
 // Default configuration (mirrors src/config/plans.ts)
 const DEFAULT_PLAN_CONFIG = {
   user: {
+    displayName: 'Free',
+    price: 0,
+    description: 'Perfect for testing and small projects',
     maxWebhooks: 3,
     webhookExpirationHours: 72, // 72 hours for Free
     retentionHours: 24,
@@ -17,6 +20,9 @@ const DEFAULT_PLAN_CONFIG = {
     }
   },
   Professional: {
+    displayName: 'Professional',
+    price: 15,
+    description: 'For developers and teams',
     maxWebhooks: 10,
     webhookExpirationHours: 0, // 0 means never expire
     retentionHours: 0, // 0 means infinite/permanent
@@ -31,6 +37,9 @@ const DEFAULT_PLAN_CONFIG = {
     }
   },
   Administrator: {
+    displayName: 'Administrator',
+    price: 0,
+    description: 'Full system access',
     maxWebhooks: 99999,
     webhookExpirationHours: 0,
     retentionHours: 0,
@@ -66,7 +75,7 @@ export async function getPlans(): Promise<PlanConfig> {
       .select('value')
       .eq('key', 'plan_config')
       .maybeSingle();
-    
+
     if (data?.value) {
       cachedPlans = data.value;
       lastFetch = now;
@@ -86,7 +95,7 @@ export async function getPlans(): Promise<PlanConfig> {
 export async function savePlans(config: PlanConfig): Promise<void> {
   cachedPlans = config;
   lastFetch = Date.now();
-  
+
   const { error } = await supabase.from('system_config').upsert({
     key: 'plan_config',
     value: config,

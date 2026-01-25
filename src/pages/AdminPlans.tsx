@@ -20,6 +20,9 @@ interface PlanFeatures {
 }
 
 interface PlanConfig {
+  displayName?: string;
+  price?: number;
+  description?: string;
   maxWebhooks: number;
   webhookExpirationHours: number;
   retentionHours: number;
@@ -116,7 +119,7 @@ export default function AdminPlans() {
     }
   };
 
-  const updatePlan = (role: keyof Plans, field: keyof PlanConfig, value: number) => {
+  const updatePlan = (role: keyof Plans, field: keyof PlanConfig, value: string | number) => {
     if (!plans) return;
     setPlans({
       ...plans,
@@ -168,6 +171,37 @@ export default function AdminPlans() {
           <h2 className={`font-semibold ${textColor}`}>{title}</h2>
         </div>
         <div className="p-6 space-y-6">
+          <div className="grid md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-qimtek-text-secondary mb-2">Display Name</label>
+              <input
+                type="text"
+                value={plan.displayName || ''}
+                placeholder={role}
+                onChange={(e) => updatePlan(role, 'displayName', e.target.value)}
+                className="w-full px-3 py-2 bg-qimtek-bg border border-qimtek-border rounded-lg text-qimtek-text focus:border-[#82c91e] focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-qimtek-text-secondary mb-2">Price ($)</label>
+              <input
+                type="number"
+                value={plan.price ?? 0}
+                onChange={(e) => updatePlan(role, 'price', parseFloat(e.target.value) || 0)}
+                className="w-full px-3 py-2 bg-qimtek-bg border border-qimtek-border rounded-lg text-qimtek-text focus:border-[#82c91e] focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-qimtek-text-secondary mb-2">Description</label>
+              <input
+                type="text"
+                value={plan.description || ''}
+                onChange={(e) => updatePlan(role, 'description', e.target.value)}
+                className="w-full px-3 py-2 bg-qimtek-bg border border-qimtek-border rounded-lg text-qimtek-text focus:border-[#82c91e] focus:outline-none"
+              />
+            </div>
+          </div>
+
           <div className="grid md:grid-cols-3 gap-6">
             <div>
               <label className="block text-sm font-medium text-qimtek-text-secondary mb-2 flex items-center gap-2">
