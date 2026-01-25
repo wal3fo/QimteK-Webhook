@@ -18,6 +18,7 @@ interface AuthContextType {
   register: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   checkSession: () => Promise<void>;
+  changePassword: (data: any) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -174,6 +175,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [token, fetchUser, logout]);
 
+  const changePassword = useCallback(async (data: any) => {
+    const response = await fetch(`${API_URL}/auth/change-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(data)
+    });
+
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || 'Failed to change password');
+    }
+  }, [token]);
+
   const value = {
     user,
     token,
@@ -184,6 +201,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     register,
     logout,
     checkSession,
+    changePassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

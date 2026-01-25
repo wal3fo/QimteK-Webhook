@@ -1,6 +1,18 @@
 @import './styles/dark-theme.css';
 
 @tailwind base;
+
+@layer base {
+
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--QimteK-border-color, #303030);
+  }
+}
+
 @tailwind components;
 @tailwind utilities;
 

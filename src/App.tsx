@@ -7,6 +7,8 @@ const RequestDetails = lazy(() => import("@/pages/RequestDetails"));
 const Login = lazy(() => import("@/pages/Login"));
 const AdminUsers = lazy(() => import("@/pages/AdminUsers"));
 const AdminPlans = lazy(() => import("@/pages/AdminPlans"));
+const Documentation = lazy(() => import("@/pages/Documentation"));
+const WebhookDetails = lazy(() => import("@/pages/WebhookDetails"));
 
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
@@ -43,8 +45,17 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/docs" element={<Documentation />} />
             <Route
-              path="/request/:id"
+              path="/webhook/:token"
+              element={
+                <ProtectedRoute>
+                  <WebhookDetails />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/webhook/:token/request/:id"
               element={
                 <ProtectedRoute>
                   <RequestDetails />

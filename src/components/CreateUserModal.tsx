@@ -17,6 +17,7 @@ export default function CreateUserModal({
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'user' | 'Administrator' | 'Professional'>('user');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Handle ESC key
   useEffect(() => {
@@ -65,7 +66,7 @@ export default function CreateUserModal({
       // Don't close here, let parent close on success or throw on error
     } catch (err) {
       console.error(err);
-      // Keep modal open if error
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }
@@ -97,20 +98,25 @@ export default function CreateUserModal({
               id="modal-title"
               className="text-lg sm:text-xl font-semibold text-qimtek-text"
             >
-              ✨ Create New User
+              Create New User
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-qimtek-bg-secondary transition-colors duration-200 text-qimtek-text-secondary hover:text-qimtek-text touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
-            aria-label="Close modal"
+            className="p-2 text-qimtek-text-secondary hover:text-qimtek-text hover:bg-qimtek-bg-hover rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Content */}
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
+          {error && (
+            <div className="p-3 text-sm text-red-500 bg-red-500/10 border border-red-500/20 rounded-lg">
+              {error}
+            </div>
+          )}
+
+
           {/* Email Field */}
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-qimtek-text-secondary mb-2">
@@ -249,7 +255,7 @@ export default function CreateUserModal({
             </button>
           </div>
         </form>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }

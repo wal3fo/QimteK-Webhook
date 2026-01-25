@@ -17,7 +17,7 @@ export default {
           'text': 'var(--QimteK-body-color, #e8e8e8)',
           'text-secondary': 'var(--QimteK-secondary-color, rgba(232, 232, 232, 0.75))',
           'text-tertiary': 'var(--QimteK-tertiary-color, rgba(232, 232, 232, 0.5))',
-          'border': 'var(--QimteK-border-color, #2b282b)',
+          'border': 'var(--QimteK-border-color, #3d3d3d)',
           'border-active': 'var(--QimteK-dark-mode-border-color-active, #2c415d)',
           'primary': 'var(--QimteK-primary, #82c91e)',
           'lime': 'var(--QimteK-lime, #82c91e)',
@@ -33,7 +33,7 @@ export default {
         'dark-secondary': 'var(--QimteK-secondary-color, rgba(232, 232, 232, 0.75))',
       },
       borderColor: {
-        'dark': 'var(--QimteK-border-color, #2b282b)',
+        'dark': 'var(--QimteK-border-color, #303030)',
         'dark-active': 'var(--QimteK-dark-mode-border-color-active, #2c415d)',
       },
     },

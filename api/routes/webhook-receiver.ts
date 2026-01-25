@@ -89,7 +89,16 @@ router.all('/:token', async (req: Request, res: Response): Promise<void> => {
     } else if (typeof req.body === 'string') {
       rawBody = req.body;
     } else if (req.body) {
-      rawBody = String(req.body);
+      // Fallback: if req.body is an object (unexpectedly parsed), stringify it
+      if (typeof req.body === 'object') {
+        try {
+          rawBody = JSON.stringify(req.body);
+        } catch {
+          rawBody = String(req.body);
+        }
+      } else {
+        rawBody = String(req.body);
+      }
     }
 
     // Parse body based on content type

@@ -173,28 +173,46 @@ router.get('/', authenticate, async (req: Request, res: Response): Promise<void>
       .from('webhooks')
       .select('token, name, created_at, expires_at, is_active')
       .eq('user_id', user.id)
-      .eq('is_active', true)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
 
-    // Build URLs for each webhook
+    // Build URLs and fetch stats
     const protocol = (req.headers['x-forwarded-proto'] as string) || req.protocol;
     const host = (req.headers['x-forwarded-host'] as string) || req.get('host');
     const baseUrl = process.env.BASE_URL || `${protocol}://${host}`;
 
-    const webhooksWithUrls = (webhooks || []).map(wh => ({
-      token: wh.token,
-      name: wh.name,
-      url: `${baseUrl}/api/webhook/${wh.token}`,
-      createdAt: wh.created_at,
-      expiresAt: wh.expires_at,
-      isActive: wh.is_active,
+    const webhooksWithStats = await Promise.all((webhooks || []).map(async (wh) => {
+      // Get count
+      const { count } = await supabase
+        .from('requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('webhook_token', wh.token);
+
+      // Get last request
+      const { data: lastRequest } = await supabase
+        .from('requests')
+        .select('timestamp')
+        .eq('webhook_token', wh.token)
+        .order('timestamp', { ascending: false })
+        .limit(1)
+        .single();
+
+      return {
+        token: wh.token,
+        name: wh.name,
+        url: `${baseUrl}/api/webhook/${wh.token}`,
+        createdAt: wh.created_at,
+        expiresAt: wh.expires_at,
+        isActive: wh.is_active,
+        requestCount: count || 0,
+        lastActive: lastRequest?.timestamp || null,
+      };
     }));
 
     res.json({
       success: true,
-      webhooks: webhooksWithUrls,
+      webhooks: webhooksWithStats,
     });
   } catch (error) {
     console.error('Error fetching webhooks:', error);
@@ -202,6 +220,36 @@ router.get('/', authenticate, async (req: Request, res: Response): Promise<void>
       success: false,
       error: 'Failed to fetch webhooks',
     });
+  }
+});
+
+/**
+ * Update webhook status
+ * PATCH /api/webhooks/:token
+ */
+router.patch('/:token', authenticate, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = (req as any).user;
+    const { token } = req.params;
+    const { is_active } = req.body;
+
+    if (typeof is_active !== 'boolean') {
+      res.status(400).json({ success: false, error: 'Invalid is_active value' });
+      return;
+    }
+
+    const { error } = await supabase
+      .from('webhooks')
+      .update({ is_active })
+      .eq('token', token)
+      .eq('user_id', user.id); // Ensure ownership
+
+    if (error) throw error;
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error updating webhook:', error);
+    res.status(500).json({ success: false, error: 'Failed to update webhook' });
   }
 });
 
@@ -277,7 +325,7 @@ router.get('/requests/:id', authenticate, async (req: Request, res: Response): P
 router.get('/:token/requests', async (req: Request, res: Response): Promise<void> => {
   try {
     const { token } = req.params;
-    const { limit = 100, offset = 0 } = req.query;
+    const { limit = 100, offset = 0, summary = 'false' } = req.query;
 
     // Verify webhook exists and is active
     const { data: webhook, error: webhookError } = await supabase
@@ -327,17 +375,23 @@ router.get('/:token/requests', async (req: Request, res: Response): Promise<void
       return field;
     };
 
-    const parsedRequests = (requests || []).map(req => ({
-      id: req.id,
-      webhook_token: req.webhook_token,
-      method: req.method,
-      url: req.url,
-      headers: parseJsonField(req.headers),
-      body: parseJsonField(req.body),
-      query: parseJsonField(req.query),
-      timestamp: req.timestamp,
-      ip_address: req.ip_address,
-    }));
+    const parsedRequests = (requests || []).map(req => {
+      const isSummary = summary === 'true';
+      const bodySize = req.body ? (typeof req.body === 'string' ? req.body.length : JSON.stringify(req.body).length) : 0;
+
+      return {
+        id: req.id,
+        webhook_token: req.webhook_token,
+        method: req.method,
+        url: req.url,
+        headers: isSummary ? null : parseJsonField(req.headers),
+        body: isSummary ? null : parseJsonField(req.body),
+        query: isSummary ? null : parseJsonField(req.query),
+        timestamp: req.timestamp,
+        ip_address: req.ip_address,
+        size: bodySize
+      };
+    });
 
     res.json({
       success: true,

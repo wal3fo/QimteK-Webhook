@@ -9,9 +9,10 @@ interface GenerateWebhookModalProps {
   onClose: () => void;
   onGenerate: (name: string, alias?: string) => Promise<void>;
   loading?: boolean;
+  error?: string | null;
 }
 
-export default function GenerateWebhookModal({ isOpen, onClose, onGenerate, loading }: GenerateWebhookModalProps) {
+export default function GenerateWebhookModal({ isOpen, onClose, onGenerate, loading, error }: GenerateWebhookModalProps) {
   const [name, setName] = useState('');
   const [alias, setAlias] = useState('');
   const { user } = useAuth();
@@ -95,6 +96,12 @@ export default function GenerateWebhookModal({ isOpen, onClose, onGenerate, load
                   </p>
                 )}
               </div>
+
+              {error && (
+                <div className="mt-4 text-red-400 text-sm bg-red-500/10 p-2 rounded text-center">
+                  {error}
+                </div>
+              )}
 
               <div className="flex gap-3 mt-6">
                 <button

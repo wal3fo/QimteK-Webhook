@@ -7,11 +7,12 @@ export interface WebhookRequest {
   webhook_token: string;
   method: string;
   url: string;
-  headers: Record<string, string>;
+  headers: Record<string, string> | null;
   body: any;
   query: any;
   timestamp: string;
   ip_address: string | null;
+  size?: number;
 }
 
 export interface Webhook {
@@ -21,13 +22,15 @@ export interface Webhook {
   expiresAt: string;
   created_at?: string;
   is_active?: boolean;
+  requestCount?: number;
+  lastActive?: string | null;
 }
 
 import { API_URL } from '@/config/api';
 
 const WEBHOOK_STORAGE_KEY = 'last_selected_webhook_token';
 
-export function useWebhook() {
+export function useWebhook(options: { autoSelect?: boolean } = { autoSelect: true }) {
   const { token: authToken, isAuthenticated } = useAuth();
   const [webhooks, setWebhooks] = useState<Webhook[]>([]);
   const [selectedWebhook, setSelectedWebhook] = useState<Webhook | null>(null);
@@ -70,7 +73,7 @@ export function useWebhook() {
           setWebhooks(fetchedWebhooks);
 
           // Logic to select webhook: Stored > First Available
-          if (!selectedWebhook && fetchedWebhooks.length > 0) {
+          if (options.autoSelect && !selectedWebhook && fetchedWebhooks.length > 0) {
             const storedToken = localStorage.getItem(WEBHOOK_STORAGE_KEY);
             let webhookToSelect = null;
 
@@ -89,7 +92,7 @@ export function useWebhook() {
     } catch (err) {
       console.error('Error fetching webhooks:', err);
     }
-  }, [isAuthenticated, authToken, getAuthHeaders, selectedWebhook]);
+  }, [isAuthenticated, authToken, getAuthHeaders, selectedWebhook, options.autoSelect]);
 
   // Load webhooks on mount and when auth changes
   useEffect(() => {
@@ -107,14 +110,20 @@ export function useWebhook() {
     if (!authToken) return;
 
     try {
-      const response = await fetch(`${API_URL}/webhooks/${webhookToken}/requests`, {
+      const response = await fetch(`${API_URL}/webhooks/${webhookToken}/requests?summary=true`, {
         headers: getAuthHeaders(),
       });
 
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          setRequests(data.requests || []);
+          const fetchedRequests = data.requests || [];
+          setRequests(prev => {
+            if (JSON.stringify(prev) === JSON.stringify(fetchedRequests)) {
+              return prev;
+            }
+            return fetchedRequests;
+          });
         }
       }
     } catch (err) {
@@ -132,10 +141,10 @@ export function useWebhook() {
   }, [selectedWebhook, isAuthenticated, fetchRequests]);
 
   // Generate new webhook
-  const generateWebhook = useCallback(async (expiresIn: number = 60, name?: string, alias?: string) => {
+  const generateWebhook = useCallback(async (expiresIn: number = 60, name?: string, alias?: string): Promise<boolean> => {
     if (!authToken) {
       setError('Please login to generate webhooks');
-      return;
+      return false;
     }
 
     setLoading(true);
@@ -167,9 +176,12 @@ export function useWebhook() {
 
         // Load initial requests
         await fetchRequests(data.token);
+        return true;
       }
+      return false;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate webhook');
+      return false;
     } finally {
       setLoading(false);
     }

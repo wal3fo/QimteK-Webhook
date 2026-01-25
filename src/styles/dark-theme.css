@@ -36,9 +36,9 @@
   --QimteK-tertiary-bg-rgb: 50, 50, 50;
 
   /* Border Colors */
-  --QimteK-border-color: #2b282b;
+  --QimteK-border-color: #303030;
   --QimteK-border-color-translucent: rgba(72, 72, 72, 0.5);
-  --QimteK-dark-mode-border-color: #2b282b;
+  --QimteK-dark-mode-border-color: #303030;
   --QimteK-dark-mode-border-color-translucent: rgba(72, 72, 72, 0.5);
   --QimteK-dark-mode-border-color-active: #2c415d;
   --QimteK-dark-mode-border-dark-color: #3d444d;

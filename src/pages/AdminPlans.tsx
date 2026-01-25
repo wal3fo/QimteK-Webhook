@@ -275,12 +275,15 @@ export default function AdminPlans() {
         {/* Header */}
         <header className="sticky top-0 z-40 w-full border-b border-qimtek-border bg-qimtek-bg/80 backdrop-blur-md">
           <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link to="/admin/users" className="p-2 -ml-2 hover:bg-qimtek-bg-secondary rounded-lg transition-colors text-qimtek-text-secondary hover:text-qimtek-text">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <Link
+                to="/admin/users"
+                className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-qimtek-bg-secondary border border-qimtek-border hover:border-[#82c91e]/50 hover:text-[#82c91e] transition-all duration-200"
+                title="Back to Users"
+              >
                 <ArrowLeft className="w-5 h-5" />
               </Link>
-              <div className="h-6 w-px bg-qimtek-border mx-2" />
-              <Logo />
+              <Logo className="h-6 sm:h-8" />
             </div>
 
             <div className="flex items-center gap-3">
@@ -288,11 +291,12 @@ export default function AdminPlans() {
                 onClick={handleSave}
                 disabled={saving || loading}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2 bg-[#82c91e] text-black rounded-lg font-medium transition-all hover:bg-[#6ba017] disabled:opacity-50",
+                  "flex items-center gap-2 px-2.5 py-2 sm:px-4 sm:py-2 bg-[#82c91e] text-black rounded-lg font-medium transition-all hover:bg-[#6ba017] disabled:opacity-50",
                   saving && "cursor-wait"
                 )}
               >
-                <span>💾 Save Changes</span>
+                <Save className="w-5 h-5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Save Changes</span>
               </button>
             </div>
           </div>

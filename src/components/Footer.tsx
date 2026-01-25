@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
+import { Link } from 'react-router-dom';
 import Logo from './Logo';
-import { Github, ExternalLink, Heart, Code, Zap, Shield, Users, TrendingUp } from 'lucide-react';
+import { Github, ExternalLink, Heart, Code, Zap, Shield, Users, TrendingUp, Book } from 'lucide-react';
 import { useVisitorCounter } from '@/hooks/useVisitorCounter';
 
 export default function Footer() {
@@ -195,6 +196,20 @@ export default function Footer() {
 
             {/* Support Link */}
             <div className="flex items-center gap-1">
+              <Link
+                to="/docs"
+                className={cn(
+                  'inline-flex items-center gap-2 px-4 py-2 rounded-lg',
+                  'bg-qimtek-bg-secondary border border-qimtek-border',
+                  'hover:bg-[#82c91e]/10 hover:border-[#82c91e]/30',
+                  'text-sm text-qimtek-text-secondary hover:text-[#82c91e]',
+                  'transition-all duration-200 hover:scale-105 active:scale-95',
+                  'touch-manipulation font-medium'
+                )}
+                aria-label="Documentation">
+                <Book className="w-4 h-4 text-[#82c91e]" />
+                <span>Documentation</span>
+              </Link>
               <a
                 href="https://www.paypal.com/paypalme/drgineer/5?currencyCode=USD"
                 target="_blank"
