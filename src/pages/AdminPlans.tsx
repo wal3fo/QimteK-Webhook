@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Save, Shield, Clock, Database, RefreshCw, User } from 'lucide-react';
+import { ArrowLeft, Save, Shield, Clock, Database, RefreshCw, User, Check, X, History, Zap, Settings, Star } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import Logo from '@/components/Logo';
@@ -9,16 +9,21 @@ import Footer from '@/components/Footer';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
+interface PlanFeatures {
+  customAliases: boolean;
+  permanentHistory: boolean;
+  advancedInspection: boolean;
+  requestReplay: boolean;
+  exportData: boolean;
+  higherRateLimits: boolean;
+  prioritySupport: boolean;
+}
+
 interface PlanConfig {
   maxWebhooks: number;
   webhookExpirationHours: number;
   retentionHours: number;
-  features: {
-    customAliases: boolean;
-    retryRequests: boolean;
-    emailNotifications: boolean;
-    exportData: boolean;
-  };
+  features: PlanFeatures;
 }
 
 interface Plans {
@@ -54,7 +59,11 @@ export default function AdminPlans() {
 
       const data = await response.json();
       if (data.success) {
-        setPlans(data.plans);
+        setPlans(data.data); // Note: API returns data in `data.data` or `data.plans`? logic below says data.plans in original code, but API route sends data: plans. Let's check API route again.
+        // API route: res.json({ success: true, data: plans });
+        // So it should be data.data.
+        // Original code had `setPlans(data.plans)`. This might have been a bug if the API response structure changed.
+        // I will use `data.data` based on the API code I read.
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch plans');
@@ -83,7 +92,7 @@ export default function AdminPlans() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ plans })
+        body: JSON.stringify(plans) // API expects the config object directly as body
       });
 
       if (!response.ok) {
@@ -113,6 +122,20 @@ export default function AdminPlans() {
     });
   };
 
+  const updateFeature = (role: keyof Plans, feature: keyof PlanFeatures, value: boolean) => {
+    if (!plans) return;
+    setPlans({
+      ...plans,
+      [role]: {
+        ...plans[role],
+        features: {
+          ...plans[role].features,
+          [feature]: value
+        }
+      }
+    });
+  };
+
   if (!isAdmin) {
     return (
       <div className="min-h-screen bg-qimtek-bg flex items-center justify-center">
@@ -120,6 +143,84 @@ export default function AdminPlans() {
       </div>
     );
   }
+
+  const renderPlanCard = (role: keyof Plans, title: string, icon: React.ReactNode, borderColor: string, bgColor: string, textColor: string) => {
+    if (!plans) return null;
+    const plan = plans[role];
+
+    return (
+      <div className={`bg-qimtek-bg-surface rounded-xl border ${borderColor} overflow-hidden`}>
+        <div className={`p-4 border-b ${borderColor} ${bgColor} flex items-center gap-3`}>
+          {icon}
+          <h2 className={`font-semibold ${textColor}`}>{title}</h2>
+        </div>
+        <div className="p-6 space-y-6">
+          <div className="grid md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-qimtek-text-secondary mb-2 flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                Expiration (Hours)
+              </label>
+              <input
+                type="number"
+                value={plan.webhookExpirationHours}
+                onChange={(e) => updatePlan(role, 'webhookExpirationHours', parseInt(e.target.value) || 0)}
+                className="w-full px-3 py-2 bg-qimtek-bg border border-qimtek-border rounded-lg text-qimtek-text focus:border-[#82c91e] focus:outline-none"
+              />
+              <p className="mt-1 text-xs text-qimtek-text-tertiary">0 = Never expire</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-qimtek-text-secondary mb-2 flex items-center gap-2">
+                <History className="w-4 h-4" />
+                Retention (Hours)
+              </label>
+              <input
+                type="number"
+                value={plan.retentionHours}
+                onChange={(e) => updatePlan(role, 'retentionHours', parseInt(e.target.value) || 0)}
+                className="w-full px-3 py-2 bg-qimtek-bg border border-qimtek-border rounded-lg text-qimtek-text focus:border-[#82c91e] focus:outline-none"
+              />
+              <p className="mt-1 text-xs text-qimtek-text-tertiary">0 = Keep forever</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-qimtek-text-secondary mb-2 flex items-center gap-2">
+                <Database className="w-4 h-4" />
+                Max Webhooks
+              </label>
+              <input
+                type="number"
+                value={plan.maxWebhooks}
+                onChange={(e) => updatePlan(role, 'maxWebhooks', parseInt(e.target.value) || 0)}
+                className="w-full px-3 py-2 bg-qimtek-bg border border-qimtek-border rounded-lg text-qimtek-text focus:border-[#82c91e] focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="border-t border-qimtek-border pt-4">
+            <h3 className="text-sm font-medium text-qimtek-text-secondary mb-4">Features</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Object.entries(plan.features).map(([key, value]) => (
+                <label key={key} className="flex items-center gap-3 p-2 rounded-lg hover:bg-qimtek-bg-secondary/50 cursor-pointer transition-colors">
+                  <div className="relative flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={value}
+                      onChange={(e) => updateFeature(role, key as keyof PlanFeatures, e.target.checked)}
+                      className="peer sr-only"
+                    />
+                    <div className="w-9 h-5 bg-qimtek-bg border border-qimtek-border rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-qimtek-text-tertiary after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#82c91e] peer-checked:after:bg-white"></div>
+                  </div>
+                  <span className="text-sm text-qimtek-text capitalize">
+                    {key.replace(/([A-Z])/g, ' $1').trim()}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-qimtek-bg flex flex-col">
@@ -162,7 +263,7 @@ export default function AdminPlans() {
           <div className="max-w-5xl mx-auto">
             <div className="mb-8">
               <h1 className="text-2xl font-bold text-qimtek-text mb-2">Plan Configuration</h1>
-              <p className="text-qimtek-text-secondary">Manage limits and expiration policies for each user tier.</p>
+              <p className="text-qimtek-text-secondary">Manage limits, expiration policies, and feature access for each user tier.</p>
             </div>
 
             {error && (
@@ -183,110 +284,32 @@ export default function AdminPlans() {
               </div>
             ) : plans ? (
               <div className="grid gap-6">
-                {/* Free Plan */}
-                <div className="bg-qimtek-bg-surface rounded-xl border border-qimtek-border overflow-hidden">
-                  <div className="p-4 border-b border-qimtek-border bg-qimtek-bg-secondary/50 flex items-center gap-3">
-                    <User className="w-5 h-5 text-qimtek-text-secondary" />
-                    <h2 className="font-semibold text-qimtek-text">Free User Plan</h2>
-                  </div>
-                  <div className="p-6 grid md:grid-cols-3 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-qimtek-text-secondary mb-2 flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        Expiration (Hours)
-                      </label>
-                      <input
-                        type="number"
-                        value={plans.user.webhookExpirationHours}
-                        onChange={(e) => updatePlan('user', 'webhookExpirationHours', parseInt(e.target.value) || 0)}
-                        className="w-full px-3 py-2 bg-qimtek-bg border border-qimtek-border rounded-lg text-qimtek-text focus:border-[#82c91e] focus:outline-none"
-                      />
-                      <p className="mt-1 text-xs text-qimtek-text-tertiary">0 = Never expire</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-qimtek-text-secondary mb-2 flex items-center gap-2">
-                        <Database className="w-4 h-4" />
-                        Max Webhooks
-                      </label>
-                      <input
-                        type="number"
-                        value={plans.user.maxWebhooks}
-                        onChange={(e) => updatePlan('user', 'maxWebhooks', parseInt(e.target.value) || 0)}
-                        className="w-full px-3 py-2 bg-qimtek-bg border border-qimtek-border rounded-lg text-qimtek-text focus:border-[#82c91e] focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
+                {renderPlanCard(
+                  'user',
+                  'Free User Plan',
+                  <User className="w-5 h-5 text-qimtek-text-secondary" />,
+                  'border-qimtek-border',
+                  'bg-qimtek-bg-secondary/50',
+                  'text-qimtek-text'
+                )}
+                
+                {renderPlanCard(
+                  'Professional',
+                  'Professional Plan',
+                  <Shield className="w-5 h-5 text-blue-400" />,
+                  'border-blue-500/20',
+                  'bg-blue-500/5',
+                  'text-blue-400'
+                )}
 
-                {/* Professional Plan */}
-                <div className="bg-qimtek-bg-surface rounded-xl border border-blue-500/20 overflow-hidden">
-                  <div className="p-4 border-b border-blue-500/20 bg-blue-500/5 flex items-center gap-3">
-                    <Shield className="w-5 h-5 text-blue-400" />
-                    <h2 className="font-semibold text-blue-400">Professional Plan</h2>
-                  </div>
-                  <div className="p-6 grid md:grid-cols-3 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-qimtek-text-secondary mb-2 flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        Expiration (Hours)
-                      </label>
-                      <input
-                        type="number"
-                        value={plans.Professional.webhookExpirationHours}
-                        onChange={(e) => updatePlan('Professional', 'webhookExpirationHours', parseInt(e.target.value) || 0)}
-                        className="w-full px-3 py-2 bg-qimtek-bg border border-qimtek-border rounded-lg text-qimtek-text focus:border-[#82c91e] focus:outline-none"
-                      />
-                      <p className="mt-1 text-xs text-qimtek-text-tertiary">0 = Never expire</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-qimtek-text-secondary mb-2 flex items-center gap-2">
-                        <Database className="w-4 h-4" />
-                        Max Webhooks
-                      </label>
-                      <input
-                        type="number"
-                        value={plans.Professional.maxWebhooks}
-                        onChange={(e) => updatePlan('Professional', 'maxWebhooks', parseInt(e.target.value) || 0)}
-                        className="w-full px-3 py-2 bg-qimtek-bg border border-qimtek-border rounded-lg text-qimtek-text focus:border-[#82c91e] focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Administrator Plan */}
-                <div className="bg-qimtek-bg-surface rounded-xl border border-purple-500/20 overflow-hidden">
-                  <div className="p-4 border-b border-purple-500/20 bg-purple-500/5 flex items-center gap-3">
-                    <Shield className="w-5 h-5 text-purple-400" />
-                    <h2 className="font-semibold text-purple-400">Administrator Plan</h2>
-                  </div>
-                  <div className="p-6 grid md:grid-cols-3 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-qimtek-text-secondary mb-2 flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        Expiration (Hours)
-                      </label>
-                      <input
-                        type="number"
-                        value={plans.Administrator.webhookExpirationHours}
-                        onChange={(e) => updatePlan('Administrator', 'webhookExpirationHours', parseInt(e.target.value) || 0)}
-                        className="w-full px-3 py-2 bg-qimtek-bg border border-qimtek-border rounded-lg text-qimtek-text focus:border-[#82c91e] focus:outline-none"
-                      />
-                      <p className="mt-1 text-xs text-qimtek-text-tertiary">0 = Never expire</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-qimtek-text-secondary mb-2 flex items-center gap-2">
-                        <Database className="w-4 h-4" />
-                        Max Webhooks
-                      </label>
-                      <input
-                        type="number"
-                        value={plans.Administrator.maxWebhooks}
-                        onChange={(e) => updatePlan('Administrator', 'maxWebhooks', parseInt(e.target.value) || 0)}
-                        className="w-full px-3 py-2 bg-qimtek-bg border border-qimtek-border rounded-lg text-qimtek-text focus:border-[#82c91e] focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
+                {renderPlanCard(
+                  'Administrator',
+                  'Administrator Plan',
+                  <Star className="w-5 h-5 text-purple-400" />,
+                  'border-purple-500/20',
+                  'bg-purple-500/5',
+                  'text-purple-400'
+                )}
               </div>
             ) : null}
           </div>
