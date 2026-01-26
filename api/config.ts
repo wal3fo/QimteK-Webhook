@@ -5,19 +5,6 @@
  */
 
 export const PLAN_CONFIG = {
-  guest: {
-    maxWebhooks: 1,
-    retentionHours: 1,
-    features: {
-      customAliases: false,
-      permanentHistory: false,
-      advancedInspection: false,
-      requestReplay: false,
-      exportData: false,
-      higherRateLimits: false,
-      prioritySupport: false
-    }
-  },
   user: {
     maxWebhooks: 3,
     retentionHours: 24,

@@ -22,7 +22,6 @@ export interface Webhook {
   expiresAt: string;
   created_at?: string;
   is_active?: boolean;
-  is_guest?: boolean;
   requestCount?: number;
   lastActive?: string | null;
 }

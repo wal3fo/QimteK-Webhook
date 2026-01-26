@@ -54,13 +54,8 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
     console.log(`Current count: ${currentCount}`);
 
     const plans = await getPlans();
-    
-    // Determine role (check for virtual guest role)
-    let userRole = user.role as keyof PlanConfig;
-    if (user.email && user.email.endsWith('@qimtek.guest')) {
-      userRole = 'guest';
-    }
 
+    const userRole = user.role as keyof PlanConfig;
     const plan = plans[userRole] || plans.user;
     const limit = plan.maxWebhooks;
 
@@ -484,11 +479,10 @@ router.delete('/:token', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const isGuest = webhook.users?.email?.endsWith('@qimtek.guest');
     const isOwner = userId && webhook.user_id === userId;
 
-    // Allow if authenticated owner OR guest webhook
-    if (!isOwner && !isGuest) {
+    // Allow if authenticated owner
+    if (!isOwner) {
       res.status(403).json({
         success: false,
         error: 'Access denied. Only the owner can delete this webhook.',

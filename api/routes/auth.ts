@@ -295,9 +295,6 @@ router.get('/me', authenticate, async (req: Request, res: Response): Promise<voi
 
     // Determine virtual role
     let role = dbUser.role;
-    if (dbUser.email.endsWith('@qimtek.guest')) {
-      role = 'guest';
-    }
 
     res.json({
       success: true,

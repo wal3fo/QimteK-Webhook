@@ -4,7 +4,7 @@ import { useWebhook, Webhook } from '@/hooks/useWebhook';
 import { useAuth } from '@/hooks/useAuth';
 import {
     ArrowLeft, Clock, Activity, BarChart2, Calendar, Settings,
-    Trash2, Power, Copy, Check, Download, AlertCircle, Play
+    Trash2, Power, Copy, Check, Download, AlertCircle, Play, ExternalLink
 } from 'lucide-react';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -172,7 +172,7 @@ export default function WebhookDetails() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        {(isAuthenticated || selectedWebhook?.is_guest) && (
+                        {isAuthenticated && (
                             <>
                                 <button
                                     onClick={handleToggleActive}
@@ -223,7 +223,7 @@ export default function WebhookDetails() {
                                     rel="noopener noreferrer"
                                     className="px-4 rounded-lg border border-qimtek-border hover:bg-qimtek-bg-secondary transition-all flex items-center justify-center min-w-[3rem]"
                                 >
-                                    <ExternalLinkIcon />
+                                    <ExternalLink className="w-5 h-5" />
                                 </a>
                             </div>
                         </div>
