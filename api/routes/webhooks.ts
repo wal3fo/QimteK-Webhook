@@ -13,7 +13,7 @@
 import { Router, type Request, type Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../lib/supabase.js';
-import { authenticate } from '../utils/auth.js';
+import { authenticate, verifyToken } from '../utils/auth.js';
 import { getPlans, type PlanConfig } from '../utils/plan-storage.js';
 
 const router = Router();
@@ -265,20 +265,15 @@ router.patch('/:token', authenticate, async (req: Request, res: Response): Promi
  * Get a single request by ID
  * GET /api/webhooks/requests/:id
  */
-router.get('/requests/:id', authenticate, async (req: Request, res: Response): Promise<void> => {
+router.get('/requests/:id', async (req: Request, res: Response): Promise<void> => {
   try {
-    const user = (req as any).user;
     const { id } = req.params;
 
-    // Get request and verify it belongs to a webhook owned by the user
+    // Get request - no user check required (token/ID is the key)
     const { data: request, error } = await supabase
       .from('requests')
-      .select(`
-        *,
-        webhooks!inner(user_id)
-      `)
+      .select('*')
       .eq('id', id)
-      .eq('webhooks.user_id', user.id)
       .single();
 
     if (error || !request) {
@@ -419,16 +414,15 @@ router.get('/:token/requests', async (req: Request, res: Response): Promise<void
  * Get webhook info
  * GET /api/webhooks/:token
  */
-router.get('/:token', authenticate, async (req: Request, res: Response): Promise<void> => {
+router.get('/:token', async (req: Request, res: Response): Promise<void> => {
   try {
-    const user = (req as any).user;
     const { token } = req.params;
 
+    // Public access allowed via token
     const { data: webhook, error } = await supabase
       .from('webhooks')
       .select('*')
       .eq('token', token)
-      .eq('user_id', user.id)
       .eq('is_active', true)
       .single();
 
@@ -462,27 +456,53 @@ router.get('/:token', authenticate, async (req: Request, res: Response): Promise
  * Delete a webhook and all its requests
  * DELETE /api/webhooks/:token
  */
-router.delete('/:token', authenticate, async (req: Request, res: Response): Promise<void> => {
+router.delete('/:token', async (req: Request, res: Response): Promise<void> => {
   try {
-    const user = (req as any).user;
     const { token } = req.params;
+    let userId: string | null = null;
 
-    // Only delete if webhook belongs to the user
-    const { error, count } = await supabase
+    // Check auth header manually
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const tokenStr = authHeader.substring(7);
+      const user = verifyToken(tokenStr);
+      if (user) userId = user.id;
+    }
+
+    // Fetch webhook to check ownership
+    const { data: webhook, error } = await supabase
       .from('webhooks')
-      .delete({ count: 'exact' })
+      .select('*, users!inner(email)')
       .eq('token', token)
-      .eq('user_id', user.id);
+      .single();
 
-    if (error) throw error;
-
-    if (count === 0) {
+    if (error || !webhook) {
       res.status(404).json({
         success: false,
         error: 'Webhook not found or access denied',
       });
       return;
     }
+
+    const isGuest = webhook.users?.email?.endsWith('@qimtek.guest');
+    const isOwner = userId && webhook.user_id === userId;
+
+    // Allow if authenticated owner OR guest webhook
+    if (!isOwner && !isGuest) {
+      res.status(403).json({
+        success: false,
+        error: 'Access denied. Only the owner can delete this webhook.',
+      });
+      return;
+    }
+
+    // Delete
+    const { error: deleteError } = await supabase
+      .from('webhooks')
+      .delete()
+      .eq('token', token);
+
+    if (deleteError) throw deleteError;
 
     res.json({
       success: true,

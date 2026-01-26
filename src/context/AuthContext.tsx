@@ -134,30 +134,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const loginAsGuest = useCallback(async () => {
-    try {
-      const response = await fetch(`${API_URL}/auth/guest`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = await response.json();
-
-      if (data.success && data.token) {
-        setToken(data.token);
-        setUser(data.user);
-        localStorage.setItem(STORAGE_KEY, data.token);
-        return { success: true };
-      } else {
-        return { success: false, error: data.error || 'Guest login failed' };
-      }
-    } catch (error) {
-      return { success: false, error: 'Network error' };
-    }
-  }, []);
-
   const register = useCallback(async (email: string, password: string) => {
     try {
       const response = await fetch(`${API_URL}/auth/register`, {
@@ -222,7 +198,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated: !!user,
     isAdmin: user?.role === 'Administrator',
     login,
-    loginAsGuest,
     register,
     logout,
     checkSession,

@@ -112,64 +112,6 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
 });
 
 /**
- * Guest Login
- * POST /api/auth/guest
- */
-router.post('/guest', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const guestId = uuidv4();
-    const email = `guest_${guestId.substring(0, 8)}@qimtek.guest`;
-    const password = uuidv4();
-    const passwordHash = await hashPassword(password);
-
-    // Create guest user (role='user' to satisfy DB constraint)
-    const { data: user, error } = await supabase
-      .from('users')
-      .insert({
-        email,
-        password_hash: passwordHash,
-        role: 'user', // Virtual role 'guest' derived from email domain
-        is_verified: true
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error creating guest user:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to create guest session',
-      });
-      return;
-    }
-
-    // Generate token
-    const token = generateToken({
-      id: user.id,
-      email: user.email,
-      role: 'user', // Token says 'user', but app logic will refine it
-    });
-
-    res.json({
-      success: true,
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        role: 'guest', // Explicitly return guest role
-        mfa_enabled: false
-      }
-    });
-  } catch (error) {
-    console.error('Error creating guest session:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to create guest session',
-    });
-  }
-});
-
-/**
  * Verify email
  * GET /api/auth/verify-email
  */

@@ -48,19 +48,11 @@ export default function App() {
             <Route path="/docs" element={<Documentation />} />
             <Route
               path="/webhook/:token"
-              element={
-                <ProtectedRoute>
-                  <WebhookDetails />
-                </ProtectedRoute>
-              }
+              element={<WebhookDetails />}
             />
             <Route
               path="/webhook/:token/request/:id"
-              element={
-                <ProtectedRoute>
-                  <RequestDetails />
-                </ProtectedRoute>
-              }
+              element={<RequestDetails />}
             />
             <Route
               path="/admin/users"

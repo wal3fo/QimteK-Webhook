@@ -23,9 +23,9 @@ export default function WebhookDetails() {
     const navigate = useNavigate();
     const {
         webhooks, selectedWebhook, requests, loading, error, isConnected,
-        fetchRequests, deleteWebhook, setSelectedWebhook, fetchWebhooks
+        fetchRequests, deleteWebhook, setSelectedWebhook, fetchWebhooks, fetchWebhook
     } = useWebhook();
-    const { user } = useAuth();
+    const { user, isAuthenticated } = useAuth();
 
     const [activeTab, setActiveTab] = useState<'overview' | 'requests' | 'settings'>('overview');
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -40,15 +40,21 @@ export default function WebhookDetails() {
     }, [fetchWebhooks, webhooks.length]);
 
     useEffect(() => {
-        if (token && webhooks.length > 0) {
-            const webhook = webhooks.find(w => w.token === token);
-            if (webhook) {
-                setSelectedWebhook(webhook);
+        if (token) {
+            if (webhooks.length > 0) {
+                const webhook = webhooks.find(w => w.token === token);
+                if (webhook) {
+                    setSelectedWebhook(webhook);
+                } else {
+                    // Try fetching individually if not in list
+                    fetchWebhook(token);
+                }
             } else {
-                // Handle not found
+                // No webhooks loaded (e.g. public access), fetch individually
+                fetchWebhook(token);
             }
         }
-    }, [token, webhooks, setSelectedWebhook]);
+    }, [token, webhooks, setSelectedWebhook, fetchWebhook]);
 
     const handleCopy = async () => {
         if (selectedWebhook) {
@@ -166,26 +172,30 @@ export default function WebhookDetails() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <button
-                            onClick={handleToggleActive}
-                            disabled={isUpdating}
-                            className={cn(
-                                "flex items-center gap-2 px-4 py-2 rounded-lg border transition-all",
-                                selectedWebhook?.is_active !== false
-                                    ? "border-red-500/30 text-red-400 hover:bg-red-500/10"
-                                    : "border-green-500/30 text-green-400 hover:bg-green-500/10"
-                            )}
-                        >
-                            <Power className="w-4 h-4" />
-                            {selectedWebhook?.is_active !== false ? 'Disable' : 'Enable'}
-                        </button>
-                        <button
-                            onClick={() => setShowDeleteModal(true)}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-all"
-                        >
-                            <Trash2 className="w-4 h-4" />
-                            Delete
-                        </button>
+                        {(isAuthenticated || selectedWebhook?.is_guest) && (
+                            <>
+                                <button
+                                    onClick={handleToggleActive}
+                                    disabled={isUpdating}
+                                    className={cn(
+                                        "flex items-center gap-2 px-4 py-2 rounded-lg border transition-all",
+                                        selectedWebhook?.is_active !== false
+                                            ? "border-red-500/30 text-red-400 hover:bg-red-500/10"
+                                            : "border-green-500/30 text-green-400 hover:bg-green-500/10"
+                                    )}
+                                >
+                                    <Power className="w-4 h-4" />
+                                    {selectedWebhook?.is_active !== false ? 'Disable' : 'Enable'}
+                                </button>
+                                <button
+                                    onClick={() => setShowDeleteModal(true)}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-all"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    Delete
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
 

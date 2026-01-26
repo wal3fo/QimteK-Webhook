@@ -22,6 +22,7 @@ export interface Webhook {
   expiresAt: string;
   created_at?: string;
   is_active?: boolean;
+  is_guest?: boolean;
   requestCount?: number;
   lastActive?: string | null;
 }
@@ -107,8 +108,7 @@ export function useWebhook(options: { autoSelect?: boolean } = { autoSelect: tru
 
   // Fetch requests for the selected webhook
   const fetchRequests = useCallback(async (webhookToken: string) => {
-    if (!authToken) return;
-
+    // Public access allowed
     try {
       const response = await fetch(`${API_URL}/webhooks/${webhookToken}/requests?summary=true`, {
         headers: getAuthHeaders(),
@@ -129,16 +129,43 @@ export function useWebhook(options: { autoSelect?: boolean } = { autoSelect: tru
     } catch (err) {
       console.error('Error fetching requests:', err);
     }
-  }, [authToken, getAuthHeaders]);
+  }, [getAuthHeaders]);
 
   // Fetch requests when selected webhook changes
   useEffect(() => {
-    if (selectedWebhook && isAuthenticated) {
+    if (selectedWebhook) {
       fetchRequests(selectedWebhook.token);
     } else {
       setRequests([]);
     }
-  }, [selectedWebhook, isAuthenticated, fetchRequests]);
+  }, [selectedWebhook, fetchRequests]);
+
+  // Fetch a single webhook by token (public or private)
+  const fetchWebhook = useCallback(async (token: string) => {
+    setLoading(true);
+    try {
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
+      const response = await fetch(`${API_URL}/webhooks/${token}`, { headers });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.webhook) {
+          const webhook = data.webhook;
+          setSelectedWebhook(webhook);
+          // Also fetch requests
+          await fetchRequests(token);
+          return webhook;
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching webhook:', err);
+    } finally {
+      setLoading(false);
+    }
+    return null;
+  }, [authToken, fetchRequests]);
 
   // Generate new webhook
   const generateWebhook = useCallback(async (expiresIn: number = 60, name?: string, alias?: string): Promise<boolean> => {
@@ -214,7 +241,7 @@ export function useWebhook(options: { autoSelect?: boolean } = { autoSelect: tru
 
   // Poll for new requests periodically
   useEffect(() => {
-    if (!selectedWebhook || !isAuthenticated) {
+    if (!selectedWebhook) {
       setIsConnected(false);
       return;
     }
@@ -229,7 +256,7 @@ export function useWebhook(options: { autoSelect?: boolean } = { autoSelect: tru
       clearInterval(pollInterval);
       setIsConnected(false);
     };
-  }, [selectedWebhook, isAuthenticated, fetchRequests]);
+  }, [selectedWebhook, fetchRequests]);
 
   return {
     webhooks,
@@ -243,5 +270,6 @@ export function useWebhook(options: { autoSelect?: boolean } = { autoSelect: tru
     deleteWebhook,
     setSelectedWebhook,
     fetchWebhooks,
+    fetchWebhook,
   };
 }
