@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Save, Shield, Clock, Database, RefreshCw, User, Check, X, History, Zap, Settings, Star } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
+import { PLAN_CONFIG } from '@/config/plans';
 import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
 
@@ -246,22 +247,42 @@ export default function AdminPlans() {
           <div className="border-t border-qimtek-border pt-4">
             <h3 className="text-sm font-medium text-qimtek-text-secondary mb-4">✨ Features</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Object.entries(plan.features).map(([key, value]) => (
-                <label key={key} className="flex items-center gap-3 p-2 rounded-lg hover:bg-qimtek-bg-secondary/50 cursor-pointer transition-colors">
-                  <div className="relative flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={value}
-                      onChange={(e) => updateFeature(role, key as keyof PlanFeatures, e.target.checked)}
-                      className="peer sr-only"
-                    />
-                    <div className="w-9 h-5 bg-qimtek-bg border border-qimtek-border rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-qimtek-text-tertiary after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#82c91e] peer-checked:after:bg-white"></div>
-                  </div>
-                  <span className="text-sm text-qimtek-text capitalize">
-                    {key.replace(/([A-Z])/g, ' $1').trim()}
-                  </span>
-                </label>
-              ))}
+              {(() => {
+                // Display features per order static then dynamic
+                const staticKeys = Object.keys(PLAN_CONFIG.user.features);
+                const currentKeys = Object.keys(plan.features);
+                const dynamicKeys = currentKeys.filter(k => !staticKeys.includes(k));
+
+                // Sort dynamic keys: Active first, then inactive
+                dynamicKeys.sort((a, b) => {
+                  const valA = plan.features[a as keyof PlanFeatures];
+                  const valB = plan.features[b as keyof PlanFeatures];
+                  if (valA === valB) return a.localeCompare(b);
+                  return valA ? -1 : 1;
+                });
+
+                const orderedKeys = [...staticKeys.filter(k => currentKeys.includes(k)), ...dynamicKeys];
+
+                return orderedKeys.map((key) => {
+                  const value = plan.features[key as keyof PlanFeatures];
+                  return (
+                    <label key={key} className="flex items-center gap-3 p-2 rounded-lg hover:bg-qimtek-bg-secondary/50 cursor-pointer transition-colors">
+                      <div className="relative flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={value}
+                          onChange={(e) => updateFeature(role, key as keyof PlanFeatures, e.target.checked)}
+                          className="peer sr-only"
+                        />
+                        <div className="w-9 h-5 bg-qimtek-bg border border-qimtek-border rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-qimtek-text-tertiary after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#82c91e] peer-checked:after:bg-white"></div>
+                      </div>
+                      <span className="text-sm text-qimtek-text capitalize">
+                        {key.replace(/([A-Z])/g, ' $1').trim()}
+                      </span>
+                    </label>
+                  );
+                });
+              })()}
             </div>
           </div>
         </div>

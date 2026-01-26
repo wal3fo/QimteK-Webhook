@@ -53,6 +53,30 @@ export default function PricingCards() {
     </li>
   );
 
+  const FEATURE_DEFINITIONS = [
+    { key: 'advancedInspection', label: 'Advanced Inspection & Filtering' },
+    { key: 'exportData', label: 'Export Data (JSON/CSV)' },
+    { key: 'customAliases', label: 'Custom Aliases & Friendly URLs' },
+    { key: 'requestReplay', label: 'Request Replay & Redelivery' },
+    { key: 'higherRateLimits', label: 'Higher Rate Limits' },
+    { key: 'prioritySupport', label: 'Priority Support' },
+  ] as const;
+
+  const renderFeatures = (planFeatures: any) => {
+    return FEATURE_DEFINITIONS
+      .map(def => ({
+        ...def,
+        included: planFeatures[def.key]
+      }))
+      .sort((a, b) => {
+        if (a.included === b.included) return 0;
+        return a.included ? -1 : 1;
+      })
+      .map(f => (
+        <FeatureItem key={f.key} included={f.included} text={f.label} />
+      ));
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -79,12 +103,7 @@ export default function PricingCards() {
           <FeatureItem included={true} text={plans.user.webhookExpirationHours === 0 ? "No Webhook Expiration" : `${plans.user.webhookExpirationHours}h Webhook Expiration`} />
           <FeatureItem included={true} text={plans.user.retentionHours === 0 ? "Unlimited Request Retention" : `${plans.user.retentionHours}h Request Retention`} />
 
-          <FeatureItem included={plans.user.features.advancedInspection} text="Advanced Inspection & Filtering" />
-          <FeatureItem included={plans.user.features.exportData} text="Export Data (JSON/CSV)" />
-          <FeatureItem included={plans.user.features.customAliases} text="Custom Aliases & Friendly URLs" />
-          <FeatureItem included={plans.user.features.requestReplay} text="Request Replay & Redelivery" />
-          <FeatureItem included={plans.user.features.higherRateLimits} text="Higher Rate Limits" />
-          <FeatureItem included={plans.user.features.prioritySupport} text="Priority Support" />
+          {renderFeatures(plans.user.features)}
         </ul>
 
         {authLoading ? (
@@ -129,12 +148,7 @@ export default function PricingCards() {
           <FeatureItem included={true} text={plans.Professional.webhookExpirationHours === 0 ? "No Webhook Expiration" : `${plans.Professional.webhookExpirationHours}h Webhook Expiration`} />
           <FeatureItem included={true} text={plans.Professional.retentionHours === 0 ? "Unlimited Request Retention" : `${plans.Professional.retentionHours}h Request Retention`} />
 
-          <FeatureItem included={plans.Professional.features.customAliases} text="Custom Aliases & Friendly URLs" />
-          <FeatureItem included={plans.Professional.features.advancedInspection} text="Advanced Inspection & Filtering" />
-          <FeatureItem included={plans.Professional.features.requestReplay} text="Request Replay & Redelivery" />
-          <FeatureItem included={plans.Professional.features.exportData} text="Export Data (JSON/CSV)" />
-          <FeatureItem included={plans.Professional.features.higherRateLimits} text="Higher Rate Limits" />
-          <FeatureItem included={plans.Professional.features.prioritySupport} text="Priority Support" />
+          {renderFeatures(plans.Professional.features)}
         </ul>
 
         {authLoading ? (
