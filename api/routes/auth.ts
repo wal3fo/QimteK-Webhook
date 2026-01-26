@@ -57,7 +57,7 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
     if (existingUser) {
       res.status(409).json({
         success: false,
-        error: 'User with this email already exists',
+        error: 'User already exists',
       });
       return;
     }
@@ -66,26 +66,29 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
     const passwordHash = await hashPassword(password);
 
     // Create user
-    const userId = uuidv4();
-
-    const { error: insertError } = await supabase
+    const { data: user, error } = await supabase
       .from('users')
       .insert({
-        id: userId,
-        email: email.toLowerCase(),
+        email,
         password_hash: passwordHash,
-        role: 'user',
-        created_at: new Date().toISOString()
-      });
+        role: 'user', // Default role
+      })
+      .select()
+      .single();
 
-    if (insertError) {
-      throw insertError;
+    if (error) {
+      console.error('Error creating user:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to create user',
+      });
+      return;
     }
 
     // Generate token
     const token = generateToken({
-      id: userId,
-      email: email.toLowerCase(),
+      id: user.id,
+      email: user.email,
       role: 'user',
     });
 
@@ -93,16 +96,75 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
       success: true,
       token,
       user: {
-        id: userId,
-        email: email.toLowerCase(),
-        role: 'user',
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        mfa_enabled: false
       },
     });
   } catch (error) {
     console.error('Error registering user:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to register user',
+      error: 'Failed to register',
+    });
+  }
+});
+
+/**
+ * Guest Login
+ * POST /api/auth/guest
+ */
+router.post('/guest', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const guestId = uuidv4();
+    const email = `guest_${guestId.substring(0, 8)}@qimtek.guest`;
+    const password = uuidv4();
+    const passwordHash = await hashPassword(password);
+
+    // Create guest user (role='user' to satisfy DB constraint)
+    const { data: user, error } = await supabase
+      .from('users')
+      .insert({
+        email,
+        password_hash: passwordHash,
+        role: 'user', // Virtual role 'guest' derived from email domain
+        is_verified: true
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating guest user:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to create guest session',
+      });
+      return;
+    }
+
+    // Generate token
+    const token = generateToken({
+      id: user.id,
+      email: user.email,
+      role: 'user', // Token says 'user', but app logic will refine it
+    });
+
+    res.json({
+      success: true,
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: 'guest', // Explicitly return guest role
+        mfa_enabled: false
+      }
+    });
+  } catch (error) {
+    console.error('Error creating guest session:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create guest session',
     });
   }
 });
@@ -289,12 +351,18 @@ router.get('/me', authenticate, async (req: Request, res: Response): Promise<voi
       return;
     }
 
+    // Determine virtual role
+    let role = dbUser.role;
+    if (dbUser.email.endsWith('@qimtek.guest')) {
+      role = 'guest';
+    }
+
     res.json({
       success: true,
       user: {
         id: dbUser.id,
         email: dbUser.email,
-        role: dbUser.role,
+        role: role,
         created_at: dbUser.created_at,
         mfa_enabled: !!dbUser.mfa_enabled
       },

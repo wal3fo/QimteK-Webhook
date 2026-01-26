@@ -54,7 +54,13 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
     console.log(`Current count: ${currentCount}`);
 
     const plans = await getPlans();
-    const userRole = user.role as keyof PlanConfig;
+    
+    // Determine role (check for virtual guest role)
+    let userRole = user.role as keyof PlanConfig;
+    if (user.email && user.email.endsWith('@qimtek.guest')) {
+      userRole = 'guest';
+    }
+
     const plan = plans[userRole] || plans.user;
     const limit = plan.maxWebhooks;
 

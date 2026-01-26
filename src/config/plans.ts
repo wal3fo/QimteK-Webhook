@@ -1,4 +1,21 @@
 export const PLAN_CONFIG = {
+  guest: {
+    displayName: 'Guest',
+    price: 0,
+    description: 'No login required',
+    maxWebhooks: 1,
+    webhookExpirationHours: 1,
+    retentionHours: 1,
+    features: {
+      customAliases: false,
+      permanentHistory: false,
+      advancedInspection: false,
+      requestReplay: false,
+      exportData: false,
+      higherRateLimits: false,
+      prioritySupport: false
+    }
+  },
   user: {
     displayName: 'Free',
     price: 0,
