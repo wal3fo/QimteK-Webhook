@@ -11,9 +11,14 @@ import { generateSecret, verify, generateURI } from 'otplib';
 import QRCode from 'qrcode';
 import { supabase } from '../lib/supabase.js';
 
-// JWT secret - use environment variable or fallback (should be set in production)
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+// Helper to get secrets lazily (for Cloudflare Pages compatibility)
+function getJwtSecret() {
+  return process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+}
+
+function getJwtExpiresIn() {
+  return process.env.JWT_EXPIRES_IN || '7d';
+}
 
 export interface UserPayload {
   id: string;
@@ -40,7 +45,7 @@ export async function comparePassword(password: string, hash: string): Promise<b
  * Generate a JWT token for a user
  */
 export function generateToken(payload: UserPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN as any });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: getJwtExpiresIn() as any });
 }
 
 /**
@@ -48,7 +53,7 @@ export function generateToken(payload: UserPayload): string {
  */
 export function verifyToken(token: string): UserPayload | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as UserPayload;
+    const decoded = jwt.verify(token, getJwtSecret()) as UserPayload;
     return decoded;
   } catch (error) {
     return null;
@@ -98,9 +103,9 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
     }
 
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-    const payload = verifyToken(token);
+    const decoded = verifyToken(token);
 
-    if (!payload) {
+    if (!decoded) {
       res.status(401).json({
         success: false,
         error: 'Invalid or expired token',
@@ -108,42 +113,11 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
       return;
     }
 
-    // Verify user exists in database and get latest role
-    try {
-      const { data: user, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', payload.id)
-        .single();
-
-      if (error || !user) {
-        res.status(401).json({
-          success: false,
-          error: 'User no longer exists',
-        });
-        return;
-      }
-
-      // Attach latest user info to request object
-      (req as any).user = {
-        id: user.id,
-        email: user.email,
-        role: user.role
-      };
-
-      next();
-    } catch (dbError) {
-      console.error('Database auth check failed:', dbError);
-      // Fallback to token payload if DB check fails (optional, but safer to fail closed)
-      // For high security, we should fail.
-      res.status(500).json({
-        success: false,
-        error: 'Authentication system error',
-      });
-      return;
-    }
+    // Attach user to request
+    (req as any).user = decoded;
+    next();
   } catch (error) {
-    res.status(401).json({
+    res.status(500).json({
       success: false,
       error: 'Authentication failed',
     });
@@ -151,16 +125,16 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
 }
 
 /**
- * Admin-only middleware
- * Must be used after authenticate middleware
+ * Admin middleware
+ * Ensures user is an Administrator
  */
 export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
-  const user = (req as any).user as UserPayload | undefined;
+  const user = (req as any).user as UserPayload;
 
   if (!user || user.role !== 'Administrator') {
     res.status(403).json({
       success: false,
-      error: 'Admin access required',
+      error: 'Access denied. Administrator privileges required.',
     });
     return;
   }

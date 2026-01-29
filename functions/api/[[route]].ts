@@ -1,6 +1,14 @@
 import serverless from 'serverless-http';
 import app from '../../api/app';
 
+// Polyfill process for Cloudflare Pages if it doesn't exist
+// This prevents crashes in modules that access process.env at the top level
+if (typeof process === 'undefined') {
+  (globalThis as any).process = { env: {} };
+} else if (!process.env) {
+  process.env = {};
+}
+
 const handler = serverless(app);
 
 export const onRequest = async (context: any) => {
