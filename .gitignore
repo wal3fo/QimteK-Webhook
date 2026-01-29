@@ -24,8 +24,10 @@ dist-ssr
 *.sw?
 
 # Environment variables
+.env
 .env.local
 .env.production
+secrets.json
 
 # Database
 *.db

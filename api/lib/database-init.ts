@@ -10,7 +10,12 @@ export async function initializeDatabase(): Promise<void> {
   console.log('🔌 Initializing Database Connection...');
 
   if (!process.env.SUPABASE_URL || (!process.env.SUPABASE_ANON_KEY && !process.env.SUPABASE_KEY)) {
-    throw new Error('Supabase credentials missing');
+    console.warn('⚠️ Supabase credentials missing. App will run in limited mode (offline/placeholder).');
+    // Don't throw, just return. The Supabase proxy will handle the rest.
+    // However, if we return here, isInitialized won't be set to true?
+    // Let's set it to true so we don't retry unnecessarily.
+    isInitialized = true;
+    return;
   }
 
   try {

@@ -11,13 +11,26 @@ import { generateSecret, verify, generateURI } from 'otplib';
 import QRCode from 'qrcode';
 import { supabase } from '../lib/supabase.js';
 
+// Safe environment variable access
+const getEnv = (key: string, defaultValue: string) => {
+  try {
+    if (typeof process !== 'undefined' && process.env) {
+      return process.env[key] || defaultValue;
+    }
+    // Fallback for environments where process is not defined
+    return defaultValue;
+  } catch (e) {
+    return defaultValue;
+  }
+};
+
 // Helper to get secrets lazily (for Cloudflare Pages compatibility)
 function getJwtSecret() {
-  return process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+  return getEnv('JWT_SECRET', 'your-secret-key-change-in-production');
 }
 
 function getJwtExpiresIn() {
-  return process.env.JWT_EXPIRES_IN || '7d';
+  return getEnv('JWT_EXPIRES_IN', '7d');
 }
 
 export interface UserPayload {

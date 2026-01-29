@@ -24,8 +24,11 @@ export const supabase = new Proxy({} as SupabaseClient, {
     }
 
     // Initialize on first access
-    const supabaseUrl = process.env.SUPABASE_URL?.trim();
-    const supabaseKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_KEY)?.trim();
+    // Safe process.env access
+    const env = (typeof process !== 'undefined' && process.env) ? process.env : {};
+
+    const supabaseUrl = env.SUPABASE_URL?.trim();
+    const supabaseKey = (env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || env.SUPABASE_KEY)?.trim();
 
     // If keys are missing, use placeholders to prevent crash during module load/init.
     // The actual calls will fail if keys are invalid.
