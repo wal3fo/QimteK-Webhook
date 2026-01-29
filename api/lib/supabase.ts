@@ -1,23 +1,46 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
 // Ensure env vars are loaded
 dotenv.config();
 
-const supabaseUrl = process.env.SUPABASE_URL?.trim();
-const supabaseKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_KEY)?.trim();
+let supabaseInstance: SupabaseClient | null = null;
 
-if (!supabaseUrl || !supabaseKey) {
-  // We don't throw here to avoid side effects on import, 
-  // but the client won't work if these are missing.
-  // The initialization step will catch this.
-  console.warn('⚠️ Supabase URL or Key is missing!');
-}
+// Lazy initialization via Proxy to handle Cloudflare Pages environment
+// where process.env is only populated during the request handler
+export const supabase = new Proxy({} as SupabaseClient, {
+  get: (target, prop) => {
+    // If instance exists, return its property
+    if (supabaseInstance) {
+      // @ts-ignore
+      return supabaseInstance[prop];
+    }
 
-// Create a single supabase client for interacting with your database
-export const supabase = createClient(supabaseUrl || '', supabaseKey || '', {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false,
+    // Initialize on first access
+    const supabaseUrl = process.env.SUPABASE_URL?.trim();
+    const supabaseKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_KEY)?.trim();
+
+    // If keys are missing, use placeholders to prevent crash during module load/init.
+    // The actual calls will fail if keys are invalid.
+    const url = supabaseUrl || 'https://placeholder.supabase.co';
+    const key = supabaseKey || 'placeholder';
+
+    if (!supabaseUrl || !supabaseKey) {
+      // Only log in production/runtime if we are actually missing keys
+      // preventing noise during build
+      if (process.env.NODE_ENV !== 'test') {
+        // console.warn(`[Supabase] Initializing with placeholder URL because env vars are missing. URL: ${url}`);
+      }
+    }
+
+    supabaseInstance = createClient(url, key, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      }
+    });
+
+    // @ts-ignore
+    return supabaseInstance[prop];
   }
 });
