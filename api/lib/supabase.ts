@@ -1,8 +1,15 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
-// Ensure env vars are loaded
-dotenv.config();
+// Ensure env vars are loaded (only for local dev where fs is available)
+// In Cloudflare, this is not needed and might crash if process is missing
+try {
+  if (process.env.NODE_ENV !== 'production' && typeof process !== 'undefined') {
+    dotenv.config();
+  }
+} catch (e) {
+  // Ignore dotenv errors
+}
 
 let supabaseInstance: SupabaseClient | null = null;
 
@@ -41,6 +48,10 @@ export const supabase = new Proxy({} as SupabaseClient, {
     });
 
     // @ts-ignore
-    return supabaseInstance[prop];
+    const value = supabaseInstance[prop];
+    if (typeof value === 'function') {
+      return value.bind(supabaseInstance);
+    }
+    return value;
   }
 });
