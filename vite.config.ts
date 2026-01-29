@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => {
       react({
         babel: {
           plugins: [
-            'react-dev-locator',
+            ...(mode === 'development' ? ['react-dev-locator'] : []),
           ],
         },
       }),

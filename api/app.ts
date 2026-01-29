@@ -8,25 +8,11 @@ import express, {
   type NextFunction,
 } from 'express'
 import cors from 'cors'
-import dotenv from 'dotenv'
-import path from 'path'
-import fs from 'fs'
-import { fileURLToPath } from 'url'
 import webhookRoutes from './routes/webhooks.js'
 import webhookReceiverRoutes from './routes/webhook-receiver.js'
 import authRoutes from './routes/auth.js'
 import userRoutes from './routes/users.js'
 import planRoutes from './routes/plans.js'
-
-
-// Load environment variables
-if (process.env.NODE_ENV !== 'production') {
-  dotenv.config()
-}
-
-// ESM-compatible __dirname
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
 
 const app: express.Application = express()
 
@@ -87,42 +73,5 @@ app.use((error: Error, req: Request, res: Response, _next: NextFunction) => {
       : error.message,
   })
 })
-
-/**
- * 404 handler and Static File Serving
- */
-// Determine dist path based on execution environment
-// Production (compiled): api/dist/app.js -> ../../dist
-// Development (tsx): api/app.ts -> ../dist
-const distPathProd = path.join(__dirname, '../../dist')
-const distPathDev = path.join(__dirname, '../dist')
-
-let distPath = distPathProd
-if (fs.existsSync(path.join(distPathDev, 'index.html'))) {
-  distPath = distPathDev
-}
-
-const hasDist = fs.existsSync(path.join(distPath, 'index.html'))
-
-// Serve static files if in production OR if dist exists (fallback for local preview)
-if (process.env.NODE_ENV === 'production' || hasDist) {
-  console.log(`Serving static files from: ${distPath}`)
-  app.use(express.static(distPath))
-
-  app.get('*', (req: Request, res: Response) => {
-    if (req.path.startsWith('/api')) {
-      res.status(404).json({ success: false, error: 'API not found' })
-      return
-    }
-    res.sendFile(path.join(distPath, 'index.html'))
-  })
-} else {
-  app.use((req: Request, res: Response) => {
-    res.status(404).json({
-      success: false,
-      error: 'API not found',
-    })
-  })
-}
 
 export default app
