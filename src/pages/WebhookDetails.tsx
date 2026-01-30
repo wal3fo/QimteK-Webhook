@@ -317,7 +317,7 @@ export default function WebhookDetails() {
                         {/* Main Chart */}
                         <div className="bg-qimtek-bg-surface p-6 rounded-xl border border-qimtek-border md:col-span-3">
                             <h3 className="font-semibold text-lg mb-6">Traffic Volume</h3>
-                            <div className="h-[300px]">
+                            <div className="h-[300px] w-full min-h-[300px]">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart data={requestsOverTime}>
                                         <defs>
