@@ -226,8 +226,19 @@ router.delete('/:id', authenticate, requireAdmin, async (req: Request, res: Resp
     // Delete user (Cascading delete should handle webhooks if configured in DB, 
     // but we can manually delete webhooks first to be safe or if foreign keys aren't set up for cascade)
 
-    // Check if we need to manually delete webhooks
-    // Assuming Supabase foreign keys might not be set to CASCADE.
+    // 1. Get user's webhooks to clean up requests
+    const { data: webhooks } = await supabase
+      .from('webhooks')
+      .select('token')
+      .eq('user_id', id);
+
+    if (webhooks && webhooks.length > 0) {
+      const tokens = webhooks.map(w => w.token);
+      // 2. Delete requests for these webhooks
+      await supabase.from('requests').delete().in('webhook_token', tokens);
+    }
+
+    // 3. Delete webhooks
     await supabase.from('webhooks').delete().eq('user_id', id);
 
     const { error: deleteError } = await supabase
@@ -251,16 +262,17 @@ router.delete('/:id', authenticate, requireAdmin, async (req: Request, res: Resp
 });
 
 /**
- * Update user role
- * PATCH /api/users/:id/role
+ * Update user details (role, email, password)
+ * PATCH /api/users/:id
  */
-router.patch('/:id/role', authenticate, requireAdmin, async (req: Request, res: Response): Promise<void> => {
+router.patch('/:id', authenticate, requireAdmin, async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const { role } = req.body;
+    const { role, email, password } = req.body;
     const currentUser = (req as any).user;
 
-    if (id === currentUser.id) {
+    // Check if trying to update self role
+    if (role && id === currentUser.id) {
       res.status(400).json({
         success: false,
         error: 'Cannot change your own role',
@@ -268,30 +280,69 @@ router.patch('/:id/role', authenticate, requireAdmin, async (req: Request, res: 
       return;
     }
 
-    if (!['Administrator', 'Professional', 'user'].includes(role)) {
+    const updates: any = {};
+
+    // Validate and add role
+    if (role) {
+      if (!['Administrator', 'Professional', 'user'].includes(role)) {
+        res.status(400).json({
+          success: false,
+          error: 'Invalid role. Must be "Administrator", "Professional", or "user"',
+        });
+        return;
+      }
+      updates.role = role;
+    }
+
+    // Validate and add email
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        res.status(400).json({
+          success: false,
+          error: 'Invalid email format',
+        });
+        return;
+      }
+      updates.email = email.toLowerCase();
+    }
+
+    // Validate and add password
+    if (password) {
+      if (password.length < 6) {
+        res.status(400).json({
+          success: false,
+          error: 'Password must be at least 6 characters',
+        });
+        return;
+      }
+      updates.password_hash = await hashPassword(password);
+    }
+
+    if (Object.keys(updates).length === 0) {
       res.status(400).json({
         success: false,
-        error: 'Invalid role. Must be "Administrator", "Professional", or "user"',
+        error: 'No updates provided',
       });
       return;
     }
 
     const { error } = await supabase
       .from('users')
-      .update({ role })
+      .update(updates)
       .eq('id', id);
 
     if (error) throw error;
 
     res.json({
       success: true,
-      message: 'User role updated successfully',
+      message: 'User updated successfully',
     });
   } catch (error) {
-    console.error('Error updating user role:', error);
+    console.error('Error updating user:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to update user role',
+      error: 'Failed to update user',
     });
   }
 });

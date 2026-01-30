@@ -191,7 +191,7 @@ export default function AdminUsers() {
     if (!userToEditRole || !token) return;
 
     try {
-      const response = await fetch(`${API_URL}/users/${userToEditRole.id}/role`, {
+      const response = await fetch(`${API_URL}/users/${userToEditRole.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

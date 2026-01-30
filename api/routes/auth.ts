@@ -66,12 +66,16 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
     const passwordHash = await hashPassword(password);
 
     // Create user
+    const userId = uuidv4();
     const { data: user, error } = await supabase
       .from('users')
       .insert({
+        id: userId,
         email,
         password_hash: passwordHash,
         role: 'user', // Default role
+        is_verified: true,
+        created_at: new Date().toISOString()
       })
       .select()
       .single();
