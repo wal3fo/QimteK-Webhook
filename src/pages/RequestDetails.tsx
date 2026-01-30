@@ -6,6 +6,7 @@ import { cn, METHOD_COLORS } from '@/lib/utils';
 import { format, isValid } from 'date-fns';
 import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
+import SEO from '@/components/SEO';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -180,6 +181,10 @@ export default function RequestDetails() {
 
   return (
     <div className="min-h-screen bg-qimtek-bg page-enter font-mono text-sm">
+      <SEO
+        title={request ? `${request.method} ${request.url}` : 'Request Details'}
+        description={request ? `Inspect ${request.method} request to ${request.url}` : 'View webhook request details'}
+      />
       <div className="container mx-auto px-2 sm:px-4 lg:px-6 py-4 max-w-7xl">
         {/* Header Navigation */}
         <div className="mb-4 flex items-center justify-between">

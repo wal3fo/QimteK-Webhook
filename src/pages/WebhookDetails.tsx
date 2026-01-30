@@ -15,6 +15,7 @@ import { cn, METHOD_COLORS } from '@/lib/utils';
 import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
 import ConfirmModal from '@/components/ConfirmModal';
+import SEO from '@/components/SEO';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
@@ -25,7 +26,7 @@ export default function WebhookDetails() {
         webhooks, selectedWebhook, requests, loading, error, isConnected,
         fetchRequests, deleteWebhook, setSelectedWebhook, fetchWebhooks, fetchWebhook
     } = useWebhook();
-    const { user, isAuthenticated } = useAuth();
+    const { user, isAuthenticated, token: authToken } = useAuth();
 
     const [activeTab, setActiveTab] = useState<'overview' | 'requests' | 'settings'>('overview');
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -146,6 +147,10 @@ export default function WebhookDetails() {
 
     return (
         <div className="min-h-screen bg-qimtek-bg text-qimtek-text font-sans">
+            <SEO
+                title={selectedWebhook?.name ? `${selectedWebhook.name} - Webhook Details` : 'Webhook Details'}
+                description={selectedWebhook ? `Inspect webhook ${selectedWebhook.name || selectedWebhook.token}` : 'View webhook details'}
+            />
             <div className="container mx-auto px-4 py-6 max-w-7xl">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">

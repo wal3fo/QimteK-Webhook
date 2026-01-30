@@ -67,7 +67,7 @@ export default function AdminPlans() {
       }
 
       const data = await response.json();
-      console.log('Plans API response:', data);
+      // console.log('Plans API response:', data);
 
       if (data.success) {
         if (data.data) {

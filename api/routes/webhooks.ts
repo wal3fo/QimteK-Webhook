@@ -37,7 +37,7 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
     }
 
     // Check webhook limits
-    console.log(`Checking limits for user ${user.id} (${user.role})`);
+    // console.log(`Checking limits for user ${user.id} (${user.role})`);
 
     const { count, error: countError } = await supabase
       .from('webhooks')
@@ -51,7 +51,7 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
     }
 
     const currentCount = count || 0;
-    console.log(`Current count: ${currentCount}`);
+    // console.log(`Current count: ${currentCount}`);
 
     const plans = await getPlans();
 
@@ -59,7 +59,7 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
     const plan = plans[userRole] || plans.user;
     const limit = plan.maxWebhooks;
 
-    console.log(`User Role: ${userRole}, Plan Limit: ${limit}, Current Count: ${currentCount}`);
+    // console.log(`User Role: ${userRole}, Plan Limit: ${limit}, Current Count: ${currentCount}`);
 
     if (currentCount >= limit) {
       res.status(403).json({

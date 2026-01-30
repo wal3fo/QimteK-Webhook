@@ -39,7 +39,7 @@ export default function PricingCards() {
           }
         });
         const data = await res.json();
-        console.log('Fetched plans:', data); // Debug log
+        // console.log('Fetched plans:', data);
         if (data.success && data.data) {
           setPlans(data.data);
         }

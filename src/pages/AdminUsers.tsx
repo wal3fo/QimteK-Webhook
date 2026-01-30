@@ -76,7 +76,7 @@ export default function AdminUsers() {
     setLoading(true);
     setError(null);
     try {
-      console.log(`Fetching users from: ${API_URL}/users`);
+      // console.log(`Fetching users from: ${API_URL}/users`);
       const response = await fetch(`${API_URL}/users`, {
         headers: {
           'Authorization': `Bearer ${token}`
