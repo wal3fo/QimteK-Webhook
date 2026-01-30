@@ -1,38 +1,24 @@
 import { createClient } from '@supabase/supabase-js';
 import { verifyJwt } from '../../utils/jwt';
-
-// Helper to initialize Supabase
-function getSupabase(env: any) {
-    return createClient(
-        env.SUPABASE_URL,
-        env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY,
-        {
-            auth: {
-                persistSession: false,
-                autoRefreshToken: false,
-                detectSessionInUrl: false
-            }
-        }
-    );
-}
+import { getSupabase } from '../../utils/supabase';
 
 // Plan Configuration (Sync with plans.ts)
 const DEFAULT_PLAN_CONFIG = {
-  user: {
-    maxWebhooks: 3,
-    webhookExpirationHours: 72,
-    features: { customAliases: false }
-  },
-  Professional: {
-    maxWebhooks: 10,
-    webhookExpirationHours: 0,
-    features: { customAliases: true }
-  },
-  Administrator: {
-    maxWebhooks: 99999,
-    webhookExpirationHours: 0,
-    features: { customAliases: true }
-  }
+    user: {
+        maxWebhooks: 3,
+        webhookExpirationHours: 72,
+        features: { customAliases: false }
+    },
+    Professional: {
+        maxWebhooks: 10,
+        webhookExpirationHours: 0,
+        features: { customAliases: true }
+    },
+    Administrator: {
+        maxWebhooks: 99999,
+        webhookExpirationHours: 0,
+        features: { customAliases: true }
+    }
 };
 
 async function getPlans(supabase: any) {
@@ -41,14 +27,14 @@ async function getPlans(supabase: any) {
         .select('value')
         .eq('key', 'plan_config')
         .maybeSingle();
-    
+
     return data?.value || DEFAULT_PLAN_CONFIG;
 }
 
 export const onRequestPost = async (context: any) => {
     try {
         const { request, env } = context;
-        
+
         // 1. Auth Check
         const authHeader = request.headers.get('Authorization');
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -93,7 +79,7 @@ export const onRequestPost = async (context: any) => {
         const currentCount = count || 0;
 
         if (currentCount >= limit) {
-             return new Response(JSON.stringify({ success: false, error: `Webhook limit reached. Max: ${limit}` }), { status: 403, headers: { 'Content-Type': 'application/json' } });
+            return new Response(JSON.stringify({ success: false, error: `Webhook limit reached. Max: ${limit}` }), { status: 403, headers: { 'Content-Type': 'application/json' } });
         }
 
         // 4. Generate Token / Alias
@@ -106,13 +92,13 @@ export const onRequestPost = async (context: any) => {
 
             const cleanAlias = alias.trim();
             if (!/^[a-zA-Z0-9_-]{3,50}$/.test(cleanAlias)) {
-                 return new Response(JSON.stringify({ success: false, error: 'Invalid alias format' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+                return new Response(JSON.stringify({ success: false, error: 'Invalid alias format' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
             }
 
             // Check uniqueness
             const { data: existing } = await supabase.from('webhooks').select('token').eq('token', cleanAlias).maybeSingle();
             if (existing) {
-                 return new Response(JSON.stringify({ success: false, error: 'Alias already taken' }), { status: 409, headers: { 'Content-Type': 'application/json' } });
+                return new Response(JSON.stringify({ success: false, error: 'Alias already taken' }), { status: 409, headers: { 'Content-Type': 'application/json' } });
             }
             webhookToken = cleanAlias;
         }

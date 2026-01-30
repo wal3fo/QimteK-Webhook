@@ -1,20 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { verifyJwt } from '../utils/jwt';
-
-// Helper to initialize Supabase
-export function getSupabase(env: any) {
-    return createClient(
-        env.SUPABASE_URL,
-        env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY,
-        {
-            auth: {
-                persistSession: false,
-                autoRefreshToken: false,
-                detectSessionInUrl: false
-            }
-        }
-    );
-}
+import { getSupabase } from '../utils/supabase';
 
 // Default Plan Configuration
 const DEFAULT_PLAN_CONFIG = {

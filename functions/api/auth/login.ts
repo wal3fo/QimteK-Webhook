@@ -1,178 +1,62 @@
-import { createClient } from '@supabase/supabase-js';
-import bcrypt from 'bcryptjs';
+import { signJwt } from '../../utils/jwt';
+import { getSupabase } from '../../utils/supabase';
+import * as bcrypt from 'bcryptjs';
 
-/**
- * Native Cloudflare Pages Function for Login
- * Bypasses Express/Node.js dependencies to ensure compatibility with Workers Runtime.
- */
-
-// Web Crypto compatible JWT Signing
-async function signJwt(payload: any, secret: string) {
-    const enc = new TextEncoder();
-    const key = await crypto.subtle.importKey(
-        "raw",
-        enc.encode(secret),
-        { name: "HMAC", hash: "SHA-256" },
-        false,
-        ["sign"]
-    );
-    
-    // Default expiration: 7 days
-    const now = Math.floor(Date.now() / 1000);
-    const exp = now + (7 * 24 * 60 * 60);
-    
-    const finalPayload = {
-        ...payload,
-        iat: now,
-        exp: exp
-    };
-
-    const header = { alg: "HS256", typ: "JWT" };
-    
-    const base64Url = (input: string) => {
-        return btoa(input)
-            .replace(/=/g, "")
-            .replace(/\+/g, "-")
-            .replace(/\//g, "_");
-    };
-
-    const encodedHeader = base64Url(JSON.stringify(header));
-    const encodedPayload = base64Url(JSON.stringify(finalPayload));
-    
-    const signature = await crypto.subtle.sign(
-        "HMAC",
-        key,
-        enc.encode(`${encodedHeader}.${encodedPayload}`)
-    );
-    
-    // Convert signature to string properly
-    const signatureArray = Array.from(new Uint8Array(signature));
-    const signatureString = signatureArray.map(b => String.fromCharCode(b)).join('');
-    const encodedSignature = base64Url(signatureString);
-    
-    return `${encodedHeader}.${encodedPayload}.${encodedSignature}`;
-}
-
+// Login
 export const onRequestPost = async (context: any) => {
     try {
         const { request, env } = context;
-        
-        // 1. Parse JSON safely
-        let body;
-        try {
-            body = await request.json();
-        } catch (e) {
-            return new Response(JSON.stringify({ 
-                success: false, 
-                error: 'Invalid JSON body' 
-            }), { 
-                status: 400,
-                headers: { 'Content-Type': 'application/json' }
-            });
-        }
-
+        const body = await request.json();
         const { email, password } = body;
 
-        // 2. Validate input
         if (!email || !password) {
-            return new Response(JSON.stringify({ 
-                success: false, 
-                error: 'Email and password are required' 
-            }), { 
-                status: 400,
-                headers: { 'Content-Type': 'application/json' }
-            });
+            return new Response(JSON.stringify({ success: false, error: 'Email and password are required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
         }
 
-        // 3. Initialize Supabase with context.env (not process.env)
-        const supabaseUrl = env.SUPABASE_URL;
-        const supabaseKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
-        
-        if (!supabaseUrl || !supabaseKey) {
-             console.error('Missing SUPABASE_URL or keys in environment variables');
-             return new Response(JSON.stringify({ 
-                success: false, 
-                error: 'Server configuration error' 
-            }), { 
-                status: 500,
-                headers: { 'Content-Type': 'application/json' }
-            });
-        }
+        const supabase = getSupabase(env);
 
-        const supabase = createClient(supabaseUrl, supabaseKey, {
-             auth: {
-                persistSession: false,
-                autoRefreshToken: false,
-                detectSessionInUrl: false
-            }
-        });
-
-        // 4. Fetch User
-        const { data: user, error: dbError } = await supabase
+        const { data: user, error } = await supabase
             .from('users')
             .select('*')
-            .eq('email', email)
-            .maybeSingle();
+            .eq('email', email.toLowerCase())
+            .single();
 
-        if (dbError) {
-            console.error('Supabase error:', dbError);
-            return new Response(JSON.stringify({ 
-                success: false, 
-                error: 'Database error' 
-            }), { 
-                status: 500,
-                headers: { 'Content-Type': 'application/json' }
-            });
+        if (error || !user) {
+            return new Response(JSON.stringify({ success: false, error: 'Invalid email or password' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
         }
 
-        if (!user) {
-             return new Response(JSON.stringify({ 
-                success: false, 
-                error: 'Invalid credentials' 
-            }), { 
-                status: 401,
-                headers: { 'Content-Type': 'application/json' }
-            });
+        const isValidPassword = await bcrypt.compare(password, user.password_hash);
+
+        if (!isValidPassword) {
+            return new Response(JSON.stringify({ success: false, error: 'Invalid email or password' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
         }
 
-        // 5. Verify Password (using bcryptjs)
-        const isValid = await bcrypt.compare(password, user.password_hash);
-        
-        if (!isValid) {
-             return new Response(JSON.stringify({ 
-                success: false, 
-                error: 'Invalid credentials' 
-            }), { 
-                status: 401,
-                headers: { 'Content-Type': 'application/json' }
-            });
-        }
-
-        // 6. Generate JWT (using Web Crypto)
+        // Generate token
         const jwtSecret = env.JWT_SECRET || 'your-secret-key-change-in-production';
+        // Parse duration string (e.g. "7d") to seconds or just use a default
+        const expiresIn = 604800; // 7 days in seconds
+
         const token = await signJwt({
             id: user.id,
             email: user.email,
-            role: user.role || 'user'
-        }, jwtSecret);
+            role: user.role
+        }, jwtSecret, expiresIn);
 
-        // 7. Return Success
         return new Response(JSON.stringify({
             success: true,
             token,
             user: {
                 id: user.id,
                 email: user.email,
-                role: user.role
+                role: user.role,
+                mfa_enabled: !!user.mfa_enabled
             }
         }), {
-            status: 200,
             headers: { 'Content-Type': 'application/json' }
         });
 
     } catch (e: any) {
-        // 8. Catch-all Error Handling
-        console.error('Login Worker Exception:', e);
+        console.error('Login error:', e);
         return new Response(JSON.stringify({
             success: false,
             error: 'Internal Server Error',

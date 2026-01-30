@@ -1,25 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import { verifyJwt } from '../../utils/jwt';
-
-// Helper to initialize Supabase
-function getSupabase(env: any) {
-    return createClient(
-        env.SUPABASE_URL,
-        env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY,
-        {
-            auth: {
-                persistSession: false,
-                autoRefreshToken: false,
-                detectSessionInUrl: false
-            }
-        }
-    );
-}
+import { getSupabase } from '../../utils/supabase';
 
 export const onRequestGet = async (context: any) => {
     try {
         const { request, env } = context;
-        
+
         // 1. Auth Check
         const authHeader = request.headers.get('Authorization');
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -49,11 +35,11 @@ export const onRequestGet = async (context: any) => {
         const baseUrl = env.BASE_URL || `${url.protocol}//${url.host}`;
 
         const webhooksWithStats = await Promise.all((webhooks || []).map(async (wh: any) => {
-             const { count } = await supabase
+            const { count } = await supabase
                 .from('requests')
                 .select('*', { count: 'exact', head: true })
                 .eq('webhook_token', wh.token);
-            
+
             const { data: lastRequest } = await supabase
                 .from('requests')
                 .select('timestamp')

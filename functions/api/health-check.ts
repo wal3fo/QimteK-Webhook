@@ -1,18 +1,12 @@
-
-import app from '../../api/app';
-import serverless from 'serverless-http';
-
-// Create a simple Express app for health check that doesn't import the main app
-// This isolates the test from potential import errors in the main app
-import express from 'express';
-const healthApp = express();
-
-healthApp.get('/api/health-check', (req, res) => {
-  res.json({
+export const onRequest = async (context: any) => {
+  const { env } = context;
+  
+  return new Response(JSON.stringify({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    env: process.env.NODE_ENV
+    env: env.NODE_ENV || 'unknown',
+    provider: 'Cloudflare Pages Functions'
+  }), {
+    headers: { 'Content-Type': 'application/json' }
   });
-});
-
-export const onRequest = serverless(healthApp);
+};

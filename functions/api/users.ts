@@ -1,21 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
 import { verifyJwt } from '../utils/jwt';
-
-// Helper to initialize Supabase
-function getSupabase(env: any) {
-    return createClient(
-        env.SUPABASE_URL,
-        env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY,
-        {
-            auth: {
-                persistSession: false,
-                autoRefreshToken: false,
-                detectSessionInUrl: false
-            }
-        }
-    );
-}
+import { getSupabase } from '../utils/supabase';
 
 export const onRequestPost = async (context: any) => {
     try {
