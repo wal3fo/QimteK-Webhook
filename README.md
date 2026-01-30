@@ -14,14 +14,17 @@ A powerful, secure, and user-friendly webhook inspection and management tool. Qi
 
 ### 🔐 Security & Authentication
 - **Secure Authentication**: JWT-based session management.
+- **Multi-Factor Authentication (MFA)**: Optional 2FA support using TOTP (Google Authenticator, Authy).
+- **Password Management**: Secure password change functionality.
 - **Role-Based Access Control (RBAC)**:
   - **User**: Free tier with basic limits (3 Webhooks, 24h retention).
-  - **Professional**: Enhanced limits (10 Webhooks, Unlimited retention, Advanced features).
+  - **Professional**: Enhanced limits (10 Webhooks, Unlimited retention, Advanced features) with **Subscription Expiration** tracking.
   - **Administrator**: Full system access and user management.
 - **Endpoint Protection**: Validates token existence and status before accepting data.
 
 ### 🛡️ Admin Panel
-- **User Management**: View, create, and delete user accounts.
+- **User Management**: View, create, edit, and delete user accounts.
+- **Role Management**: Upgrade/Downgrade user roles directly.
 - **Plan Configuration**: Dynamically configure plan limits (Max Webhooks, Expiration, etc.) via the Admin Dashboard.
 - **System Stats**: Overview of total users and active webhooks.
 
@@ -41,15 +44,16 @@ A powerful, secure, and user-friendly webhook inspection and management tool. Qi
 - **React Router** - SPA Navigation
 - **Lucide React** - Modern iconography
 
-### Backend
-- **Node.js & Express** - Robust API server
+### Backend & Infrastructure
+- **Node.js & Express** - Robust API server (for self-hosting/dev)
+- **Cloudflare Pages Functions** - Serverless backend (Production)
 - **Supabase (PostgreSQL)** - Scalable database and real-time capabilities
 - **Bcrypt & JWT** - Secure authentication
 
 ## 📦 Getting Started
 
 ### Prerequisites
-- Node.js (v18 or higher recommended)
+- Node.js (v20 or higher recommended)
 - npm or yarn
 - A **Supabase** project (for database)
 
@@ -79,6 +83,10 @@ A powerful, secure, and user-friendly webhook inspection and management tool. Qi
 
    # JWT Secret (Required for Auth)
    JWT_SECRET=your_secure_random_string
+
+   # PayPal Configuration (For Payments)
+   PAYPAL_CLIENT_ID=your_paypal_client_id
+   PAYPAL_CLIENT_SECRET=your_paypal_secret
    ```
 
 4. **Start the development server**
@@ -86,9 +94,25 @@ A powerful, secure, and user-friendly webhook inspection and management tool. Qi
    npm run dev
    ```
    This command runs both the frontend (Vite) and backend (Node/Express) concurrently.
-
    - **Frontend**: http://localhost:5173
    - **Backend API**: http://localhost:5000 (or your configured PORT)
+
+## ☁️ Deployment (Cloudflare Pages)
+
+This project is optimized for deployment on **Cloudflare Pages** using the full-stack framework (Frontend + Functions).
+
+1. **Prerequisites**:
+   - Cloudflare Account
+   - Wrangler CLI installed (`npm install -g wrangler`)
+
+2. **Configuration**:
+   Ensure `wrangler.toml` is present with `compatibility_flags = ["nodejs_compat"]`.
+
+3. **Deploy**:
+   ```bash
+   npm run deploy
+   ```
+   This script builds the frontend and deploys it along with the `/functions` directory to Cloudflare Pages.
 
 ## 📖 Usage Guide
 
@@ -111,7 +135,7 @@ A powerful, secure, and user-friendly webhook inspection and management tool. Qi
 ### Admin Features
 1. Log in with an Administrator account.
 2. Navigate to **Admin Panel**.
-3. Manage users or adjust Plan Configurations (e.g., increase Free tier limits) directly from the UI.
+3. Manage users, update roles, or adjust Plan Configurations directly from the UI.
 
 ## 🔌 API Endpoints
 
@@ -121,11 +145,16 @@ A powerful, secure, and user-friendly webhook inspection and management tool. Qi
 
 ### Protected (Auth Required)
 - `GET /api/webhooks` - List user's webhooks
-- `GET /api/webhook/:token` - Get webhook details (supports `?summary=true` for lighter payload)
+- `GET /api/webhook/:token` - Get webhook details
 - `POST /api/webhooks` - Create a new webhook
 - `DELETE /api/webhooks/:token` - Delete a webhook
+- `POST /api/auth/change-password` - Change user password
+- `POST /api/auth/mfa/setup` - Setup 2FA
+- `POST /api/auth/mfa/enable` - Enable 2FA
 
 ### Admin Only
 - `GET /api/users` - List all users
 - `POST /api/users` - Create a new user manually
+- `PATCH /api/users/:id` - Update user details (Role, etc.)
+- `DELETE /api/users/:id` - Delete a user and their data
 - `POST /api/plans/update` - Update plan configurations
