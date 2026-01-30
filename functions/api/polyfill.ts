@@ -1,3 +1,9 @@
+import { Buffer } from 'node:buffer';
+
+if (typeof globalThis.Buffer === 'undefined') {
+    globalThis.Buffer = Buffer;
+}
+
 // Polyfill process for Cloudflare Pages if it doesn't exist
 // This prevents crashes in modules that access process.env at the top level
 if (typeof globalThis.process === 'undefined') {
