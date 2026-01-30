@@ -190,6 +190,8 @@ export default function PricingCards() {
 
       if (!(window as any).paypal) {
         const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
+        console.log("PayPal SDK Loading with Client ID:", clientId ? clientId.substring(0, 5) + "..." : "undefined");
+
         if (!clientId) {
           console.error("VITE_PAYPAL_CLIENT_ID not set");
           return;
