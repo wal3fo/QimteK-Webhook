@@ -67,26 +67,31 @@ export function useWebhook(options: { autoSelect?: boolean } = { autoSelect: tru
       });
 
       if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          const fetchedWebhooks = data.webhooks || [];
-          setWebhooks(fetchedWebhooks);
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const data = await response.json();
+          if (data.success) {
+            const fetchedWebhooks = data.webhooks || [];
+            setWebhooks(fetchedWebhooks);
 
-          // Logic to select webhook: Stored > First Available
-          if (options.autoSelect && !selectedWebhook && fetchedWebhooks.length > 0) {
-            const storedToken = localStorage.getItem(WEBHOOK_STORAGE_KEY);
-            let webhookToSelect = null;
+            // Logic to select webhook: Stored > First Available
+            if (options.autoSelect && !selectedWebhook && fetchedWebhooks.length > 0) {
+              const storedToken = localStorage.getItem(WEBHOOK_STORAGE_KEY);
+              let webhookToSelect = null;
 
-            if (storedToken) {
-              webhookToSelect = fetchedWebhooks.find((w: Webhook) => w.token === storedToken);
+              if (storedToken) {
+                webhookToSelect = fetchedWebhooks.find((w: Webhook) => w.token === storedToken);
+              }
+
+              if (!webhookToSelect) {
+                webhookToSelect = fetchedWebhooks[0];
+              }
+
+              setSelectedWebhook(webhookToSelect);
             }
-
-            if (!webhookToSelect) {
-              webhookToSelect = fetchedWebhooks[0];
-            }
-
-            setSelectedWebhook(webhookToSelect);
           }
+        } else {
+           console.error('Fetch webhooks failed: Non-JSON response');
         }
       }
     } catch (err) {

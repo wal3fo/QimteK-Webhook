@@ -55,7 +55,8 @@ export default function AdminUsers() {
             'Authorization': `Bearer ${token}`
           }
         });
-        if (response.ok) {
+        const contentType = response.headers.get('content-type');
+        if (response.ok && contentType && contentType.includes('application/json')) {
           const result = await response.json();
           if (result.success && result.data) {
             setDynamicPlans(result.data);
@@ -81,15 +82,16 @@ export default function AdminUsers() {
         }
       });
 
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Fetch users error: Non-JSON response', text);
+        throw new Error('Received non-JSON response from server');
+      }
+
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Fetch users error:', response.status, errorText);
-        try {
-          const errorJson = JSON.parse(errorText);
-          throw new Error(errorJson.error || `Failed to fetch users (${response.status})`);
-        } catch (e) {
-          throw new Error(`Failed to fetch users (${response.status}): ${errorText.substring(0, 100)}`);
-        }
+        const data = await response.json();
+        throw new Error(data.error || `Failed to fetch users (${response.status})`);
       }
 
       const data = await response.json();

@@ -58,7 +58,12 @@ export default function AdminPlans() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch plans');
+        throw new Error(`Failed to fetch plans: ${response.status}`);
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+         throw new Error('Received non-JSON response from server');
       }
 
       const data = await response.json();

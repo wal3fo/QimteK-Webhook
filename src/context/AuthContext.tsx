@@ -119,6 +119,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email, password, mfa_token }),
       });
 
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Login failed: Non-JSON response', text);
+        return { success: false, error: 'Server error: Invalid response format' };
+      }
+
       const data = await response.json();
 
       if (data.success && data.token) {
@@ -143,6 +150,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
         body: JSON.stringify({ email, password }),
       });
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Registration failed: Non-JSON response', text);
+        return { success: false, error: 'Server error: Invalid response format' };
+      }
 
       const data = await response.json();
 

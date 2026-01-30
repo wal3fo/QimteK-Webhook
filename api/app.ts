@@ -68,6 +68,15 @@ app.get('/api/health', (req: Request, res: Response) => {
   })
 })
 
+// 404 Handler - Must be after all routes
+app.use((req: Request, res: Response) => {
+  res.status(404).json({
+    success: false,
+    error: 'API route not found',
+    path: req.path
+  });
+});
+
 // Error handler
 app.use((error: Error, req: Request, res: Response, _next: NextFunction) => {
   console.error('Error:', error)

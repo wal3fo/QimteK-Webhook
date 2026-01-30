@@ -1,5 +1,3 @@
-import './polyfill';
-
 interface LambdaResponse {
   statusCode: number;
   headers?: { [header: string]: boolean | number | string };
@@ -11,118 +9,139 @@ interface LambdaResponse {
 let handler: any = null;
 
 export const onRequest = async (context: any) => {
-  try {
-    // Populate process.env with Cloudflare environment variables
-    if (context.env) {
-      Object.keys(context.env).forEach(key => {
-        // Safe assignment in case process.env is read-only or proxy
-        try {
-          process.env[key] = context.env[key];
-        } catch (e) {
-          // Ignore
-        }
+  const { request, env } = context;
+  const url = new URL(request.url);
+
+  // 1. Populate process.env with Cloudflare environment variables
+  // This must happen before importing the app
+  if (env) {
+    // Ensure process.env exists
+    if (typeof process === 'undefined') {
+      (globalThis as any).process = { env: {} };
+    } else if (!process.env) {
+      (globalThis as any).process.env = {};
+    }
+
+    Object.keys(env).forEach(key => {
+      try {
+        process.env[key] = env[key];
+      } catch (e) {
+        // Ignore errors if process.env is read-only
+      }
+    });
+
+    // Explicitly set NODE_ENV if not present
+    if (!process.env.NODE_ENV) {
+      process.env.NODE_ENV = 'production';
+    }
+  }
+
+  // 2. Initialize handler if not already done
+  if (!handler) {
+    try {
+      console.log('Lazy loading dependencies...');
+
+      // Dynamic import serverless-http
+      const serverlessModule = await import('serverless-http');
+      const serverless = serverlessModule.default || serverlessModule;
+
+      console.log('Lazy loading app...');
+      // Dynamic import the Express app
+      const appModule = await import('../../api/app');
+      const app = appModule.default;
+
+      // Create the handler
+      handler = serverless(app, {
+        // Optional: Custom request transformation if needed
+        // request: (req: any, event: any, context: any) => { ... }
+      });
+
+      console.log('App loaded successfully');
+    } catch (e: any) {
+      console.error('Failed to load app module:', e);
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Startup Error',
+        details: e.message || String(e),
+        stack: process.env.NODE_ENV === 'development' ? e.stack : undefined
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
       });
     }
+  }
 
-    // Initialize handler if not already done
-    if (!handler) {
+  // 3. Prepare the request for serverless-http
+  // We need to construct a compatible event object
+
+  let body: string | null = null;
+  let isBase64Encoded = false;
+  const contentType = request.headers.get('content-type') || '';
+
+  if (request.method !== 'GET' && request.method !== 'HEAD' && request.body) {
+    if (contentType.includes('application/json') ||
+      contentType.includes('text/') ||
+      contentType.includes('application/x-www-form-urlencoded')) {
       try {
-        console.log('Lazy loading dependencies...');
-
-        // Dynamic import serverless-http to prevent top-level crashes
-        const serverlessModule = await import('serverless-http');
-        const serverless = serverlessModule.default || serverlessModule;
-
-        console.log('Lazy loading app...');
-        const appModule = await import('../../api/app');
-        const app = appModule.default;
-
-        handler = serverless(app);
-        console.log('App loaded successfully');
-      } catch (e: any) {
-        console.error('Failed to load app module:', e);
-        return new Response(JSON.stringify({
-          success: false,
-          error: 'Startup Error',
-          details: e.message || String(e),
-          stack: e.stack
-        }), { status: 500, headers: { 'Content-Type': 'application/json' } });
-      }
-    }
-
-    const request = context.request;
-    const url = new URL(request.url);
-
-    // Prepare body
-    let body: string | null = null;
-    let isBase64Encoded = false;
-    const contentType = request.headers.get('content-type') || '';
-
-    // Only read body if method is not GET/HEAD and body exists
-    if (request.method !== 'GET' && request.method !== 'HEAD' && request.body) {
-      if (contentType.includes('application/json') || contentType.includes('text/') || contentType.includes('application/x-www-form-urlencoded')) {
         body = await request.text();
-      } else {
-        // For binary data, convert to base64
+      } catch (e) {
+        console.error('Error reading request body:', e);
+        body = '';
+      }
+    } else {
+      // Binary data
+      try {
         const arrayBuffer = await request.arrayBuffer();
         body = Buffer.from(arrayBuffer).toString('base64');
         isBase64Encoded = true;
+      } catch (e) {
+        console.error('Error reading binary body:', e);
+        body = '';
       }
     }
+  }
 
-    // Construct a Lambda-compatible event object
-    // This avoids "read only property" errors by not passing the native Request object
-    const event = {
-      httpMethod: request.method,
-      path: url.pathname,
-      rawPath: url.pathname,
-      queryStringParameters: Object.fromEntries(url.searchParams),
-      headers: Object.fromEntries(request.headers),
-      multiValueHeaders: {}, // Some middleware expects this
-      body: body,
-      isBase64Encoded: isBase64Encoded,
-      requestContext: {
-        http: {
-          method: request.method,
-          path: url.pathname,
-          protocol: 'HTTP/1.1'
-        }
+  const event = {
+    httpMethod: request.method,
+    path: url.pathname,
+    rawPath: url.pathname,
+    queryStringParameters: Object.fromEntries(url.searchParams),
+    headers: Object.fromEntries(request.headers),
+    multiValueHeaders: {},
+    body: body,
+    isBase64Encoded: isBase64Encoded,
+    requestContext: {
+      http: {
+        method: request.method,
+        path: url.pathname,
+        protocol: 'HTTP/1.1'
       }
-    };
+    }
+  };
 
-    // Execute the handler with the constructed event
+  try {
+    // 4. Execute the handler
     const result = (await handler(event, context)) as LambdaResponse;
 
-    // Convert Lambda response back to Cloudflare Response
+    // 5. Convert response
     let responseBody: any = result.body;
     if (result.isBase64Encoded) {
       responseBody = Buffer.from(result.body, 'base64');
     }
 
-    // Ensure headers are strings (serverless-http might return numbers/booleans)
-    const headers: Record<string, string> = {};
-    if (result.headers) {
-      Object.entries(result.headers).forEach(([key, value]) => {
-        headers[key] = String(value);
-      });
-    }
-
     return new Response(responseBody, {
       status: result.statusCode,
-      headers: headers
+      headers: result.headers as HeadersInit
     });
-  } catch (error: any) {
-    console.error('Runtime Error:', error);
+  } catch (e: any) {
+    console.error('Runtime Error:', e);
     return new Response(JSON.stringify({
       success: false,
-      error: 'Internal Server Error',
-      details: error.message || String(error),
-      stack: error.stack
+      error: 'Runtime Error',
+      details: e.message || String(e)
     }), {
       status: 500,
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      headers: { 'Content-Type': 'application/json' }
     });
   }
 };
