@@ -1,3 +1,4 @@
+import { verifyJwt } from '../../../utils/jwt';
 import { getSupabase } from '../../../utils/supabase';
 
 // GET /api/webhooks/[token]/requests - Get all requests for a webhook
@@ -6,19 +7,41 @@ export const onRequestGet = async (context: any) => {
     const { params, env, request } = context;
     const { token: webhookToken } = params;
     const url = new URL(request.url);
-    const limit = url.searchParams.get('limit') || '100';
-    const offset = url.searchParams.get('offset') || '0';
-    const summary = url.searchParams.get('summary') || 'false';
+
+    // Safe parsing of limit and offset
+    const limitParam = url.searchParams.get('limit');
+    const offsetParam = url.searchParams.get('offset');
+    const limit = limitParam ? Math.min(Math.max(parseInt(limitParam), 1), 100) : 100;
+    const offset = offsetParam ? Math.max(parseInt(offsetParam), 0) : 0;
+
+    const summary = url.searchParams.get('summary') === 'true';
+
+    // Auth Check (Optional: If you want to enforce ownership)
+    const authHeader = request.headers.get('Authorization');
+    let userId = null;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      const jwtSecret = env.JWT_SECRET || 'your-secret-key-change-in-production';
+      const user = await verifyJwt(token, jwtSecret);
+      if (user) userId = user.id;
+    }
 
     const supabase = getSupabase(env);
 
     // Verify webhook exists and is active
-    const { data: webhook, error: webhookError } = await supabase
+    let query = supabase
       .from('webhooks')
       .select('*')
       .eq('token', webhookToken)
-      .eq('is_active', true)
-      .maybeSingle();
+      .eq('is_active', true);
+
+    // If we have a user, ensure they own it (optional security hardening)
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+
+    const { data: webhook, error: webhookError } = await query.maybeSingle();
 
     if (webhookError || !webhook) {
       return new Response(JSON.stringify({
@@ -36,7 +59,7 @@ export const onRequestGet = async (context: any) => {
       .select('*')
       .eq('webhook_token', webhookToken)
       .order('timestamp', { ascending: false })
-      .range(Number(offset), Number(offset) + Number(limit) - 1);
+      .range(offset, offset + limit - 1);
 
     if (requestsError) throw requestsError;
 
@@ -63,7 +86,6 @@ export const onRequestGet = async (context: any) => {
     };
 
     const parsedRequests = (requests || []).map((req: any) => {
-      const isSummary = summary === 'true';
       const bodySize = req.body ? (typeof req.body === 'string' ? req.body.length : JSON.stringify(req.body).length) : 0;
 
       return {
@@ -71,9 +93,9 @@ export const onRequestGet = async (context: any) => {
         webhook_token: req.webhook_token,
         method: req.method,
         url: req.url,
-        headers: isSummary ? null : parseJsonField(req.headers),
-        body: isSummary ? null : parseJsonField(req.body),
-        query: isSummary ? null : parseJsonField(req.query),
+        headers: summary ? null : parseJsonField(req.headers),
+        body: summary ? null : parseJsonField(req.body),
+        query: summary ? null : parseJsonField(req.query),
         timestamp: req.timestamp,
         ip_address: req.ip_address,
         size: bodySize
@@ -93,7 +115,8 @@ export const onRequestGet = async (context: any) => {
     return new Response(JSON.stringify({
       success: false,
       error: 'Internal Server Error',
-      details: e.message
+      details: e.message,
+      stack: e.stack // Debugging aid
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }

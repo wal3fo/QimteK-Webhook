@@ -72,7 +72,8 @@ export const onRequestGet = async (context: any) => {
         return new Response(JSON.stringify({
             success: false,
             error: 'Internal Server Error',
-            details: e.message
+            details: e.message,
+            stack: e.stack
         }), {
             status: 500,
             headers: { 'Content-Type': 'application/json' }
