@@ -1,10 +1,11 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { getEnv } from './context.js';
 import dotenv from 'dotenv';
 
 // Ensure env vars are loaded (only for local dev where fs is available)
 // In Cloudflare, this is not needed and might crash if process is missing
 try {
-  if (process.env.NODE_ENV !== 'production' && typeof process !== 'undefined') {
+  if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'production') {
     dotenv.config();
   }
 } catch (e) {
@@ -23,12 +24,9 @@ export const supabase = new Proxy({} as SupabaseClient, {
       return supabaseInstance[prop];
     }
 
-    // Initialize on first access
-    // Safe process.env access
-    const env = (typeof process !== 'undefined' && process.env) ? process.env : {};
-
-    const supabaseUrl = env.SUPABASE_URL?.trim();
-    const supabaseKey = (env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || env.SUPABASE_KEY)?.trim();
+    // Initialize on first access using safe env access
+    const supabaseUrl = getEnv('SUPABASE_URL');
+    const supabaseKey = getEnv('SUPABASE_SERVICE_ROLE_KEY') || getEnv('SUPABASE_ANON_KEY') || getEnv('SUPABASE_KEY');
 
     // If keys are missing, use placeholders to prevent crash during module load/init.
     // The actual calls will fail if keys are invalid.
@@ -38,9 +36,6 @@ export const supabase = new Proxy({} as SupabaseClient, {
     if (!supabaseUrl || !supabaseKey) {
       // Only log in production/runtime if we are actually missing keys
       // preventing noise during build
-      if (process.env.NODE_ENV !== 'test') {
-        // console.warn(`[Supabase] Initializing with placeholder URL because env vars are missing. URL: ${url}`);
-      }
     }
 
     supabaseInstance = createClient(url, key, {

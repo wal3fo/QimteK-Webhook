@@ -119,29 +119,11 @@ export const onRequest = async (context: any) => {
     }
   };
 
-  try {
-    // 4. Execute the handler
-    const result = (await handler(event, context)) as LambdaResponse;
+  // Use handler
+  const result = await handler(event, context);
 
-    // 5. Convert response
-    let responseBody: any = result.body;
-    if (result.isBase64Encoded) {
-      responseBody = Buffer.from(result.body, 'base64');
-    }
-
-    return new Response(responseBody, {
-      status: result.statusCode,
-      headers: result.headers as HeadersInit
-    });
-  } catch (e: any) {
-    console.error('Runtime Error:', e);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Runtime Error',
-      details: e.message || String(e)
-    }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
+  return new Response(result.body, {
+    status: result.statusCode,
+    headers: result.headers as any
+  });
 };

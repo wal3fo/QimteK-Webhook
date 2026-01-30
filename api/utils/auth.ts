@@ -10,19 +10,7 @@ import { type Request, type Response, type NextFunction } from 'express';
 import { generateSecret, verify, generateURI } from 'otplib';
 import QRCode from 'qrcode';
 import { supabase } from '../lib/supabase.js';
-
-// Safe environment variable access
-const getEnv = (key: string, defaultValue: string) => {
-  try {
-    if (typeof process !== 'undefined' && process.env) {
-      return process.env[key] || defaultValue;
-    }
-    // Fallback for environments where process is not defined
-    return defaultValue;
-  } catch (e) {
-    return defaultValue;
-  }
-};
+import { getEnv } from '../lib/context.js';
 
 // Helper to get secrets lazily (for Cloudflare Pages compatibility)
 function getJwtSecret() {
