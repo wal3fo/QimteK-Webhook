@@ -13,6 +13,7 @@ import webhookReceiverRoutes from './routes/webhook-receiver.js'
 import authRoutes from './routes/auth.js'
 import userRoutes from './routes/users.js'
 import planRoutes from './routes/plans.js'
+import { getEnv } from './lib/context.js'
 
 const app: express.Application = express()
 
@@ -29,7 +30,7 @@ app.use(cors({
       origin.includes('replit.app') ||
       origin.includes('repl.co') ||
       origin.includes('vercel.app') ||
-      origin === process.env.CLIENT_URL
+      origin === getEnv('CLIENT_URL')
     ) {
       return callback(null, true)
     }
