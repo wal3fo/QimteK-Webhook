@@ -1,7 +1,4 @@
 import './polyfill';
-import serverless from 'serverless-http';
-import app from '../../api/app';
-import { Buffer } from 'node:buffer';
 
 interface LambdaResponse {
   statusCode: number;
@@ -10,15 +7,47 @@ interface LambdaResponse {
   isBase64Encoded: boolean;
 }
 
-const handler = serverless(app);
+// Lazy load handler to ensure polyfills run first and prevent startup crashes
+let handler: any = null;
 
 export const onRequest = async (context: any) => {
   try {
     // Populate process.env with Cloudflare environment variables
     if (context.env) {
       Object.keys(context.env).forEach(key => {
-        process.env[key] = context.env[key];
+        // Safe assignment in case process.env is read-only or proxy
+        try {
+          process.env[key] = context.env[key];
+        } catch (e) {
+          // Ignore
+        }
       });
+    }
+
+    // Initialize handler if not already done
+    if (!handler) {
+      try {
+        console.log('Lazy loading dependencies...');
+
+        // Dynamic import serverless-http to prevent top-level crashes
+        const serverlessModule = await import('serverless-http');
+        const serverless = serverlessModule.default || serverlessModule;
+
+        console.log('Lazy loading app...');
+        const appModule = await import('../../api/app');
+        const app = appModule.default;
+
+        handler = serverless(app);
+        console.log('App loaded successfully');
+      } catch (e: any) {
+        console.error('Failed to load app module:', e);
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Startup Error',
+          details: e.message || String(e),
+          stack: e.stack
+        }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+      }
     }
 
     const request = context.request;
@@ -83,6 +112,7 @@ export const onRequest = async (context: any) => {
       headers: headers
     });
   } catch (error: any) {
+    console.error('Runtime Error:', error);
     return new Response(JSON.stringify({
       success: false,
       error: 'Internal Server Error',
