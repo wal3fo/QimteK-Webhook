@@ -40,6 +40,7 @@ export const onRequestGet = async (context: any) => {
         });
 
     } catch (e: any) {
+        console.error('Webhook Details Error:', e);
         return new Response(JSON.stringify({
             success: false,
             error: 'Internal Server Error',

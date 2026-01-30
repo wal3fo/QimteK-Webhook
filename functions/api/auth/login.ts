@@ -57,6 +57,19 @@ export const onRequestPost = async (context: any) => {
 
     } catch (e: any) {
         console.error('Login error:', e);
+
+        // Return explicit error for configuration issues
+        if (e.message.includes('Configuration Error')) {
+            return new Response(JSON.stringify({
+                success: false,
+                error: 'Server Configuration Error',
+                details: e.message
+            }), {
+                status: 503, // Service Unavailable
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+
         return new Response(JSON.stringify({
             success: false,
             error: 'Internal Server Error',

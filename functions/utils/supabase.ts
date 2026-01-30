@@ -12,11 +12,13 @@ export function getSupabase(env: any) {
   const supabaseKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
 
   if (!supabaseUrl) {
-    throw new Error('SUPABASE_URL is missing in environment variables. Please check your Cloudflare Pages secrets.');
+    console.error('SUPABASE_URL is missing in env');
+    throw new Error('Configuration Error: SUPABASE_URL is missing. Please check Cloudflare Pages settings.');
   }
 
   if (!supabaseKey) {
-    throw new Error('SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY is missing in environment variables. Please check your Cloudflare Pages secrets.');
+    console.error('SUPABASE_KEY is missing in env');
+    throw new Error('Configuration Error: SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY is missing. Please check Cloudflare Pages settings.');
   }
 
   try {

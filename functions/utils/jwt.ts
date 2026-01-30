@@ -67,7 +67,9 @@ export async function verifyJwt(token: string, secret: string) {
 
     const key = await importKey(secret, ["verify"]);
 
-    const signature = Uint8Array.from(atob(signatureB64.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+    const signatureBinStr = base64UrlDecode(signatureB64);
+    const signature = Uint8Array.from(signatureBinStr, c => c.charCodeAt(0));
+    
     const data = new TextEncoder().encode(`${headerB64}.${payloadB64}`);
 
     const isValid = await crypto.subtle.verify(
