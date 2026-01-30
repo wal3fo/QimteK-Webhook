@@ -23,6 +23,10 @@ envContent.split('\n').forEach(line => {
   
   const [key, ...valueParts] = trimmed.split('=');
   if (key && valueParts.length > 0) {
+    const keyTrimmed = key.trim();
+    // Skip NODE_ENV as it is handled by wrangler.toml for production
+    if (keyTrimmed === 'NODE_ENV') return;
+
     const value = valueParts.join('=').trim();
     // Remove quotes if present
     const cleanValue = value.replace(/^['"](.*)['"]$/, '$1');
