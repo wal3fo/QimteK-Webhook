@@ -262,7 +262,8 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
         id: user.id,
         email: user.email,
         role: user.role,
-        mfa_enabled: !!user.mfa_enabled
+        mfa_enabled: !!user.mfa_enabled,
+        plan_expires_at: user.plan_expires_at
       },
     });
   } catch (error: any) {
@@ -308,7 +309,8 @@ router.get('/me', authenticate, async (req: Request, res: Response): Promise<voi
         email: dbUser.email,
         role: role,
         created_at: dbUser.created_at,
-        mfa_enabled: !!dbUser.mfa_enabled
+        mfa_enabled: !!dbUser.mfa_enabled,
+        plan_expires_at: dbUser.plan_expires_at
       },
     });
   } catch (error) {

@@ -23,6 +23,7 @@ interface UserData {
   created_at: string;
   mfa_enabled?: boolean;
   webhook_count?: number;
+  plan_expires_at?: string;
 }
 
 export default function AdminUsers() {
@@ -281,6 +282,21 @@ export default function AdminUsers() {
           </div>
         );
       }
+    },
+    {
+      key: 'plan_expires_at',
+      header: 'Expires',
+      sortable: true,
+      align: 'center',
+      render: (userData) => (
+        userData.role === 'Professional' ? (
+          <span className="text-xs text-qimtek-text-secondary font-mono">
+            {userData.plan_expires_at ? format(new Date(userData.plan_expires_at), 'PP') : 'Never'}
+          </span>
+        ) : (
+          <span className="text-xs text-qimtek-text-tertiary">-</span>
+        )
+      )
     },
     {
       key: 'usage',

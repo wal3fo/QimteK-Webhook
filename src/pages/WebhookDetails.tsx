@@ -167,6 +167,8 @@ export default function WebhookDetails() {
                                 <span className="font-mono">{selectedWebhook?.token}</span>
                                 <span className="w-1 h-1 rounded-full bg-gray-500"></span>
                                 <span>Created {selectedWebhook?.created_at && format(new Date(selectedWebhook.created_at), 'MMM d, yyyy')}</span>
+                                <span className="w-1 h-1 rounded-full bg-gray-500"></span>
+                                <span>Expires {selectedWebhook?.expiresAt && new Date(selectedWebhook.expiresAt).getFullYear() > 2100 ? `Never (${format(new Date(selectedWebhook.expiresAt), 'MMM d, yyyy')})` : (selectedWebhook?.expiresAt ? format(new Date(selectedWebhook.expiresAt), 'MMM d, yyyy') : 'N/A')}</span>
                             </div>
                         </div>
                     </div>

@@ -49,7 +49,8 @@ export const onRequestPost = async (context: any) => {
                 id: user.id,
                 email: user.email,
                 role: user.role,
-                mfa_enabled: !!user.mfa_enabled
+                mfa_enabled: !!user.mfa_enabled,
+                plan_expires_at: user.plan_expires_at
             }
         }), {
             headers: { 'Content-Type': 'application/json' }

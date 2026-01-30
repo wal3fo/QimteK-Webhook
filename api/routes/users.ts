@@ -115,10 +115,10 @@ router.post('/', authenticate, requireAdmin, async (req: Request, res: Response)
 router.get('/', authenticate, requireAdmin, async (req: Request, res: Response): Promise<void> => {
   try {
     // Get all users (exclude password hash)
-    // Try with mfa_enabled first
+    // Try with mfa_enabled and plan_expires_at first
     let query = supabase
       .from('users')
-      .select('id, email, role, created_at, mfa_enabled')
+      .select('id, email, role, created_at, mfa_enabled, plan_expires_at')
       .order('created_at', { ascending: false });
 
     let { data: usersList, error: usersError } = await query;

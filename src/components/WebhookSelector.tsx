@@ -113,7 +113,7 @@ export default function WebhookSelector({ webhooks, selectedWebhook, onSelect }:
                       <div className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {wh.expiresAt && new Date(wh.expiresAt).getFullYear() > 2100
-                          ? 'Never'
+                          ? `Never (${format(new Date(wh.expiresAt), 'MMM d, yyyy')})`
                           : (wh.expiresAt ? format(new Date(wh.expiresAt), 'MMM d, HH:mm') : 'N/A')}
                       </div>
                     </div>

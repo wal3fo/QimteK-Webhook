@@ -121,6 +121,11 @@ export default function Home() {
                   )}>
                     {user?.role === 'Administrator' ? 'ADMIN' : user?.role === 'Professional' ? 'PRO' : 'USER'}
                   </span>
+                  {user?.role === 'Professional' && (
+                    <span className="text-xs text-qimtek-text-secondary hidden xl:inline ml-1">
+                      (Exp: {user.plan_expires_at ? format(new Date(user.plan_expires_at), 'MMM d, yyyy') : 'Never'})
+                    </span>
+                  )}
                 </button>
 
                 {/* Actions */}

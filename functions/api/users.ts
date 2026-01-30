@@ -31,10 +31,10 @@ export const onRequestGet = async (context: any) => {
         // 2. Fetch Users
         const supabase = getSupabase(env);
 
-        // Try with mfa_enabled first
+        // Try with mfa_enabled and plan_expires_at first
         let query = supabase
             .from('users')
-            .select('id, email, role, created_at, mfa_enabled')
+            .select('id, email, role, created_at, mfa_enabled, plan_expires_at')
             .order('created_at', { ascending: false });
 
         let { data: usersList, error: usersError } = await query;

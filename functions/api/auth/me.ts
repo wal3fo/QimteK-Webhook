@@ -46,7 +46,8 @@ export const onRequestGet = async (context: any) => {
         email: dbUser.email,
         role: dbUser.role,
         mfa_enabled: !!dbUser.mfa_enabled,
-        created_at: dbUser.created_at
+        created_at: dbUser.created_at,
+        plan_expires_at: dbUser.plan_expires_at
       }
     }), {
       headers: { 'Content-Type': 'application/json' }

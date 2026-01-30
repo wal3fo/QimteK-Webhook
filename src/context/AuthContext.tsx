@@ -6,6 +6,7 @@ export interface User {
   role: 'Administrator' | 'Professional' | 'user';
   created_at?: string;
   mfa_enabled?: boolean;
+  plan_expires_at?: string;
 }
 
 interface AuthContextType {
