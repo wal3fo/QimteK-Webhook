@@ -115,19 +115,12 @@
 <body>
   <div id="root" class="font-mono"></div>
   <script type="module" src="/src/main.tsx"></script>
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=%VITE_GA_ID%"></script>
+  <!-- Privacy-friendly analytics by Plausible -->
+  <script async src="https://plausible.io/js/pa-AUiuleeKZWZ2K3Ah8WtPQ.js"></script>
   <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag() { dataLayer.push(arguments); }
-    gtag('js', new Date());
-
-    gtag('config', '%VITE_GA_ID%');
+    window.plausible = window.plausible || function () { (plausible.q = plausible.q || []).push(arguments) }, plausible.init = plausible.init || function (i) { plausible.o = i || {} };
+    plausible.init()
   </script>
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=%VITE_ADSENSE_ID%"
-    crossorigin="anonymous"></script>
-  <!-- <script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="%VITE_COOKIEBOT_ID%"
-    type="text/javascript" async></script> -->
 </body>
 
 </html>
