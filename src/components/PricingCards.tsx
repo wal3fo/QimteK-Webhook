@@ -96,106 +96,115 @@ export default function PricingCards() {
     if (showPaymentModal) {
       document.body.style.overflow = 'hidden';
 
-      // Polling to ensure PayPal SDK is loaded
-      const intervalId = setInterval(() => {
-        if ((window as any).paypal && (window as any).paypal.Buttons) {
-          clearInterval(intervalId);
-          try {
-            // Clear previous buttons if any
-            const container = document.getElementById("paypal-container-YATY56ANEDQYJ");
-            if (container) container.innerHTML = "";
+      const renderPayPalButtons = () => {
+        try {
+          const container = document.getElementById("paypal-container-YATY56ANEDQYJ");
+          if (container) container.innerHTML = "";
 
-            (window as any).paypal.Buttons({
-              style: {
-                shape: 'rect',
-                color: 'gold',
-                layout: 'vertical',
-                label: 'pay',
-              },
-              createOrder: (_data: any, actions: any) => {
-                return actions.order.create({
-                  purchase_units: [{
-                    amount: {
-                      value: plans.Professional.price?.toString() || '15.00'
-                    },
-                    description: 'Professional Plan (1 Year)'
-                  }]
+          if (!(window as any).paypal || !(window as any).paypal.Buttons) {
+            console.error("PayPal SDK not loaded or Buttons not available");
+            return;
+          }
+
+          (window as any).paypal.Buttons({
+            style: {
+              shape: 'rect',
+              color: 'gold',
+              layout: 'vertical',
+              label: 'pay',
+            },
+            createOrder: (_data: any, actions: any) => {
+              return actions.order.create({
+                purchase_units: [{
+                  amount: {
+                    value: plans.Professional.price?.toString() || '15.00'
+                  },
+                  description: 'Professional Plan (1 Year)'
+                }]
+              });
+            },
+            onApprove: async (_data: any, actions: any) => {
+              try {
+                const order = await actions.order.capture();
+                console.log('PayPal Order Captured:', order);
+
+                const res = await fetch(`${API_URL}/payments/verify`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    orderID: order.id,
+                    plan: 'PROFESSIONAL',
+                    email: order.payer.email_address,
+                    userId: user?.id
+                  })
                 });
-              },
-              onApprove: async (_data: any, actions: any) => {
-                try {
-                  const order = await actions.order.capture();
-                  console.log('PayPal Order Captured:', order);
 
-                  const res = await fetch(`${API_URL}/payments/verify`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      orderID: order.id,
-                      plan: 'PROFESSIONAL',
-                      email: order.payer.email_address,
-                      userId: user?.id
-                    })
-                  });
-
-                  const result = await res.json();
-                  if (result.success) {
-                    setShowPaymentModal(false);
-                    setStatusModal({
-                      isOpen: true,
-                      title: 'Payment Successful!',
-                      message: 'Your license has been activated successfully. Enjoy the Professional plan! 🚀',
-                      isDanger: false,
-                      type: 'success'
-                    });
-                  } else {
-                    setShowPaymentModal(false);
-                    setStatusModal({
-                      isOpen: true,
-                      title: 'Verification Failed',
-                      message: result.error || 'Unknown error occurred during verification.',
-                      isDanger: true,
-                      type: 'error'
-                    });
-                  }
-                } catch (err) {
-                  console.error('Payment Error:', err);
+                const result = await res.json();
+                if (result.success) {
                   setShowPaymentModal(false);
                   setStatusModal({
                     isOpen: true,
-                    title: 'Payment Error',
-                    message: 'Payment failed to process. Please contact support.',
+                    title: 'Payment Successful!',
+                    message: 'Your license has been activated successfully. Enjoy the Professional plan! 🚀',
+                    isDanger: false,
+                    type: 'success'
+                  });
+                } else {
+                  setShowPaymentModal(false);
+                  setStatusModal({
+                    isOpen: true,
+                    title: 'Verification Failed',
+                    message: result.error || 'Unknown error occurred during verification.',
                     isDanger: true,
                     type: 'error'
                   });
                 }
-              },
-              onError: (err: any) => {
-                console.error('PayPal Error:', err);
+              } catch (err) {
+                console.error('Payment Error:', err);
                 setShowPaymentModal(false);
                 setStatusModal({
                   isOpen: true,
-                  title: 'PayPal Error',
-                  message: 'PayPal encountered an error. Please try again.',
+                  title: 'Payment Error',
+                  message: 'Payment failed to process. Please contact support.',
                   isDanger: true,
                   type: 'error'
                 });
               }
-            }).render("#paypal-container-YATY56ANEDQYJ");
-          } catch (err) {
-            console.error("PayPal render error:", err);
-          }
+            },
+            onError: (err: any) => {
+              console.error('PayPal Error:', err);
+              setShowPaymentModal(false);
+              setStatusModal({
+                isOpen: true,
+                title: 'PayPal Error',
+                message: 'PayPal encountered an error. Please try again.',
+                isDanger: true,
+                type: 'error'
+              });
+            }
+          }).render("#paypal-container-YATY56ANEDQYJ");
+        } catch (err) {
+          console.error("PayPal render error:", err);
         }
-      }, 500);
+      };
 
-      // Timeout after 10 seconds
-      const timeoutId = setTimeout(() => {
-        clearInterval(intervalId);
-      }, 10000);
+      if (!(window as any).paypal) {
+        const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
+        if (!clientId) {
+          console.error("VITE_PAYPAL_CLIENT_ID not set");
+          return;
+        }
+
+        const script = document.createElement('script');
+        script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&components=buttons&disable-funding=venmo&currency=USD`;
+        script.async = true;
+        script.onload = renderPayPalButtons;
+        document.body.appendChild(script);
+      } else {
+        renderPayPalButtons();
+      }
 
       return () => {
-        clearInterval(intervalId);
-        clearTimeout(timeoutId);
         document.body.style.overflow = 'unset';
       };
     }
