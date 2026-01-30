@@ -13,6 +13,7 @@ import webhookReceiverRoutes from './routes/webhook-receiver.js'
 import authRoutes from './routes/auth.js'
 import userRoutes from './routes/users.js'
 import planRoutes from './routes/plans.js'
+import paymentRoutes from './routes/payments.js'
 import { getEnv } from './lib/context.js'
 
 const app: express.Application = express()
@@ -57,6 +58,7 @@ app.get('/api/ping', (_req: Request, res: Response) => {
 app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/plans', planRoutes)
+app.use('/api/payments', paymentRoutes)
 app.use('/api/webhooks', webhookRoutes)
 
 // Health check

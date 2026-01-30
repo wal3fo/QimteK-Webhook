@@ -25,6 +25,12 @@ const LoadingSpinner = () => (
 
 export default function App() {
   useEffect(() => {
+    // Production hostname check
+    if (import.meta.env.PROD && window.location.hostname !== 'qimhook.pages.dev') {
+      window.location.replace(`https://qimhook.pages.dev${window.location.pathname}${window.location.search}${window.location.hash}`);
+      return;
+    }
+
     // Set dark theme attribute
     document.documentElement.setAttribute('data-bs-theme', 'dark');
     document.documentElement.classList.add('dark');

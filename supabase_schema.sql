@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS public.users (
     email TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
     role TEXT NOT NULL CHECK (role IN ('Administrator', 'Professional', 'user')),
+    plan_expires_at TIMESTAMP WITH TIME ZONE,
     is_verified BOOLEAN DEFAULT FALSE,
     verification_token TEXT,
     verification_token_expires_at TIMESTAMP WITH TIME ZONE,
@@ -24,6 +25,10 @@ BEGIN
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'mfa_secret') THEN
         ALTER TABLE public.users ADD COLUMN mfa_secret TEXT;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'plan_expires_at') THEN
+        ALTER TABLE public.users ADD COLUMN plan_expires_at TIMESTAMP WITH TIME ZONE;
     END IF;
 END $$;
 

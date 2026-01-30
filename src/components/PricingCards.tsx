@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Check, X, Loader2, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { PLAN_CONFIG } from '@/config/plans';
+import ConfirmModal from './ConfirmModal';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -12,6 +14,19 @@ export default function PricingCards() {
   const [plans, setPlans] = useState(PLAN_CONFIG);
   const [loading, setLoading] = useState(true);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [statusModal, setStatusModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    isDanger: boolean;
+    type: 'success' | 'error';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    isDanger: false,
+    type: 'success'
+  });
 
   useEffect(() => {
     async function fetchPlans() {
@@ -77,6 +92,122 @@ export default function PricingCards() {
       ));
   };
 
+  useEffect(() => {
+    if (showPaymentModal) {
+      document.body.style.overflow = 'hidden';
+
+      // Polling to ensure PayPal SDK is loaded
+      const intervalId = setInterval(() => {
+        if ((window as any).paypal && (window as any).paypal.Buttons) {
+          clearInterval(intervalId);
+          try {
+            // Clear previous buttons if any
+            const container = document.getElementById("paypal-container-YATY56ANEDQYJ");
+            if (container) container.innerHTML = "";
+
+            (window as any).paypal.Buttons({
+              style: {
+                shape: 'rect',
+                color: 'gold',
+                layout: 'vertical',
+                label: 'pay',
+              },
+              createOrder: (_data: any, actions: any) => {
+                return actions.order.create({
+                  purchase_units: [{
+                    amount: {
+                      value: plans.Professional.price?.toString() || '15.00'
+                    },
+                    description: 'Professional Plan (1 Year)'
+                  }]
+                });
+              },
+              onApprove: async (_data: any, actions: any) => {
+                try {
+                  const order = await actions.order.capture();
+                  console.log('PayPal Order Captured:', order);
+
+                  const res = await fetch(`${API_URL}/payments/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      orderID: order.id,
+                      plan: 'PROFESSIONAL',
+                      email: order.payer.email_address,
+                      userId: user?.id
+                    })
+                  });
+
+                  const result = await res.json();
+                  if (result.success) {
+                    setShowPaymentModal(false);
+                    setStatusModal({
+                      isOpen: true,
+                      title: 'Payment Successful!',
+                      message: 'Your license has been activated successfully. Enjoy the Professional plan! 🚀',
+                      isDanger: false,
+                      type: 'success'
+                    });
+                  } else {
+                    setShowPaymentModal(false);
+                    setStatusModal({
+                      isOpen: true,
+                      title: 'Verification Failed',
+                      message: result.error || 'Unknown error occurred during verification.',
+                      isDanger: true,
+                      type: 'error'
+                    });
+                  }
+                } catch (err) {
+                  console.error('Payment Error:', err);
+                  setShowPaymentModal(false);
+                  setStatusModal({
+                    isOpen: true,
+                    title: 'Payment Error',
+                    message: 'Payment failed to process. Please contact support.',
+                    isDanger: true,
+                    type: 'error'
+                  });
+                }
+              },
+              onError: (err: any) => {
+                console.error('PayPal Error:', err);
+                setShowPaymentModal(false);
+                setStatusModal({
+                  isOpen: true,
+                  title: 'PayPal Error',
+                  message: 'PayPal encountered an error. Please try again.',
+                  isDanger: true,
+                  type: 'error'
+                });
+              }
+            }).render("#paypal-container-YATY56ANEDQYJ");
+          } catch (err) {
+            console.error("PayPal render error:", err);
+          }
+        }
+      }, 500);
+
+      // Timeout after 10 seconds
+      const timeoutId = setTimeout(() => {
+        clearInterval(intervalId);
+      }, 10000);
+
+      return () => {
+        clearInterval(intervalId);
+        clearTimeout(timeoutId);
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [showPaymentModal]);
+
+  const handleStatusModalClose = () => {
+    setStatusModal(prev => ({ ...prev, isOpen: false }));
+    if (statusModal.type === 'success') {
+      window.location.reload();
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -138,7 +269,7 @@ export default function PricingCards() {
           <h3 className="text-3xl md:text-4xl font-bold text-qimtek-text">{plans.Professional.displayName || 'Professional'}</h3>
           <div className="mt-2 flex items-baseline gap-1">
             <span className="text-2xl md:text-3xl font-bold text-qimtek-text">${plans.Professional.price ?? 15}</span>
-            <span className="text-qimtek-text-secondary">/Lifetime</span>
+            <span className="text-qimtek-text-secondary">/Year</span>
           </div>
           <p className="mt-2 text-qimtek-text-secondary text-sm">{plans.Professional.description || 'For developers and teams'}</p>
         </div>
@@ -180,44 +311,39 @@ export default function PricingCards() {
       </div>
 
       {/* Payment Instruction Modal */}
-      {showPaymentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm font-mono">
-          <div className="bg-qimtek-bg-surface border border-qimtek-border rounded-xl max-w-md w-full p-4 md:p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center gap-3 mb-4 text-amber-400">
-              <AlertTriangle className="w-6 h-6 shrink-0" />
-              <h3 className="text-lg font-bold">⚠️ Important Payment Instruction</h3>
-            </div>
+      {showPaymentModal && createPortal(
+        <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/80 backdrop-blur-sm font-mono">
+          <div className="flex min-h-screen items-center justify-center p-4">
+            <div className="bg-qimtek-bg-surface border border-qimtek-border rounded-xl max-w-md w-full p-4 md:p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+              <h3 className="text-xl font-bold text-qimtek-text mb-6 text-center">Complete Your Purchase</h3>
 
-            <p className="text-qimtek-text-secondary mb-6 leading-relaxed text-sm md:text-base">
-              To ensure instant delivery 🚀 of your Professional plan, please make sure to use
-              <span className="text-qimtek-text font-semibold"> the same email address 📧 </span>
-              for the PayPal payment as your QimteK account email:
-            </p>
+              <div id="paypal-container-YATY56ANEDQYJ" className="mb-4 min-h-[50px] w-full z-0"></div>
 
-            <div className="bg-qimtek-bg p-3 rounded-lg border border-qimtek-border mb-6 text-center break-all">
-              <span className="font-mono text-[#82c91e] text-base md:text-lg">{user?.email}</span>
-            </div>
-
-            <div className="flex flex-col-reverse sm:flex-row gap-3">
-              <button
-                onClick={() => setShowPaymentModal(false)}
-                className="flex-1 py-2.5 px-4 bg-qimtek-bg-secondary hover:bg-qimtek-bg-tertiary border border-qimtek-border text-qimtek-text rounded-lg transition-colors font-medium"
-              >
-                Cancel ❌
-              </button>
-              <a
-                href={`${import.meta.env.VITE_PAYPAL_ME_URL}/${plans.Professional.price ?? 15}?currencyCode=USD`}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setShowPaymentModal(false)}
-                className="flex-1 py-2.5 px-4 bg-[#82c91e] hover:bg-[#6ba017] text-black text-center rounded-lg transition-colors font-bold flex items-center justify-center gap-2"
-              >
-                Proceed to PayPal 💳
-              </a>
+              <div className="flex flex-col-reverse sm:flex-row gap-3">
+                <button
+                  onClick={() => setShowPaymentModal(false)}
+                  className="flex-1 py-2.5 px-4 bg-qimtek-bg-secondary hover:bg-qimtek-bg-tertiary border border-qimtek-border text-qimtek-text rounded-lg transition-colors font-medium"
+                >
+                  Cancel ❌
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
+
+      {/* Status Modal */}
+      <ConfirmModal
+        isOpen={statusModal.isOpen}
+        onClose={handleStatusModalClose}
+        onConfirm={handleStatusModalClose}
+        title={statusModal.title}
+        message={statusModal.message}
+        isDanger={statusModal.isDanger}
+        confirmText={statusModal.type === 'success' ? 'Great!' : 'Close'}
+        cancelText={null}
+      />
     </div>
   );
 }
