@@ -261,11 +261,12 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
         mfa_enabled: !!user.mfa_enabled
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error logging in:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to login',
+      details: error.message || String(error)
     });
   }
 });
