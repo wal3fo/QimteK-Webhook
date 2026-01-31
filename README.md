@@ -8,6 +8,9 @@ A powerful, secure, and user-friendly webhook inspection and management tool. Qi
 - **Webhook Management**: Generate unique webhook URLs with customizable names.
 - **Real-time Inspection**: View incoming requests instantly.
 - **Detailed Request Analysis**: Inspect Headers, Body (JSON/Text), Query Parameters, IP addresses, and timestamps.
+- **Advanced Inspection & Filtering**: (Professional) Filter requests by method (GET, POST, etc.) or search by URL/Body content.
+- **Request Replay**: (Professional) One-click replay of any captured request to debug endpoints or retry failed webhooks.
+- **Data Export**: Export webhook request data to JSON or CSV formats for offline analysis.
 - **Smart Parsing**: Automatically handles various content types and detects JSON payloads.
 - **Visual Analytics**: Interactive charts for traffic monitoring (Requests per minute/hour).
 - **Optimized Performance**: "Summary" data fetching for fast chart rendering even with large datasets.
@@ -125,7 +128,9 @@ This project is optimized for deployment on **Cloudflare Pages** using the full-
 ### Inspecting Requests
 1. Click on a webhook card to view its details.
 2. The **Traffic** tab shows real-time request volume.
-3. The **Requests** list shows recent hits. Click one to see the full payload (Headers, Body, etc.).
+3. The **Requests** tab allows you to list, filter, and search through captured requests.
+4. Click "Export" to download your data as JSON or CSV.
+5. Click a request to see full details. Use the **Replay** button to re-send the request (Professional only).
 
 ### Upgrading to Professional
 1. Go to the **Pricing** section.
@@ -148,6 +153,7 @@ This project is optimized for deployment on **Cloudflare Pages** using the full-
 - `GET /api/webhook/:token` - Get webhook details
 - `POST /api/webhooks` - Create a new webhook
 - `DELETE /api/webhooks/:token` - Delete a webhook
+- `POST /api/webhooks/requests/:id/replay` - Replay a request (Professional)
 - `POST /api/auth/change-password` - Change user password
 - `POST /api/auth/mfa/setup` - Setup 2FA
 - `POST /api/auth/mfa/enable` - Enable 2FA

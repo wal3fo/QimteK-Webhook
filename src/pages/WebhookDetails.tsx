@@ -11,11 +11,13 @@ import {
     ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts';
 import { format, isValid, parseISO } from 'date-fns';
-import { cn, METHOD_COLORS } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import { PLAN_CONFIG, PlanRole } from '@/config/plans';
 import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
 import ConfirmModal from '@/components/ConfirmModal';
 import SEO from '@/components/SEO';
+import RequestsTable from '@/components/RequestsTable';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
@@ -32,6 +34,12 @@ export default function WebhookDetails() {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [copied, setCopied] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
+
+    const hasAdvancedFeatures = useMemo(() => {
+        if (!user) return false;
+        const role = (user.role || 'user') as PlanRole;
+        return PLAN_CONFIG[role]?.features.advancedInspection ?? false;
+    }, [user]);
 
     // Initialize
     useEffect(() => {
@@ -94,6 +102,47 @@ export default function WebhookDetails() {
             await deleteWebhook(selectedWebhook.token);
             navigate('/');
         }
+    };
+
+    const handleExport = (format: 'json' | 'csv') => {
+        if (!requests.length) return;
+
+        let content = '';
+        let type = '';
+        const timestamp = new Date().toISOString().split('T')[0];
+        const filename = `webhook-${selectedWebhook?.name || 'export'}-${timestamp}.${format}`;
+
+        if (format === 'json') {
+            content = JSON.stringify(requests, null, 2);
+            type = 'application/json';
+        } else {
+            // CSV
+            const headers = ['ID', 'Method', 'URL', 'Timestamp', 'IP', 'Size', 'Body'];
+            const rows = requests.map(r => {
+                const bodyStr = typeof r.body === 'object' ? JSON.stringify(r.body) : String(r.body || '');
+                return [
+                    r.id,
+                    r.method,
+                    r.url,
+                    r.timestamp,
+                    r.ip_address || '',
+                    r.size || 0,
+                    `"${bodyStr.replace(/"/g, '""')}"` // Escape quotes
+                ].join(',');
+            });
+            content = [headers.join(','), ...rows].join('\n');
+            type = 'text/csv';
+        }
+
+        const blob = new Blob([content], { type });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     };
 
     // Stats
@@ -181,6 +230,20 @@ export default function WebhookDetails() {
                     <div className="flex items-center gap-2">
                         {isAuthenticated && (
                             <>
+                                <div className="relative group">
+                                    <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-qimtek-bg-secondary hover:bg-qimtek-bg-secondary/80 transition-colors text-white">
+                                        <Download className="w-4 h-4" />
+                                        Export
+                                    </button>
+                                    <div className="absolute right-0 mt-2 w-48 bg-qimtek-bg-surface border border-qimtek-border rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                                        <button onClick={() => handleExport('json')} className="w-full text-left px-4 py-2 hover:bg-qimtek-bg-secondary first:rounded-t-lg text-sm">
+                                            Export JSON
+                                        </button>
+                                        <button onClick={() => handleExport('csv')} className="w-full text-left px-4 py-2 hover:bg-qimtek-bg-secondary last:rounded-b-lg text-sm">
+                                            Export CSV
+                                        </button>
+                                    </div>
+                                </div>
                                 <button
                                     onClick={handleToggleActive}
                                     disabled={isUpdating}
@@ -350,60 +413,11 @@ export default function WebhookDetails() {
 
                 {/* Requests Tab */}
                 {activeTab === 'requests' && (
-                    <div className="bg-qimtek-bg-surface rounded-xl border border-qimtek-border overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead className="bg-qimtek-bg-secondary border-b border-qimtek-border">
-                                    <tr>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-qimtek-text-secondary uppercase">Method</th>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-qimtek-text-secondary uppercase">Path</th>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-qimtek-text-secondary uppercase">Time</th>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-qimtek-text-secondary uppercase">Size</th>
-                                        <th className="px-6 py-4 text-right text-xs font-semibold text-qimtek-text-secondary uppercase">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-qimtek-border">
-                                    {requests.map(req => (
-                                        <tr
-                                            key={req.id}
-                                            onClick={() => navigate(`/webhook/${selectedWebhook?.token}/request/${req.id}`)}
-                                            className="hover:bg-qimtek-bg-secondary/50 transition-colors cursor-pointer group"
-                                        >
-                                            <td className="px-6 py-4">
-                                                <span className={cn(
-                                                    "px-2 py-1 rounded text-xs font-bold text-white",
-                                                    METHOD_COLORS[req.method.toUpperCase()] || 'bg-gray-600'
-                                                )}>
-                                                    {req.method}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm font-mono truncate max-w-[200px]">
-                                                {req.url}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-qimtek-text-secondary">
-                                                {format(new Date(req.timestamp), 'MMM d, HH:mm:ss')}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-qimtek-text-secondary">
-                                                {req.size !== undefined ? req.size : (req.body ? JSON.stringify(req.body).length : 0)} B
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <button className="text-[#82c91e] opacity-0 group-hover:opacity-100 transition-opacity text-sm font-medium">
-                                                    Details
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {requests.length === 0 && (
-                                        <tr>
-                                            <td colSpan={5} className="px-6 py-12 text-center text-qimtek-text-secondary">
-                                                No requests captured yet
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <RequestsTable
+                        requests={requests}
+                        hasAdvancedFeatures={hasAdvancedFeatures}
+                        webhookToken={selectedWebhook?.token}
+                    />
                 )}
             </div>
 

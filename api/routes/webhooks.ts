@@ -257,6 +257,75 @@ router.patch('/:token', authenticate, async (req: Request, res: Response): Promi
 });
 
 /**
+ * Replay a request (Duplicate/Re-inject)
+ * POST /api/webhooks/requests/:id/replay
+ */
+router.post('/requests/:id/replay', authenticate, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const user = (req as any).user;
+
+    // Check Plan Access
+    const plans = await getPlans();
+    const userRole = user.role as keyof PlanConfig;
+    const plan = plans[userRole] || plans.user;
+
+    if (!plan.features.requestReplay) {
+      res.status(403).json({ success: false, error: 'Request Replay is available only on Professional plan' });
+      return;
+    }
+
+    // Fetch original request
+    const { data: request, error } = await supabase
+      .from('requests')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !request) {
+      res.status(404).json({ success: false, error: 'Request not found' });
+      return;
+    }
+
+    // Verify ownership
+    const { data: webhook, error: webhookError } = await supabase
+      .from('webhooks')
+      .select('user_id')
+      .eq('token', request.webhook_token)
+      .single();
+
+    if (webhookError || !webhook || webhook.user_id !== user.id) {
+      res.status(403).json({ success: false, error: 'Access denied' });
+      return;
+    }
+
+    // Replay: Create a new request entry with the same data
+    const newRequestId = uuidv4();
+    const { error: insertError } = await supabase
+      .from('requests')
+      .insert({
+        id: newRequestId,
+        webhook_token: request.webhook_token,
+        method: request.method,
+        url: request.url,
+        headers: request.headers,
+        query: request.query,
+        body: request.body,
+        ip_address: 'REPLAY', // Mark as replay
+        timestamp: new Date().toISOString()
+      });
+      
+    if (insertError) throw insertError;
+    
+    res.json({ success: true, newId: newRequestId });
+
+  } catch (error) {
+    console.error('Replay error:', error);
+    res.status(500).json({ success: false, error: 'Failed to replay request' });
+  }
+});
+
+/**
  * Get a single request by ID
  * GET /api/webhooks/requests/:id
  */

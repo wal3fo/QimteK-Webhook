@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Copy, Check, ExternalLink, Edit } from 'lucide-react';
+import { ArrowLeft, Copy, Check, ExternalLink, Edit, Play, Lock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { cn, METHOD_COLORS } from '@/lib/utils';
 import { format, isValid } from 'date-fns';
+import { PLAN_CONFIG, PlanRole } from '@/config/plans';
 import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
 import SEO from '@/components/SEO';
@@ -53,15 +54,44 @@ const getRelativeTime = (dateStr: string) => {
 export default function RequestDetails() {
   const { token: webhookToken, id } = useParams<{ token: string; id: string }>();
   const navigate = useNavigate();
-  const { token, loading: authLoading } = useAuth();
+  const { token, loading: authLoading, user } = useAuth();
   const [request, setRequest] = useState<WebhookRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [replaying, setReplaying] = useState(false);
 
   // View options
   const [formatJson, setFormatJson] = useState(true);
   const [wordWrap, setWordWrap] = useState(true);
+
+  const canReplay = useMemo(() => {
+    if (!user) return false;
+    const role = (user.role || 'user') as PlanRole;
+    return PLAN_CONFIG[role]?.features.requestReplay ?? false;
+  }, [user]);
+
+  const handleReplay = async () => {
+    if (!request || replaying) return;
+    setReplaying(true);
+    try {
+      const res = await fetch(`${API_URL}/webhooks/requests/${id}/replay`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('Request replayed successfully');
+      } else {
+        alert(data.error || 'Failed to replay request');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error replaying request');
+    } finally {
+      setReplaying(false);
+    }
+  };
 
   useEffect(() => {
     if (!id || authLoading) return;
@@ -195,7 +225,38 @@ export default function RequestDetails() {
             <ArrowLeft className="w-4 h-4" />
             <span>Back</span>
           </button>
-          <Logo size="sm" />
+
+          <div className="flex items-center gap-4">
+            <div className="relative group">
+              <button
+                onClick={handleReplay}
+                disabled={!canReplay || replaying}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2 rounded-lg transition-colors border text-xs font-medium",
+                  canReplay
+                    ? "bg-qimtek-bg-secondary border-qimtek-border hover:bg-qimtek-bg-secondary/80 text-white"
+                    : "bg-qimtek-bg-secondary/50 border-qimtek-border/50 text-qimtek-text-secondary cursor-not-allowed opacity-70"
+                )}
+              >
+                {replaying ? (
+                  <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Play className="w-3 h-3" />
+                )}
+                Replay
+              </button>
+              {!canReplay && (
+                <div className="absolute right-0 top-full mt-2 w-48 bg-black/90 text-white text-xs rounded p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 pointer-events-none">
+                  <div className="flex items-center gap-1 mb-1 text-yellow-500 font-bold">
+                    <Lock className="w-3 h-3" />
+                    Pro Feature
+                  </div>
+                  Replay functionality is available in Professional plan.
+                </div>
+              )}
+            </div>
+            <Logo size="sm" />
+          </div>
         </div>
 
         {/* Main Details Section */}

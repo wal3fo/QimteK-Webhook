@@ -267,6 +267,24 @@ export default function Documentation() {
                       <td className="px-6 py-4 text-green-400"><span className="sr-only">Yes</span>✓</td>
                       <td className="px-6 py-4 text-green-400"><span className="sr-only">Yes</span>✓</td>
                     </tr>
+                    <tr>
+                      <td className="px-6 py-4 text-qimtek-text-secondary">Advanced Inspection</td>
+                      <td className="px-6 py-4 text-red-400"><span className="sr-only">No</span>×</td>
+                      <td className="px-6 py-4 text-red-400"><span className="sr-only">No</span>×</td>
+                      <td className="px-6 py-4 text-green-400"><span className="sr-only">Yes</span>✓</td>
+                    </tr>
+                    <tr>
+                      <td className="px-6 py-4 text-qimtek-text-secondary">Request Replay</td>
+                      <td className="px-6 py-4 text-red-400"><span className="sr-only">No</span>×</td>
+                      <td className="px-6 py-4 text-red-400"><span className="sr-only">No</span>×</td>
+                      <td className="px-6 py-4 text-green-400"><span className="sr-only">Yes</span>✓</td>
+                    </tr>
+                    <tr>
+                      <td className="px-6 py-4 text-qimtek-text-secondary">Data Export (CSV/JSON)</td>
+                      <td className="px-6 py-4 text-red-400"><span className="sr-only">No</span>×</td>
+                      <td className="px-6 py-4 text-green-400"><span className="sr-only">Yes</span>✓</td>
+                      <td className="px-6 py-4 text-green-400"><span className="sr-only">Yes</span>✓</td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
