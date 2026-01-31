@@ -26,7 +26,11 @@ const LoadingSpinner = () => (
 export default function App() {
   useEffect(() => {
     // Production hostname check
-    if (import.meta.env.PROD && window.location.hostname !== 'qimhook.pages.dev') {
+    // Allow localhost and preview deployments (*.pages.dev)
+    const isLocal = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1');
+    const isPreview = window.location.hostname.endsWith('.pages.dev') && window.location.hostname !== 'qimhook.pages.dev';
+
+    if (!isLocal && !isPreview && window.location.hostname !== 'qimhook.pages.dev') {
       window.location.replace(`https://qimhook.pages.dev${window.location.pathname}${window.location.search}${window.location.hash}`);
       return;
     }
