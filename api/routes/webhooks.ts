@@ -227,6 +227,45 @@ router.get('/', authenticate, async (req: Request, res: Response): Promise<void>
 });
 
 /**
+ * Get webhook details
+ * GET /api/webhooks/:token
+ */
+router.get('/:token', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { token } = req.params;
+    
+    // Get webhook details (Public access allowed via token)
+    const { data: webhook, error } = await supabase
+      .from('webhooks')
+      .select('*')
+      .eq('token', token)
+      .maybeSingle();
+
+    if (error || !webhook) {
+      res.status(404).json({ success: false, error: 'Webhook not found' });
+      return;
+    }
+
+    res.json({
+      success: true,
+      webhook: {
+        token: webhook.token,
+        name: webhook.name,
+        created_at: webhook.created_at,
+        expires_at: webhook.expires_at,
+        is_active: webhook.is_active,
+        // user_id is internal, but maybe needed for ownership checks in UI?
+        // functions/api/webhooks/[token].ts was returning just token, created_at, expires_at, is_active.
+        // But WebhookDetails.tsx uses it.
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching webhook details:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch webhook details' });
+  }
+});
+
+/**
  * Update webhook status
  * PATCH /api/webhooks/:token
  */
