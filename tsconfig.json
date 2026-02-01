@@ -29,11 +29,13 @@
     },
     "types": [
       "node",
-      "express"
+      "express",
+      "@cloudflare/workers-types"
     ]
   },
   "include": [
     "src",
-    "api"
+    "api",
+    "functions"
   ]
 }
