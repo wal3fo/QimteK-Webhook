@@ -63,7 +63,7 @@ export default function AdminPlans() {
 
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-         throw new Error('Received non-JSON response from server');
+        throw new Error('Received non-JSON response from server');
       }
 
       const data = await response.json();
@@ -317,7 +317,7 @@ export default function AdminPlans() {
                 onClick={handleSave}
                 disabled={saving || loading}
                 className={cn(
-                  "flex items-center gap-2 px-2.5 py-2 sm:px-4 sm:py-2 bg-[#82c91e] text-black rounded-lg font-medium transition-all hover:bg-[#6ba017] disabled:opacity-50",
+                  "flex items-center gap-2 px-2.5 py-2 sm:px-3 sm:py-2 bg-[#82c91e] hover:bg-[#6ba017] text-black rounded-lg transition-colors text-sm font-semibold shadow-lg shadow-[#82c91e]/10",
                   saving && "cursor-wait"
                 )}
               >

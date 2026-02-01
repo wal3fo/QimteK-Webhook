@@ -101,6 +101,7 @@ export const onRequestGet = async (context: any) => {
   }
 };
 
+
 export const onRequestDelete: PagesFunction<Env> = async (context) => {
   const { request, env, params } = context;
   const { token } = params as { token: string };
