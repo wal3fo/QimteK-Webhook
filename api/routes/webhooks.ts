@@ -233,7 +233,7 @@ router.get('/', authenticate, async (req: Request, res: Response): Promise<void>
 router.get('/:token', async (req: Request, res: Response): Promise<void> => {
   try {
     const { token } = req.params;
-    
+
     // Get webhook details (Public access allowed via token)
     const { data: webhook, error } = await supabase
       .from('webhooks')
@@ -246,6 +246,21 @@ router.get('/:token', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    // Get count
+    const { count: requestCount } = await supabase
+      .from('requests')
+      .select('*', { count: 'exact', head: true })
+      .eq('webhook_token', token);
+
+    // Get last request
+    const { data: lastRequest } = await supabase
+      .from('requests')
+      .select('timestamp')
+      .eq('webhook_token', token)
+      .order('timestamp', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
     res.json({
       success: true,
       webhook: {
@@ -254,9 +269,8 @@ router.get('/:token', async (req: Request, res: Response): Promise<void> => {
         created_at: webhook.created_at,
         expires_at: webhook.expires_at,
         is_active: webhook.is_active,
-        // user_id is internal, but maybe needed for ownership checks in UI?
-        // functions/api/webhooks/[token].ts was returning just token, created_at, expires_at, is_active.
-        // But WebhookDetails.tsx uses it.
+        requestCount: requestCount || 0,
+        lastActive: lastRequest?.timestamp || null,
       }
     });
   } catch (error) {
@@ -353,9 +367,9 @@ router.post('/requests/:id/replay', authenticate, async (req: Request, res: Resp
         ip_address: 'REPLAY', // Mark as replay
         timestamp: new Date().toISOString()
       });
-      
+
     if (insertError) throw insertError;
-    
+
     res.json({ success: true, newId: newRequestId });
 
   } catch (error) {
@@ -433,13 +447,12 @@ router.get('/:token/requests', async (req: Request, res: Response): Promise<void
     const { token } = req.params;
     const { limit = 100, offset = 0, summary = 'false' } = req.query;
 
-    // Verify webhook exists and is active
+    // Verify webhook exists
     const { data: webhook, error: webhookError } = await supabase
       .from('webhooks')
       .select('*')
       .eq('token', token)
-      .eq('is_active', true)
-      .single();
+      .maybeSingle();
 
     if (webhookError || !webhook) {
       res.status(404).json({
@@ -509,48 +522,6 @@ router.get('/:token/requests', async (req: Request, res: Response): Promise<void
     res.status(500).json({
       success: false,
       error: 'Failed to fetch requests',
-    });
-  }
-});
-
-/**
- * Get webhook info
- * GET /api/webhooks/:token
- */
-router.get('/:token', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { token } = req.params;
-
-    // Public access allowed via token
-    const { data: webhook, error } = await supabase
-      .from('webhooks')
-      .select('*')
-      .eq('token', token)
-      .eq('is_active', true)
-      .single();
-
-    if (error || !webhook) {
-      res.status(404).json({
-        success: false,
-        error: 'Webhook not found, expired, or access denied',
-      });
-      return;
-    }
-
-    res.json({
-      success: true,
-      webhook: {
-        token: webhook.token,
-        created_at: webhook.created_at,
-        expires_at: webhook.expires_at,
-        is_active: webhook.is_active,
-      },
-    });
-  } catch (error) {
-    console.error('Error fetching webhook:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch webhook',
     });
   }
 });
