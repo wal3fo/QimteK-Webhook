@@ -58,7 +58,7 @@ export default function AdminUsers() {
         });
         const contentType = response.headers.get('content-type');
         if (response.ok && contentType && contentType.includes('application/json')) {
-          const result = await response.json();
+          const result = await response.json() as any;
           if (result.success && result.data) {
             setDynamicPlans(result.data);
           }
@@ -91,11 +91,11 @@ export default function AdminUsers() {
       }
 
       if (!response.ok) {
-        const data = await response.json();
+        const data = await response.json() as any;
         throw new Error(data.error || `Failed to fetch users (${response.status})`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
       if (data.success) {
         setUsers(data.users);
       } else {
@@ -126,7 +126,7 @@ export default function AdminUsers() {
         }
       });
 
-      const data = await response.json();
+      const data = await response.json() as any;
 
       if (data.success) {
         setUsers(users.filter(u => u.id !== userToDelete.id));
@@ -166,7 +166,7 @@ export default function AdminUsers() {
         }
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
 
       if (data.success) {
         // Refresh users list or add to list
@@ -201,7 +201,7 @@ export default function AdminUsers() {
         body: JSON.stringify({ role: newRole })
       });
 
-      const data = await response.json();
+      const data = await response.json() as any;
 
       if (data.success) {
         setUsers(users.map(u => u.id === userToEditRole.id ? { ...u, role: newRole } : u));

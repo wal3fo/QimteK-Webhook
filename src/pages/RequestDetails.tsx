@@ -79,7 +79,7 @@ export default function RequestDetails() {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      const data = await res.json();
+      const data = await res.json() as any;
       if (data.success) {
         alert('Request replayed successfully');
       } else {
@@ -110,7 +110,7 @@ export default function RequestDetails() {
           throw new Error('Failed to fetch request');
         }
 
-        const data = await response.json();
+        const data = await response.json() as any;
         if (data.success) {
           setRequest(data.request);
         } else {

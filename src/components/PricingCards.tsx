@@ -38,7 +38,7 @@ export default function PricingCards() {
             'Cache-Control': 'no-cache'
           }
         });
-        const data = await res.json();
+        const data = await res.json() as any;
         // console.log('Fetched plans:', data);
         if (data.success && data.data) {
           setPlans(data.data);
@@ -139,7 +139,7 @@ export default function PricingCards() {
                   })
                 });
 
-                const result = await res.json();
+                const result = await res.json() as any;
                 if (result.success) {
                   setShowPaymentModal(false);
                   setStatusModal({

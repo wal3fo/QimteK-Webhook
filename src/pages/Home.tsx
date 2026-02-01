@@ -37,7 +37,7 @@ export default function Home() {
       try {
         const response = await fetch(`${API_URL}/plans`);
         if (response.ok) {
-          const result = await response.json();
+          const result = await response.json() as any;
           if (result.success && result.data) {
             setDynamicPlans(result.data);
           }

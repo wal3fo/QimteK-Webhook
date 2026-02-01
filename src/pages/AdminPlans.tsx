@@ -66,7 +66,7 @@ export default function AdminPlans() {
         throw new Error('Received non-JSON response from server');
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
       // console.log('Plans API response:', data);
 
       if (data.success) {
@@ -113,7 +113,7 @@ export default function AdminPlans() {
         throw new Error('Failed to update plans');
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
       if (data.success) {
         setSuccess('Plans updated successfully');
         setTimeout(() => setSuccess(null), 3000);
