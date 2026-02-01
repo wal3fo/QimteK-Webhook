@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { authenticator } from 'otplib';
+import { generateSecret, generateURI, verify } from 'otplib';
 import QRCode from 'qrcode';
 import { createSupabaseClient } from '../lib/supabase';
 
@@ -33,8 +33,12 @@ export function verifyToken(token: string, secret: string): UserPayload | null {
 }
 
 export function generateMfaSecret(email: string) {
-  const secret = authenticator.generateSecret();
-  const otpauth = authenticator.keyuri(email, 'QimteK Webhook', secret);
+  const secret = generateSecret();
+  const otpauth = generateURI({
+    secret,
+    issuer: 'QimteK Webhook',
+    label: email
+  });
   return { secret, otpauth };
 }
 
@@ -44,7 +48,8 @@ export async function generateQrCode(otpauth: string) {
 
 export async function verifyMfaToken(token: string, secret: string) {
   try {
-    return authenticator.verify({ token, secret });
+    const result = await verify({ token, secret });
+    return result.valid;
   } catch (err) {
     return false;
   }
