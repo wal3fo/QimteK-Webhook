@@ -81,14 +81,19 @@ export default function WebhookDetails() {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}` // Should use useAuth token but for quick access
+                    'Authorization': `Bearer ${authToken}`
                 },
                 body: JSON.stringify({ is_active: !selectedWebhook.is_active })
             });
 
             if (response.ok) {
+                // Optimistic update
+                setSelectedWebhook({
+                    ...selectedWebhook,
+                    is_active: !selectedWebhook.is_active
+                });
                 // Refresh webhooks to get updated state
-                fetchWebhooks();
+                await fetchWebhooks();
             }
         } catch (err) {
             console.error('Failed to toggle status', err);

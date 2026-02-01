@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import WebhookDetails from '../pages/WebhookDetails';
 import { useAuth } from '../hooks/useAuth';
 import { useWebhook } from '../hooks/useWebhook';
@@ -146,5 +146,48 @@ describe('WebhookDetails', () => {
     fireEvent.click(exportJsonBtn);
 
     expect(global.URL.createObjectURL).toHaveBeenCalled();
+  });
+
+  it('toggles webhook status when Disable/Enable button is clicked', async () => {
+    const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true })
+    } as Response);
+
+    const setSelectedWebhook = vi.fn();
+    (useWebhook as any).mockReturnValue({
+      selectedWebhook: { name: 'Test Webhook', token: 'test-token', is_active: true, url: 'http://test.com' },
+      webhooks: [],
+      requests: mockRequests,
+      loading: false,
+      fetchRequests: vi.fn(),
+      fetchWebhook: vi.fn(),
+      deleteWebhook: vi.fn(),
+      setSelectedWebhook,
+      fetchWebhooks: vi.fn().mockResolvedValue(undefined),
+    });
+
+    render(<WebhookDetails />);
+
+    const disableBtn = screen.getByText('Disable');
+    fireEvent.click(disableBtn);
+
+    await waitFor(() => {
+        expect(fetchSpy).toHaveBeenCalledWith(
+          expect.stringContaining('/webhooks/test-token'),
+          expect.objectContaining({
+            method: 'PATCH',
+            headers: expect.objectContaining({
+              'Authorization': 'Bearer auth-token',
+              'Content-Type': 'application/json'
+            }),
+            body: JSON.stringify({ is_active: false })
+          })
+        );
+    });
+
+    expect(setSelectedWebhook).toHaveBeenCalledWith(expect.objectContaining({
+        is_active: false
+    }));
   });
 });
