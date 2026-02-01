@@ -1,16 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { getEnv } from './context.js';
-import dotenv from 'dotenv';
-
-// Ensure env vars are loaded (only for local dev where fs is available)
-// In Cloudflare, this is not needed and might crash if process is missing
-try {
-  if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'production') {
-    dotenv.config();
-  }
-} catch (e) {
-  // Ignore dotenv errors
-}
 
 let supabaseInstance: SupabaseClient | null = null;
 
