@@ -1,5 +1,5 @@
 
-import { createSupabaseClient } from '../../lib/supabase';
+import { createSupabaseClient } from '../lib/supabase';
 
 interface Env {
   PAYPAL_CLIENT_ID: string;

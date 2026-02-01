@@ -62,11 +62,11 @@ export async function authenticate(request: Request, env: any): Promise<UserPayl
 
   const token = authHeader.split(' ')[1];
   const secret = env.JWT_SECRET || 'your-secret-key-change-in-production';
-  
+
   const decoded = verifyToken(token, secret);
 
   if (!decoded) {
-     return new Response(JSON.stringify({
+    return new Response(JSON.stringify({
       success: false,
       error: 'Invalid token'
     }), { status: 401, headers: { 'Content-Type': 'application/json' } });
@@ -80,22 +80,22 @@ export async function authenticate(request: Request, env: any): Promise<UserPayl
     .single();
 
   if (error || !user) {
-      return new Response(JSON.stringify({
+    return new Response(JSON.stringify({
       success: false,
       error: 'User not found'
     }), { status: 401, headers: { 'Content-Type': 'application/json' } });
   }
 
-   if (!user.is_verified) {
-      return new Response(JSON.stringify({
+  if (!user.is_verified) {
+    return new Response(JSON.stringify({
       success: false,
       error: 'User is not verified'
     }), { status: 403, headers: { 'Content-Type': 'application/json' } });
   }
 
   return {
-      id: user.id,
-      email: user.email,
-      role: user.role
+    id: user.id,
+    email: user.email,
+    role: user.role
   } as UserPayload;
 }
