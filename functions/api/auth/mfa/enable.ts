@@ -12,25 +12,25 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     try {
       const authHeader = context.request.headers.get('Authorization');
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return new Response(JSON.stringify({ success: false, error: 'No token provided' }), { status: 401 });
+        return new Response(JSON.stringify({ success: false, error: 'No token provided' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
       }
 
       const tokenStr = authHeader.substring(7);
       const user = verifyToken(tokenStr);
 
       if (!user) {
-        return new Response(JSON.stringify({ success: false, error: 'Invalid or expired token' }), { status: 401 });
+        return new Response(JSON.stringify({ success: false, error: 'Invalid or expired token' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
       }
 
       const { token, secret } = await context.request.json() as any;
 
       if (!token || !secret) {
-        return new Response(JSON.stringify({ success: false, error: 'Token and secret are required' }), { status: 400 });
+        return new Response(JSON.stringify({ success: false, error: 'Token and secret are required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
 
       const isValid = await verifyMfaToken(token, secret);
       if (!isValid) {
-        return new Response(JSON.stringify({ success: false, error: 'Invalid MFA token' }), { status: 400 });
+        return new Response(JSON.stringify({ success: false, error: 'Invalid MFA token' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
 
       const { error: updateError } = await supabase
@@ -50,7 +50,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     } catch (error: any) {
       console.error('Error enabling MFA:', error);
-      return new Response(JSON.stringify({ success: false, error: 'Failed to enable MFA' }), { status: 500 });
+      return new Response(JSON.stringify({ success: false, error: 'Failed to enable MFA' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
   });
 };

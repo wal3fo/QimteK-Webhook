@@ -14,7 +14,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       const { email, password, mfa_token } = await context.request.json() as any;
 
       if (!email || !password) {
-        return new Response(JSON.stringify({ success: false, error: 'Email and password are required' }), { status: 400 });
+        return new Response(JSON.stringify({ success: false, error: 'Email and password are required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
 
       const { data: user, error: fetchError } = await supabase
@@ -24,13 +24,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         .single();
 
       if (fetchError || !user) {
-        return new Response(JSON.stringify({ success: false, error: 'Invalid email or password' }), { status: 401 });
+        return new Response(JSON.stringify({ success: false, error: 'Invalid email or password' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
       }
 
       const isValidPassword = await comparePassword(password, user.password_hash);
 
       if (!isValidPassword) {
-        return new Response(JSON.stringify({ success: false, error: 'Invalid email or password' }), { status: 401 });
+        return new Response(JSON.stringify({ success: false, error: 'Invalid email or password' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
       }
 
       if (user.mfa_enabled) {
@@ -39,12 +39,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
             success: false,
             error: 'MFA code required',
             mfa_required: true
-          }), { status: 403 });
+          }), { status: 403, headers: { 'Content-Type': 'application/json' } });
         }
 
         const isValidMfa = await verifyMfaToken(mfa_token, user.mfa_secret);
         if (!isValidMfa) {
-           return new Response(JSON.stringify({ success: false, error: 'Invalid MFA code' }), { status: 401 });
+          return new Response(JSON.stringify({ success: false, error: 'Invalid MFA code' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
         }
       }
 
@@ -68,7 +68,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     } catch (error: any) {
       console.error('Error logging in:', error);
-      return new Response(JSON.stringify({ success: false, error: 'Failed to login', details: error.message }), { status: 500 });
+      return new Response(JSON.stringify({ success: false, error: 'Failed to login', details: error.message }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
   });
 };

@@ -12,24 +12,24 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     try {
       const authHeader = context.request.headers.get('Authorization');
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return new Response(JSON.stringify({ success: false, error: 'No token provided' }), { status: 401 });
+        return new Response(JSON.stringify({ success: false, error: 'No token provided' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
       }
 
       const tokenStr = authHeader.substring(7);
       const user = verifyToken(tokenStr);
 
       if (!user) {
-        return new Response(JSON.stringify({ success: false, error: 'Invalid or expired token' }), { status: 401 });
+        return new Response(JSON.stringify({ success: false, error: 'Invalid or expired token' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
       }
 
       const { currentPassword, newPassword } = await context.request.json() as any;
 
       if (!currentPassword || !newPassword) {
-        return new Response(JSON.stringify({ success: false, error: 'Current and new password are required' }), { status: 400 });
+        return new Response(JSON.stringify({ success: false, error: 'Current and new password are required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
 
       if (newPassword.length < 6) {
-        return new Response(JSON.stringify({ success: false, error: 'New password must be at least 6 characters' }), { status: 400 });
+        return new Response(JSON.stringify({ success: false, error: 'New password must be at least 6 characters' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
 
       const { data: dbUser, error } = await supabase
@@ -39,12 +39,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         .single();
 
       if (error || !dbUser) {
-        return new Response(JSON.stringify({ success: false, error: 'User not found' }), { status: 404 });
+        return new Response(JSON.stringify({ success: false, error: 'User not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
       }
 
       const isValidPassword = await comparePassword(currentPassword, dbUser.password_hash);
       if (!isValidPassword) {
-        return new Response(JSON.stringify({ success: false, error: 'Incorrect current password' }), { status: 401 });
+        return new Response(JSON.stringify({ success: false, error: 'Incorrect current password' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
       }
 
       const newPasswordHash = await hashPassword(newPassword);
@@ -63,7 +63,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     } catch (error: any) {
       console.error('Error changing password:', error);
-      return new Response(JSON.stringify({ success: false, error: 'Failed to change password' }), { status: 500 });
+      return new Response(JSON.stringify({ success: false, error: 'Failed to change password' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
   });
 };

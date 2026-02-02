@@ -12,14 +12,14 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     try {
       const authHeader = context.request.headers.get('Authorization');
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return new Response(JSON.stringify({ success: false, error: 'No token provided' }), { status: 401 });
+        return new Response(JSON.stringify({ success: false, error: 'No token provided' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
       }
 
       const tokenStr = authHeader.substring(7);
       const user = verifyToken(tokenStr);
 
       if (!user) {
-        return new Response(JSON.stringify({ success: false, error: 'Invalid or expired token' }), { status: 401 });
+        return new Response(JSON.stringify({ success: false, error: 'Invalid or expired token' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
       }
 
       const { password } = await context.request.json() as any;
@@ -32,12 +32,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           .single();
 
         if (error || !dbUser) {
-          return new Response(JSON.stringify({ success: false, error: 'User not found' }), { status: 404 });
+          return new Response(JSON.stringify({ success: false, error: 'User not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
         }
 
         const isValid = await comparePassword(password, dbUser.password_hash);
         if (!isValid) {
-          return new Response(JSON.stringify({ success: false, error: 'Invalid password' }), { status: 401 });
+          return new Response(JSON.stringify({ success: false, error: 'Invalid password' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
         }
       }
 
@@ -58,7 +58,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     } catch (error: any) {
       console.error('Error disabling MFA:', error);
-      return new Response(JSON.stringify({ success: false, error: 'Failed to disable MFA' }), { status: 500 });
+      return new Response(JSON.stringify({ success: false, error: 'Failed to disable MFA' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
   });
 };

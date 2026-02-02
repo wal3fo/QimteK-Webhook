@@ -13,7 +13,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       const token = url.searchParams.get('token');
 
       if (!token) {
-        return new Response(JSON.stringify({ success: false, error: 'Invalid verification token' }), { status: 400 });
+        return new Response(JSON.stringify({ success: false, error: 'Invalid verification token' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
 
       // Find user with this token
@@ -24,12 +24,12 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         .maybeSingle();
 
       if (fetchError || !user) {
-        return new Response(JSON.stringify({ success: false, error: 'Invalid or expired verification token' }), { status: 400 });
+        return new Response(JSON.stringify({ success: false, error: 'Invalid or expired verification token' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
 
       // Check if token expired
       if (user.verification_token_expires_at && new Date(user.verification_token_expires_at) < new Date()) {
-        return new Response(JSON.stringify({ success: false, error: 'Verification token has expired' }), { status: 400 });
+        return new Response(JSON.stringify({ success: false, error: 'Verification token has expired' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
 
       // Update user status
@@ -52,7 +52,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
     } catch (error: any) {
       console.error('Error verifying email:', error);
-      return new Response(JSON.stringify({ success: false, error: 'Failed to verify email' }), { status: 500 });
+      return new Response(JSON.stringify({ success: false, error: 'Failed to verify email' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
   });
 };

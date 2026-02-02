@@ -15,16 +15,16 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       const { email, password } = await context.request.json() as any;
 
       if (!email || !password) {
-        return new Response(JSON.stringify({ success: false, error: 'Email and password are required' }), { status: 400 });
+        return new Response(JSON.stringify({ success: false, error: 'Email and password are required' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
 
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
-         return new Response(JSON.stringify({ success: false, error: 'Invalid email format' }), { status: 400 });
+        return new Response(JSON.stringify({ success: false, error: 'Invalid email format' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
 
       if (password.length < 6) {
-         return new Response(JSON.stringify({ success: false, error: 'Password must be at least 6 characters' }), { status: 400 });
+        return new Response(JSON.stringify({ success: false, error: 'Password must be at least 6 characters' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
 
       const { data: existingUser } = await supabase
@@ -34,7 +34,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         .maybeSingle();
 
       if (existingUser) {
-        return new Response(JSON.stringify({ success: false, error: 'User already exists' }), { status: 409 });
+        return new Response(JSON.stringify({ success: false, error: 'User already exists' }), { status: 409, headers: { 'Content-Type': 'application/json' } });
       }
 
       const passwordHash = await hashPassword(password);
@@ -55,7 +55,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
       if (error) {
         console.error('Error creating user:', error);
-        return new Response(JSON.stringify({ success: false, error: 'Failed to create user' }), { status: 500 });
+        return new Response(JSON.stringify({ success: false, error: 'Failed to create user' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
       }
 
       const token = generateToken({
@@ -77,7 +77,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     } catch (error: any) {
       console.error('Error registering user:', error);
-      return new Response(JSON.stringify({ success: false, error: 'Failed to register' }), { status: 500 });
+      return new Response(JSON.stringify({ success: false, error: 'Failed to register' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
   });
 };
