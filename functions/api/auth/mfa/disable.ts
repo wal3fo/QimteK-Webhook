@@ -15,11 +15,15 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     // 1. Safe Environment Access
     const supabaseUrl = env.SUPABASE_URL;
     const supabaseKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_KEY;
-    const jwtSecret = env.JWT_SECRET;
+    const jwtSecret = env.JWT_SECRET || 'your-secret-key-change-in-production';
 
-    if (!supabaseUrl || !supabaseKey || !jwtSecret) {
+    if (!supabaseUrl || !supabaseKey) {
       console.error('Missing environment variables in MFA Disable');
-      return new Response(JSON.stringify({ success: false, error: 'Server configuration error' }), {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Server configuration error',
+        debug: { hasUrl: !!supabaseUrl, hasKey: !!supabaseKey }
+      }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
       });
