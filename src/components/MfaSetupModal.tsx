@@ -8,11 +8,13 @@ const API_URL = import.meta.env.VITE_API_URL || '/api';
 interface MfaSetupModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onComplete?: () => void;
 }
 
 export default function MfaSetupModal({
   isOpen,
-  onClose
+  onClose,
+  onComplete
 }: MfaSetupModalProps) {
   const { user, token, checkSession } = useAuth();
   const [step, setStep] = useState<'initial' | 'setup' | 'verify' | 'success' | 'disable_confirm' | 'disable_success'>('initial');

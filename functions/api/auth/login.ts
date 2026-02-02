@@ -1,4 +1,5 @@
 
+import { PagesFunction } from '@cloudflare/workers-types';
 import { supabase } from '../../../api/lib/supabase';
 import { comparePassword, generateToken, verifyMfaToken } from '../../../api/utils/auth';
 import { envContext } from '../../../api/lib/context';

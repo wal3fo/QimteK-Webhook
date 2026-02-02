@@ -1,4 +1,5 @@
 
+import { PagesFunction } from '@cloudflare/workers-types';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../../../api/lib/supabase';
 import { hashPassword, generateToken } from '../../../api/utils/auth';
