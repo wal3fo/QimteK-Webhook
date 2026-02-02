@@ -19,6 +19,7 @@ export default function Footer() {
     ],
     resources: [
       { name: 'GitHub Repository', href: import.meta.env.VITE_GITHUB_URL, external: true },
+      { name: 'Privacy Policy', href: '/privacy-policy', external: false },
       { name: 'Documentation', href: '#docs' },
       { name: 'Support', href: import.meta.env.VITE_PAYPAL_URL, external: true },
     ],
@@ -193,7 +194,21 @@ export default function Footer() {
             </div>
 
             {/* Support Link */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
+              <Link
+                to="/privacy-policy"
+                className={cn(
+                  'inline-flex items-center gap-2 px-4 py-2 rounded-lg',
+                  'bg-qimtek-bg-secondary border border-qimtek-border',
+                  'hover:bg-yellow-500/10 hover:border-yellow-500/30',
+                  'text-sm text-qimtek-text-secondary hover:text-yellow-500',
+                  'transition-all duration-200',
+                  'touch-manipulation font-medium'
+                )}
+                aria-label="Privacy Policy">
+                <Shield className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                <span>Privacy Policy</span>
+              </Link>
               <Link
                 to="/docs"
                 className={cn(
@@ -201,11 +216,11 @@ export default function Footer() {
                   'bg-qimtek-bg-secondary border border-qimtek-border',
                   'hover:bg-[#82c91e]/10 hover:border-[#82c91e]/30',
                   'text-sm text-qimtek-text-secondary hover:text-[#82c91e]',
-                  'transition-all duration-200 hover:scale-105 active:scale-95',
+                  'transition-all duration-200',
                   'touch-manipulation font-medium'
                 )}
                 aria-label="Documentation">
-                <Book className="w-4 h-4 text-[#82c91e]" />
+                <Book className="w-4 h-4 text-[#82c91e] fill-[#82c91e]" />
                 <span>Documentation</span>
               </Link>
               <a
@@ -215,13 +230,13 @@ export default function Footer() {
                 className={cn(
                   'inline-flex items-center gap-2 px-4 py-2 rounded-lg',
                   'bg-qimtek-bg-secondary border border-qimtek-border',
-                  'hover:bg-[#82c91e]/10 hover:border-[#82c91e]/30',
-                  'text-sm text-qimtek-text-secondary hover:text-[#82c91e]',
-                  'transition-all duration-200 hover:scale-105 active:scale-95',
+                  'hover:bg-purple-500/10 hover:border-purple-500/30',
+                  'text-sm text-qimtek-text-secondary hover:text-purple-500',
+                  'transition-all duration-200',
                   'touch-manipulation font-medium'
                 )}
                 aria-label="Support us on PayPal">
-                <Heart className="w-4 h-4 text-red-500" />
+                <Heart className="w-4 h-4 text-purple-500 fill-purple-500" />
                 <span>Support Our Work</span>
               </a>
             </div>

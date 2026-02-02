@@ -232,7 +232,7 @@ export default function Home() {
               <div className="flex items-center gap-3">
                 {/* Usage Badge */}
                 <div className={cn(
-                  'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border',
+                  'inline-flex items-center rounded-lg gap-2 px-2.5 py-2 sm:px-3 sm:py-2 text-sm font-medium border',
                   webhooks.length >= maxWebhooks
                     ? 'bg-red-900/30 text-red-300 border-red-700/50'
                     : 'bg-blue-900/30 text-blue-300 border-blue-700/50'
@@ -242,7 +242,7 @@ export default function Home() {
 
                 <button
                   onClick={() => setShowGenerateModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-[#82c91e] text-black rounded-lg font-semibold hover:bg-[#6ba017] transition-all shadow-lg shadow-[#82c91e]/20"
+                  className="flex items-center rounded-lg gap-2 px-2.5 py-2 sm:px-3 sm:py-2 bg-[#82c91e] hover:bg-[#6ba017] text-black rounded-lg transition-colors text-sm font-semibold shadow-lg shadow-[#82c91e]/10"
                 >
                   <Plus className="w-4 h-4" />
                   New Webhook

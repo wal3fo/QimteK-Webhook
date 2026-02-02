@@ -8,6 +8,7 @@ const Login = lazy(() => import("@/pages/Login"));
 const AdminUsers = lazy(() => import("@/pages/AdminUsers"));
 const AdminPlans = lazy(() => import("@/pages/AdminPlans"));
 const Documentation = lazy(() => import("@/pages/Documentation"));
+const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy"));
 const WebhookDetails = lazy(() => import("@/pages/WebhookDetails"));
 
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -56,6 +57,7 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/docs" element={<Documentation />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route
               path="/webhook/:token"
               element={<WebhookDetails />}
