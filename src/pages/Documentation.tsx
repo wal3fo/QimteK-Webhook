@@ -5,10 +5,29 @@ import { cn } from '@/lib/utils';
 import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
 import SEO from '@/components/SEO';
+import { PLAN_CONFIG } from '@/config/plans';
+
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export default function Documentation() {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('introduction');
+  const [plans, setPlans] = useState(PLAN_CONFIG);
+
+  useEffect(() => {
+    async function fetchPlans() {
+      try {
+        const res = await fetch(`${API_URL}/plans`);
+        const data = await res.json() as any;
+        if (data.success && data.data) {
+          setPlans(data.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch plans', err);
+      }
+    }
+    fetchPlans();
+  }, []);
 
   // Handle scroll spy for active section
   useEffect(() => {
@@ -243,7 +262,6 @@ export default function Documentation() {
                   <thead className="bg-qimtek-bg-surface border-b border-qimtek-border">
                     <tr>
                       <th className="px-6 py-3 font-semibold text-qimtek-text">Feature</th>
-                      <th className="px-6 py-3 font-semibold text-qimtek-text">Guest</th>
                       <th className="px-6 py-3 font-semibold text-[#82c91e]">User</th>
                       <th className="px-6 py-3 font-semibold text-blue-400">Professional</th>
                     </tr>
@@ -251,39 +269,49 @@ export default function Documentation() {
                   <tbody className="divide-y divide-qimtek-border bg-qimtek-bg-secondary/20">
                     <tr>
                       <td className="px-6 py-4 text-qimtek-text-secondary">Webhook Expiration</td>
-                      <td className="px-6 py-4 text-qimtek-text-tertiary">Session only</td>
-                      <td className="px-6 py-4 text-qimtek-text">72 Hours</td>
-                      <td className="px-6 py-4 text-qimtek-text font-bold">Never</td>
+                      <td className="px-6 py-4 text-qimtek-text">{plans.user.webhookExpirationHours > 0 ? `${plans.user.webhookExpirationHours} Hours` : 'Never'}</td>
+                      <td className="px-6 py-4 text-qimtek-text font-bold">{plans.Professional.webhookExpirationHours > 0 ? `${plans.Professional.webhookExpirationHours} Hours` : 'Never'}</td>
                     </tr>
                     <tr>
                       <td className="px-6 py-4 text-qimtek-text-secondary">Max Webhooks</td>
-                      <td className="px-6 py-4 text-qimtek-text-tertiary">1</td>
-                      <td className="px-6 py-4 text-qimtek-text">1</td>
-                      <td className="px-6 py-4 text-qimtek-text">5</td>
+                      <td className="px-6 py-4 text-qimtek-text">{plans.user.maxWebhooks}</td>
+                      <td className="px-6 py-4 text-qimtek-text">{plans.Professional.maxWebhooks}</td>
                     </tr>
                     <tr>
                       <td className="px-6 py-4 text-qimtek-text-secondary">Custom Aliases</td>
-                      <td className="px-6 py-4 text-red-400"><span className="sr-only">No</span>×</td>
-                      <td className="px-6 py-4 text-green-400"><span className="sr-only">Yes</span>✓</td>
-                      <td className="px-6 py-4 text-green-400"><span className="sr-only">Yes</span>✓</td>
+                      <td className={cn("px-6 py-4", plans.user.features.customAliases ? "text-green-400" : "text-red-400")}>
+                        {plans.user.features.customAliases ? <><span className="sr-only">Yes</span>✓</> : <><span className="sr-only">No</span>×</>}
+                      </td>
+                      <td className={cn("px-6 py-4", plans.Professional.features.customAliases ? "text-green-400" : "text-red-400")}>
+                        {plans.Professional.features.customAliases ? <><span className="sr-only">Yes</span>✓</> : <><span className="sr-only">No</span>×</>}
+                      </td>
                     </tr>
                     <tr>
                       <td className="px-6 py-4 text-qimtek-text-secondary">Advanced Inspection</td>
-                      <td className="px-6 py-4 text-red-400"><span className="sr-only">No</span>×</td>
-                      <td className="px-6 py-4 text-red-400"><span className="sr-only">No</span>×</td>
-                      <td className="px-6 py-4 text-green-400"><span className="sr-only">Yes</span>✓</td>
+                      <td className={cn("px-6 py-4", plans.user.features.advancedInspection ? "text-green-400" : "text-red-400")}>
+                        {plans.user.features.advancedInspection ? <><span className="sr-only">Yes</span>✓</> : <><span className="sr-only">No</span>×</>}
+                      </td>
+                      <td className={cn("px-6 py-4", plans.Professional.features.advancedInspection ? "text-green-400" : "text-red-400")}>
+                        {plans.Professional.features.advancedInspection ? <><span className="sr-only">Yes</span>✓</> : <><span className="sr-only">No</span>×</>}
+                      </td>
                     </tr>
                     <tr>
                       <td className="px-6 py-4 text-qimtek-text-secondary">Request Replay</td>
-                      <td className="px-6 py-4 text-red-400"><span className="sr-only">No</span>×</td>
-                      <td className="px-6 py-4 text-red-400"><span className="sr-only">No</span>×</td>
-                      <td className="px-6 py-4 text-green-400"><span className="sr-only">Yes</span>✓</td>
+                      <td className={cn("px-6 py-4", plans.user.features.requestReplay ? "text-green-400" : "text-red-400")}>
+                        {plans.user.features.requestReplay ? <><span className="sr-only">Yes</span>✓</> : <><span className="sr-only">No</span>×</>}
+                      </td>
+                      <td className={cn("px-6 py-4", plans.Professional.features.requestReplay ? "text-green-400" : "text-red-400")}>
+                        {plans.Professional.features.requestReplay ? <><span className="sr-only">Yes</span>✓</> : <><span className="sr-only">No</span>×</>}
+                      </td>
                     </tr>
                     <tr>
                       <td className="px-6 py-4 text-qimtek-text-secondary">Data Export (CSV/JSON)</td>
-                      <td className="px-6 py-4 text-red-400"><span className="sr-only">No</span>×</td>
-                      <td className="px-6 py-4 text-green-400"><span className="sr-only">Yes</span>✓</td>
-                      <td className="px-6 py-4 text-green-400"><span className="sr-only">Yes</span>✓</td>
+                      <td className={cn("px-6 py-4", plans.user.features.exportData ? "text-green-400" : "text-red-400")}>
+                        {plans.user.features.exportData ? <><span className="sr-only">Yes</span>✓</> : <><span className="sr-only">No</span>×</>}
+                      </td>
+                      <td className={cn("px-6 py-4", plans.Professional.features.exportData ? "text-green-400" : "text-red-400")}>
+                        {plans.Professional.features.exportData ? <><span className="sr-only">Yes</span>✓</> : <><span className="sr-only">No</span>×</>}
+                      </td>
                     </tr>
                   </tbody>
                 </table>
