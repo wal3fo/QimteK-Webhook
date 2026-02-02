@@ -235,9 +235,7 @@ export default function Header() {
       <MfaSetupModal
         isOpen={mfaModalOpen}
         onClose={() => setMfaModalOpen(false)}
-        onComplete={() => {
-          setMfaModalOpen(false);
-        }}
+      // onComplete={() => setMfaModalOpen(false)}
       />
     </>
   );
