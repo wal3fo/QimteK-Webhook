@@ -1,70 +1,110 @@
 import { PagesFunction } from '@cloudflare/workers-types';
-import { comparePassword, verifyToken } from '../../../../api/utils/auth';
-import { supabase } from '../../../../api/lib/supabase';
-import { envContext } from '../../../../api/lib/context';
+import { createClient } from '@supabase/supabase-js';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 
 interface Env {
-  [key: string]: string | undefined;
+  SUPABASE_URL: string;
+  SUPABASE_SERVICE_ROLE_KEY?: string;
+  SUPABASE_KEY?: string;
+  JWT_SECRET: string;
 }
 
-export const onRequestPost: PagesFunction<Env> = async (context) => {
-  return envContext.run(context.env, async () => {
-    try {
-      console.log('MFA Disable: Request received');
-      const authHeader = context.request.headers.get('Authorization');
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return new Response(JSON.stringify({ success: false, error: 'No token provided' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
-      }
+export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+  try {
+    // 1. Safe Environment Access
+    const supabaseUrl = env.SUPABASE_URL;
+    const supabaseKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_KEY;
+    const jwtSecret = env.JWT_SECRET;
 
-      const tokenStr = authHeader.substring(7);
-      const user = verifyToken(tokenStr);
-
-      if (!user) {
-        console.log('MFA Disable: Invalid token');
-        return new Response(JSON.stringify({ success: false, error: 'Invalid or expired token' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
-      }
-
-      console.log('MFA Disable: Processing for user', user.id);
-      const { password } = await context.request.json() as any;
-
-      if (password) {
-        const { data: dbUser, error } = await supabase
-          .from('users')
-          .select('password_hash')
-          .eq('id', user.id)
-          .single();
-
-        if (error || !dbUser) {
-          console.error('MFA Disable: User not found in DB', error);
-          return new Response(JSON.stringify({ success: false, error: 'User not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
-        }
-
-        const isValid = await comparePassword(password, dbUser.password_hash);
-        if (!isValid) {
-          console.log('MFA Disable: Invalid password');
-          return new Response(JSON.stringify({ success: false, error: 'Invalid password' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
-        }
-      }
-
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({
-          mfa_secret: null,
-          mfa_enabled: false
-        })
-        .eq('id', user.id);
-
-      if (updateError) {
-        console.error('MFA Disable: DB Update failed', updateError);
-        throw updateError;
-      }
-
-      console.log('MFA Disable: Success');
-      return new Response(JSON.stringify({ success: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-
-    } catch (error: any) {
-      console.error('Error disabling MFA:', error);
-      return new Response(JSON.stringify({ success: false, error: 'Failed to disable MFA' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    if (!supabaseUrl || !supabaseKey || !jwtSecret) {
+      console.error('Missing environment variables in MFA Disable');
+      return new Response(JSON.stringify({ success: false, error: 'Server configuration error' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
-  });
+
+    // 2. Validate Authentication (JWT)
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    const token = authHeader.split(' ')[1];
+    let user: any;
+    try {
+      user = jwt.verify(token, jwtSecret);
+    } catch (e) {
+      return new Response(JSON.stringify({ success: false, error: 'Invalid token' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // 3. Parse Body (Safely)
+    let body: any = {};
+    try {
+      body = await request.json();
+    } catch (e) {
+      // Allow empty body
+    }
+
+    // 4. Initialize Supabase (Directly to avoid shared state issues)
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      }
+    });
+
+    // 5. Verify Password (only if provided in body)
+    if (body.password) {
+      const { data: dbUser, error: userError } = await supabase
+        .from('users')
+        .select('password_hash')
+        .eq('id', user.id)
+        .single();
+
+      if (!userError && dbUser) {
+        const isValid = await bcrypt.compare(body.password, dbUser.password_hash);
+        if (!isValid) {
+          return new Response(JSON.stringify({ success: false, error: 'Invalid password' }), {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+      }
+    }
+
+    // 6. Execute MFA Disable
+    // Use user.id from token (secure) instead of body.userId
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({
+        mfa_enabled: false,
+        mfa_secret: null
+      })
+      .eq('id', user.id);
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    // 7. Success Response
+    return new Response(JSON.stringify({ success: true, message: 'MFA disabled successfully' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+  } catch (error: any) {
+    console.error('MFA Disable Exception:', error);
+    return new Response(JSON.stringify({ success: false, error: error.message || 'Internal Server Error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
 };
