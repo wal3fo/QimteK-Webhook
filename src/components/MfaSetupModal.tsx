@@ -48,7 +48,7 @@ export default function MfaSetupModal({
           'Authorization': `Bearer ${token}`
         }
       });
-      const data = await response.json();
+      const data = await response.json() as any;
 
       if (data.success) {
         setSecret(data.secret);
@@ -77,13 +77,14 @@ export default function MfaSetupModal({
         },
         body: JSON.stringify({ token: verificationCode, secret })
       });
-      const data = await response.json();
+      const data = await response.json() as any;
 
       if (data.success) {
         setStep('success');
         checkSession(); // Refresh user state
         setTimeout(() => {
           onClose();
+          onComplete?.();
         }, 2000);
       } else {
         setError(data.error || 'Invalid verification code');
@@ -105,13 +106,14 @@ export default function MfaSetupModal({
           'Authorization': `Bearer ${token}`
         }
       });
-      const data = await response.json();
+      const data = await response.json() as any;
 
       if (data.success) {
         setStep('disable_success');
         checkSession(); // Refresh user state
         setTimeout(() => {
           onClose();
+          onComplete?.();
         }, 2000);
       } else {
         setError(data.error || 'Failed to disable MFA');
@@ -290,3 +292,7 @@ export default function MfaSetupModal({
     </div>
   );
 }
+function onComplete() {
+  throw new Error('Function not implemented.');
+}
+

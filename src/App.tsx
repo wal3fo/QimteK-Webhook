@@ -10,9 +10,16 @@ const AdminPlans = lazy(() => import("@/pages/AdminPlans"));
 const Documentation = lazy(() => import("@/pages/Documentation"));
 const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy"));
 const WebhookDetails = lazy(() => import("@/pages/WebhookDetails"));
+const AboutUs = lazy(() => import("@/pages/AboutUs"));
+const ContactUs = lazy(() => import("@/pages/ContactUs"));
+const Disclaimer = lazy(() => import("@/pages/Disclaimer"));
+const NotFound = lazy(() => import("@/pages/NotFound"));
+const Blog = lazy(() => import("@/pages/Blog"));
+const BlogPost = lazy(() => import("@/pages/BlogPost"));
 
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
+import CookieConsent from "@/components/CookieConsent";
 
 // Loading component
 const LoadingSpinner = () => (
@@ -57,7 +64,12 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/docs" element={<Documentation />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/about" element={<AboutUs />} />
+            <Route path="/contact" element={<ContactUs />} />
+            <Route path="/disclaimer" element={<Disclaimer />} />
             <Route
               path="/webhook/:token"
               element={<WebhookDetails />}
@@ -82,8 +94,10 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
+        <CookieConsent />
       </Router>
     </AuthProvider>
   );

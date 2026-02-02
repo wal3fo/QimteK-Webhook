@@ -8,20 +8,20 @@ export default function Footer() {
 
   const footerLinks = {
     product: [
-      { name: 'Features', href: '#features' },
-      { name: 'How It Works', href: '#how-it-works' },
-      { name: 'API Documentation', href: '#docs' },
+      { name: 'Features', href: '/#features' },
+      { name: 'How It Works', href: '/#how-it-works' },
+      { name: 'API Documentation', href: '/docs' },
     ],
     company: [
-      { name: 'About QimteK', href: import.meta.env.VITE_COMPANY_URL, external: true },
-      { name: 'Our Mission', href: import.meta.env.VITE_COMPANY_URL, external: true },
-      { name: 'Contact Us', href: import.meta.env.VITE_COMPANY_URL, external: true },
+      { name: 'About Us', href: '/about', external: false },
+      { name: 'Our Mission', href: '/about', external: false },
+      { name: 'Contact Us', href: '/contact', external: false },
     ],
     resources: [
-      { name: 'GitHub Repository', href: import.meta.env.VITE_GITHUB_URL, external: true },
+      { name: 'Blog & Tutorials', href: '/blog', external: false },
       { name: 'Privacy Policy', href: '/privacy-policy', external: false },
-      { name: 'Documentation', href: '#docs' },
-      { name: 'Support', href: import.meta.env.VITE_PAYPAL_URL, external: true },
+      { name: 'Disclaimer', href: '/disclaimer', external: false },
+      { name: 'GitHub Repository', href: import.meta.env.VITE_GITHUB_URL, external: true },
     ],
   };
 
@@ -85,8 +85,8 @@ export default function Footer() {
             <ul className="space-y-3">
               {footerLinks.company.map((link) => (
                 <li key={link.name}>
-                  <a
-                    href={link.href}
+                  <Link
+                    to={link.href}
                     target={link.external ? '_blank' : undefined}
                     rel={link.external ? 'noopener noreferrer' : undefined}
                     className={cn(
@@ -99,10 +99,8 @@ export default function Footer() {
                     <span className="group-hover:translate-x-0.5 transition-transform duration-200">
                       {link.name}
                     </span>
-                    {link.external && (
-                      <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                    )}
-                  </a>
+                    {link.external && <ExternalLink className="w-3 h-3 opacity-50" />}
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -117,8 +115,8 @@ export default function Footer() {
             <ul className="space-y-3 mb-6">
               {footerLinks.resources.map((link) => (
                 <li key={link.name}>
-                  <a
-                    href={link.href}
+                  <Link
+                    to={link.href}
                     target={link.external ? '_blank' : undefined}
                     rel={link.external ? 'noopener noreferrer' : undefined}
                     className={cn(
@@ -131,10 +129,8 @@ export default function Footer() {
                     <span className="group-hover:translate-x-0.5 transition-transform duration-200">
                       {link.name}
                     </span>
-                    {link.external && (
-                      <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                    )}
-                  </a>
+                    {link.external && <ExternalLink className="w-3 h-3 opacity-50" />}
+                  </Link>
                 </li>
               ))}
             </ul>

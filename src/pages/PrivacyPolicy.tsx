@@ -4,6 +4,7 @@ import SEO from '@/components/SEO';
 import Footer from '@/components/Footer';
 import Logo from '@/components/Logo';
 import { Shield, Lock, Eye, Cookie, Server, Mail, ExternalLink } from 'lucide-react';
+import Header from '@/components/Header';
 
 export default function PrivacyPolicy() {
   const lastUpdated = new Date().toLocaleDateString('en-US', {
@@ -21,22 +22,7 @@ export default function PrivacyPolicy() {
         canonical="https://qimhook.pages.dev/privacy-policy"
       />
 
-      {/* Header */}
-      <header className="border-b border-qimtek-border bg-qimtek-bg-surface/50 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3 group">
-            <Logo size="lg" className="group-hover:opacity-90 transition-opacity" />
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link
-              to="/"
-              className="text-sm font-medium text-qimtek-text-secondary hover:text-qimtek-text transition-colors"
-            >
-              Back to Home
-            </Link>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       <main className="flex-grow">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
@@ -221,7 +207,7 @@ export default function PrivacyPolicy() {
                 Another part of our priority is adding protection for children while using the internet. We encourage parents and guardians to observe, participate in, and/or monitor and guide their online activity.
               </p>
               <p className="text-qimtek-text-secondary leading-relaxed">
-                Qimhook does not knowingly collect any Personal Identifiable Information from children under the age of 13. If you think that your child provided this kind of information on our website, we strongly encourage you to contact us immediately and we will do our best efforts to promptly remove such information from our records.
+                Qimhook does not knowingly collect any Personal Identifiable Information from children under the age of 13. If you think that your child provided this kind of information on our website, we strongly encourage you to <Link to="/contact" className="text-[#82c91e] hover:underline">contact us</Link> immediately and we will do our best efforts to promptly remove such information from our records.
               </p>
             </section>
           </div>
