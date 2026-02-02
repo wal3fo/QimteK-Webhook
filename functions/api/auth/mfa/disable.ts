@@ -10,6 +10,7 @@ interface Env {
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   return envContext.run(context.env, async () => {
     try {
+      console.log('MFA Disable: Request received');
       const authHeader = context.request.headers.get('Authorization');
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return new Response(JSON.stringify({ success: false, error: 'No token provided' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
@@ -19,9 +20,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       const user = verifyToken(tokenStr);
 
       if (!user) {
+        console.log('MFA Disable: Invalid token');
         return new Response(JSON.stringify({ success: false, error: 'Invalid or expired token' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
       }
 
+      console.log('MFA Disable: Processing for user', user.id);
       const { password } = await context.request.json() as any;
 
       if (password) {
@@ -32,11 +35,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           .single();
 
         if (error || !dbUser) {
+          console.error('MFA Disable: User not found in DB', error);
           return new Response(JSON.stringify({ success: false, error: 'User not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
         }
 
         const isValid = await comparePassword(password, dbUser.password_hash);
         if (!isValid) {
+          console.log('MFA Disable: Invalid password');
           return new Response(JSON.stringify({ success: false, error: 'Invalid password' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
         }
       }
@@ -49,12 +54,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         })
         .eq('id', user.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('MFA Disable: DB Update failed', updateError);
+        throw updateError;
+      }
 
-      return new Response(JSON.stringify({
-        success: true,
-        message: 'MFA disabled successfully'
-      }), { headers: { 'Content-Type': 'application/json' } });
+      console.log('MFA Disable: Success');
+      return new Response(JSON.stringify({ success: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 
     } catch (error: any) {
       console.error('Error disabling MFA:', error);

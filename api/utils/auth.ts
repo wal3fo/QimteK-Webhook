@@ -8,7 +8,6 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { type Request, type Response, type NextFunction } from 'express';
 import { generateSecret, verify, generateURI } from 'otplib';
-import QRCode from 'qrcode';
 import { supabase } from '../lib/supabase.js';
 import { getEnv } from '../lib/context.js';
 
@@ -74,7 +73,9 @@ export function generateMfaSecret(email: string) {
  * Generate QR Code Data URL
  */
 export async function generateQrCode(otpauth: string) {
-  return QRCode.toDataURL(otpauth);
+  const QRCode = (await import('qrcode')).default || await import('qrcode');
+  // @ts-ignore - Handle potential default export mismatch
+  return QRCode.toDataURL ? QRCode.toDataURL(otpauth) : (QRCode as any).default.toDataURL(otpauth);
 }
 
 /**
