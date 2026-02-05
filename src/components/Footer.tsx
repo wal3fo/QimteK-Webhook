@@ -232,7 +232,7 @@ export default function Footer() {
                 )}
                 aria-label="Support us on PayPal">
                 <Heart className="w-4 h-4 text-purple-500 fill-purple-500" />
-                <span>Support Our Work</span>
+                <span>Support Us</span>
               </a>
             </div>
           </div>
