@@ -7,6 +7,7 @@ import Footer from '@/components/Footer';
 import SEO from '@/components/SEO';
 import { blogPosts } from '@/data/posts';
 import { cn } from '@/lib/utils';
+import AdBanner2 from '@/components/AdBanner2';
 
 export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
@@ -133,20 +134,23 @@ export default function BlogPost() {
             <section className="border-t border-qimtek-border pt-12">
               <h2 className="text-2xl font-bold text-qimtek-text mb-8">Related Articles</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {relatedPosts.map(related => (
-                  <Link
-                    key={related.slug}
-                    to={`/blog/${related.slug}`}
-                    className="group bg-qimtek-bg-surface rounded-xl border border-qimtek-border p-5 hover:border-[#82c91e]/50 hover:shadow-lg transition-all"
-                  >
-                    <div className="text-xs text-[#82c91e] mb-2">{related.category}</div>
-                    <h3 className="font-bold text-qimtek-text mb-2 group-hover:text-[#82c91e] transition-colors line-clamp-2">
-                      {related.title}
-                    </h3>
-                    <div className="text-xs text-qimtek-text-tertiary">
-                      {new Date(related.date).toLocaleDateString()}
+                {relatedPosts.map((related, index) => (
+                  <div key={related.slug} className="contents">
+                    <div>
+                      <Link
+                        to={`/blog/${related.slug}`}
+                        className="group bg-qimtek-bg-surface rounded-xl border border-qimtek-border p-5 hover:border-[#82c91e]/50 hover:shadow-lg transition-all block h-full"
+                      >
+                        <div className="text-xs text-[#82c91e] mb-2">{related.category}</div>
+                        <h3 className="font-bold text-qimtek-text mb-2 group-hover:text-[#82c91e] transition-colors line-clamp-2">
+                          {related.title}
+                        </h3>
+                        <div className="text-xs text-qimtek-text-tertiary">
+                          {new Date(related.date).toLocaleDateString()}
+                        </div>
+                      </Link>
                     </div>
-                  </Link>
+                  </div>
                 ))}
               </div>
             </section>

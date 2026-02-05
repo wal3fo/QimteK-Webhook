@@ -4,6 +4,7 @@ import SEO from '@/components/SEO';
 import Logo from '@/components/Logo';
 import { Mail, MessageSquare, MapPin, Send } from 'lucide-react';
 import Header from '@/components/Header';
+import AdBanner from '@/components/AdBanner';
 
 export default function ContactUs() {
   return (
@@ -117,6 +118,8 @@ export default function ContactUs() {
             </div>
           </div>
         </div>
+
+        <AdBanner />
       </main>
     </div>
   );

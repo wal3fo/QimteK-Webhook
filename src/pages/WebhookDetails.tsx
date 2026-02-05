@@ -18,6 +18,7 @@ import Footer from '@/components/Footer';
 import ConfirmModal from '@/components/ConfirmModal';
 import SEO from '@/components/SEO';
 import RequestsTable from '@/components/RequestsTable';
+import AdBanner from '@/components/AdBanner';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
@@ -304,6 +305,8 @@ export default function WebhookDetails() {
                         </div>
                     </div>
                 </div>
+
+                <AdBanner />
 
                 {/* Tabs */}
                 <div className="flex border-b border-qimtek-border mb-8">

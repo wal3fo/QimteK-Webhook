@@ -4,6 +4,7 @@ import SEO from '@/components/SEO';
 import Header from '@/components/Header';
 import { Users, Target, Shield, Globe, Award, Heart } from 'lucide-react';
 import Logo from '@/components/Logo';
+import AdBanner from '@/components/AdBanner';
 
 export default function AboutUs() {
   return (
@@ -100,6 +101,8 @@ export default function AboutUs() {
                 </div>
               </div>
             </section>
+
+            <AdBanner />
           </div>
         </div>
       </main>

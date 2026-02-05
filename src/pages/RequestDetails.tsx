@@ -8,6 +8,7 @@ import { PLAN_CONFIG, PlanRole } from '@/config/plans';
 import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
 import SEO from '@/components/SEO';
+import AdBanner from '@/components/AdBanner';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -385,6 +386,8 @@ export default function RequestDetails() {
             </div>
           </div>
         )}
+
+        <AdBanner />
 
         {/* Request Content */}
         <div className="mb-6">

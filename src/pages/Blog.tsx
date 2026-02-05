@@ -6,6 +6,8 @@ import Footer from '@/components/Footer';
 import SEO from '@/components/SEO';
 import { blogPosts } from '@/data/posts';
 import { cn } from '@/lib/utils';
+import AdBanner2, { AdBanner } from '@/components/AdBanner2';
+import AdBanner3 from '@/components/AdBanner3';
 
 export default function Blog() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -89,44 +91,50 @@ export default function Blog() {
 
         {/* Posts Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredPosts.map((post) => (
-            <Link
-              key={post.slug}
-              to={`/blog/${post.slug}`}
-              className="group flex flex-col bg-qimtek-bg-surface rounded-2xl border border-qimtek-border overflow-hidden hover:border-[#82c91e]/50 hover:shadow-lg transition-all h-full"
-            >
-              <div className="p-6 flex flex-col flex-grow">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="px-3 py-1 rounded-full bg-qimtek-bg-secondary text-xs font-medium text-[#82c91e] border border-qimtek-border">
-                    {post.category}
-                  </span>
-                  <span className="text-xs text-qimtek-text-tertiary flex items-center gap-1">
-                    <Clock className="w-3 h-3" /> {post.readTime} min read
-                  </span>
-                </div>
-
-                <h2 className="text-xl font-bold text-qimtek-text mb-3 group-hover:text-[#82c91e] transition-colors line-clamp-2">
-                  {post.title}
-                </h2>
-
-                <p className="text-qimtek-text-secondary text-sm leading-relaxed mb-6 line-clamp-3 flex-grow">
-                  {post.excerpt}
-                </p>
-
-                <div className="flex items-center justify-between pt-4 border-t border-qimtek-border mt-auto">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#82c91e] to-blue-500 flex items-center justify-center text-black font-bold text-xs">
-                      {post.author.charAt(0)}
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-xs font-medium text-qimtek-text">{post.author}</span>
-                      <span className="text-[10px] text-qimtek-text-tertiary">{post.date}</span>
-                    </div>
+          {filteredPosts.map((post, index) => (
+            <div key={post.slug} className="contents">
+              <Link
+                to={`/blog/${post.slug}`}
+                className="group flex flex-col bg-qimtek-bg-surface rounded-2xl border border-qimtek-border overflow-hidden hover:border-[#82c91e]/50 hover:shadow-lg transition-all h-full"
+              >
+                <div className="p-6 flex flex-col flex-grow">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="px-3 py-1 rounded-full bg-qimtek-bg-secondary text-xs font-medium text-[#82c91e] border border-qimtek-border">
+                      {post.category}
+                    </span>
+                    <span className="text-xs text-qimtek-text-tertiary flex items-center gap-1">
+                      <Clock className="w-3 h-3" /> {post.readTime} min read
+                    </span>
                   </div>
-                  <ArrowRight className="w-5 h-5 text-qimtek-text-tertiary group-hover:text-[#82c91e] group-hover:translate-x-1 transition-all" />
+
+                  <h2 className="text-xl font-bold text-qimtek-text mb-3 group-hover:text-[#82c91e] transition-colors line-clamp-2">
+                    {post.title}
+                  </h2>
+
+                  <p className="text-qimtek-text-secondary text-sm leading-relaxed mb-6 line-clamp-3 flex-grow">
+                    {post.excerpt}
+                  </p>
+
+                  <div className="flex items-center justify-between pt-4 border-t border-qimtek-border mt-auto">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#82c91e] to-blue-500 flex items-center justify-center text-black font-bold text-xs">
+                        {post.author.charAt(0)}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-medium text-qimtek-text">{post.author}</span>
+                        <span className="text-[10px] text-qimtek-text-tertiary">{post.date}</span>
+                      </div>
+                    </div>
+                    <ArrowRight className="w-5 h-5 text-qimtek-text-tertiary group-hover:text-[#82c91e] group-hover:translate-x-1 transition-all" />
+                  </div>
                 </div>
-              </div>
-            </Link>
+              </Link>
+              {(index + 1) % 3 === 0 && (
+                <div className="group flex flex-col bg-qimtek-bg-surface rounded-2xl border border-qimtek-border overflow-hidden hover:border-[#82c91e]/50 hover:shadow-lg transition-all h-full">
+                  <AdBanner3 />
+                </div>
+              )}
+            </div>
           ))}
         </div>
 

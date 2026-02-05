@@ -6,6 +6,7 @@ import Logo from '@/components/Logo';
 import Footer from '@/components/Footer';
 import SEO from '@/components/SEO';
 import { PLAN_CONFIG } from '@/config/plans';
+import AdBanner from '@/components/AdBanner';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -201,6 +202,8 @@ export default function Documentation() {
               </div>
             </section>
 
+            <AdBanner />
+
             {/* Inspecting Requests */}
             <section id="inspecting" className="scroll-mt-24 space-y-6">
               <div className="flex items-center gap-3 mb-6">
@@ -356,6 +359,8 @@ export default function Documentation() {
               </div>
             </section>
 
+            <AdBanner />
+
             {/* Admin Features */}
             <section id="admin" className="scroll-mt-24 space-y-6">
               <div className="flex items-center gap-3 mb-6">
@@ -411,6 +416,8 @@ export default function Documentation() {
                 </div>
               </div>
             </section>
+
+            <AdBanner />
 
           </div>
         </div>

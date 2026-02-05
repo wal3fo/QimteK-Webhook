@@ -14,6 +14,8 @@ import GenerateWebhookModal from '@/components/GenerateWebhookModal';
 import ChangePasswordModal from '@/components/ChangePasswordModal';
 import MfaSetupModal from '@/components/MfaSetupModal';
 import PricingCards from '@/components/PricingCards';
+import AdBanner from '@/components/AdBanner';
+import AdBanner2 from '@/components/AdBanner2';
 
 import { PLAN_CONFIG } from '@/config/plans';
 
@@ -165,64 +167,72 @@ export default function Home() {
                 </div>
               </div>
 
+              <AdBanner />
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {webhooks.map(webhook => (
-                  <Link
-                    key={webhook.token}
-                    to={`/webhook/${webhook.token}`}
-                    className="bg-qimtek-bg-surface p-6 rounded-xl border border-qimtek-border hover:border-[#82c91e]/50 hover:shadow-lg transition-all group relative overflow-hidden"
-                  >
-                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                      <Activity className="w-24 h-24 text-[#82c91e]" />
-                    </div>
-
-                    <div className="flex items-start justify-between mb-4 relative z-10">
-                      <div className="p-3 bg-qimtek-bg-secondary rounded-lg text-[#82c91e] group-hover:scale-110 transition-transform border border-qimtek-border">
-                        <Activity className="w-6 h-6" />
+                {webhooks.map((webhook, index) => (
+                  <div key={webhook.token} className="contents">
+                    <Link
+                      to={`/webhook/${webhook.token}`}
+                      className="bg-qimtek-bg-surface p-6 rounded-xl border border-qimtek-border hover:border-[#82c91e]/50 hover:shadow-lg transition-all group relative overflow-hidden"
+                    >
+                      <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Activity className="w-24 h-24 text-[#82c91e]" />
                       </div>
-                      <div className={cn(
-                        "px-2 py-1 rounded text-xs font-bold border flex items-center gap-1.5",
-                        webhook.is_active !== false
-                          ? "bg-green-500/10 text-green-400 border-green-500/20"
-                          : "bg-red-500/10 text-red-400 border-red-500/20"
-                      )}>
-                        <span className={cn("w-1.5 h-1.5 rounded-full", webhook.is_active !== false ? "bg-green-400" : "bg-red-400")}></span>
-                        {webhook.is_active !== false ? 'ACTIVE' : 'INACTIVE'}
-                      </div>
-                    </div>
 
-                    <div className="relative z-10 mb-6">
-                      <h3 className="text-lg font-bold text-qimtek-text mb-1 truncate" title={webhook.name}>
-                        {webhook.name || 'Untitled Webhook'}
-                      </h3>
-                      <div className="text-xs font-mono text-qimtek-text-secondary truncate bg-qimtek-bg-secondary/50 px-2 py-1 rounded w-fit max-w-full">
-                        {webhook.token}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-qimtek-border relative z-10">
-                      <div>
-                        <div className="text-xs text-qimtek-text-secondary mb-1">Requests</div>
-                        <div className="text-lg font-bold text-qimtek-text font-mono">
-                          {webhook.requestCount || 0}
+                      <div className="flex items-start justify-between mb-4 relative z-10">
+                        <div className="p-3 bg-qimtek-bg-secondary rounded-lg text-[#82c91e] group-hover:scale-110 transition-transform border border-qimtek-border">
+                          <Activity className="w-6 h-6" />
+                        </div>
+                        <div className={cn(
+                          "px-2 py-1 rounded text-xs font-bold border flex items-center gap-1.5",
+                          webhook.is_active !== false
+                            ? "bg-green-500/10 text-green-400 border-green-500/20"
+                            : "bg-red-500/10 text-red-400 border-red-500/20"
+                        )}>
+                          <span className={cn("w-1.5 h-1.5 rounded-full", webhook.is_active !== false ? "bg-green-400" : "bg-red-400")}></span>
+                          {webhook.is_active !== false ? 'ACTIVE' : 'INACTIVE'}
                         </div>
                       </div>
-                      <div>
-                        <div className="text-xs text-qimtek-text-secondary mb-1">Last Active</div>
-                        <div className="text-sm font-medium text-qimtek-text truncate" title={webhook.lastActive ? format(new Date(webhook.lastActive), 'PPpp') : 'Never'}>
-                          {webhook.lastActive
-                            ? format(new Date(webhook.lastActive), 'MMM d, HH:mm')
-                            : 'Never'}
+
+                      <div className="relative z-10 mb-6">
+                        <h3 className="text-lg font-bold text-qimtek-text mb-1 truncate" title={webhook.name}>
+                          {webhook.name || 'Untitled Webhook'}
+                        </h3>
+                        <div className="text-xs font-mono text-qimtek-text-secondary truncate bg-qimtek-bg-secondary/50 px-2 py-1 rounded w-fit max-w-full">
+                          {webhook.token}
                         </div>
                       </div>
-                    </div>
-                  </Link>
+
+                      <div className="grid grid-cols-2 gap-4 pt-4 border-t border-qimtek-border relative z-10">
+                        <div>
+                          <div className="text-xs text-qimtek-text-secondary mb-1">Requests</div>
+                          <div className="text-lg font-bold text-qimtek-text font-mono">
+                            {webhook.requestCount || 0}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-qimtek-text-secondary mb-1">Last Active</div>
+                          <div className="text-sm font-medium text-qimtek-text truncate" title={webhook.lastActive ? format(new Date(webhook.lastActive), 'PPpp') : 'Never'}>
+                            {webhook.lastActive
+                              ? format(new Date(webhook.lastActive), 'MMM d, HH:mm')
+                              : 'Never'}
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                    {/* Insert AdBanner randomly (approx every 6 items) */}
+                  </div>
                 ))}
               </div>
+
+              <AdBanner />
             </div>
           )}
 
           <PricingCards />
+
+          <AdBanner />
         </div>
       )}
       <Footer />
