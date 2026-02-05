@@ -198,7 +198,7 @@ export default function Footer() {
                   'hover:bg-yellow-500/10 hover:border-yellow-500/30',
                   'text-sm text-qimtek-text-secondary hover:text-yellow-500',
                   'transition-all duration-200',
-                  'touch-manipulation font-medium sm:w-full'
+                  'touch-manipulation font-medium'
                 )}
                 aria-label="Privacy Policy">
                 <Shield className="w-4 h-4 text-yellow-500 fill-yellow-500" />
@@ -212,7 +212,7 @@ export default function Footer() {
                   'hover:bg-[#82c91e]/10 hover:border-[#82c91e]/30',
                   'text-sm text-qimtek-text-secondary hover:text-[#82c91e]',
                   'transition-all duration-200',
-                  'touch-manipulation font-medium sm:w-full'
+                  'touch-manipulation font-medium'
                 )}
                 aria-label="Documentation">
                 <Book className="w-4 h-4 text-[#82c91e] fill-[#82c91e]" />
@@ -228,7 +228,7 @@ export default function Footer() {
                   'hover:bg-purple-500/10 hover:border-purple-500/30',
                   'text-sm text-qimtek-text-secondary hover:text-purple-500',
                   'transition-all duration-200',
-                  'touch-manipulation font-medium sm:w-full'
+                  'touch-manipulation font-medium'
                 )}
                 aria-label="Support us on PayPal">
                 <Heart className="w-4 h-4 text-purple-500 fill-purple-500" />
