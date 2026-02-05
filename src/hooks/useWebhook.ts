@@ -69,7 +69,7 @@ export function useWebhook(options: { autoSelect?: boolean } = { autoSelect: tru
       if (response.ok) {
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
-          const data = await response.json();
+          const data = await response.json() as any;
           if (data.success) {
             const fetchedWebhooks = data.webhooks || [];
             setWebhooks(fetchedWebhooks);
@@ -91,7 +91,7 @@ export function useWebhook(options: { autoSelect?: boolean } = { autoSelect: tru
             }
           }
         } else {
-           console.error('Fetch webhooks failed: Non-JSON response');
+          console.error('Fetch webhooks failed: Non-JSON response');
         }
       }
     } catch (err) {
@@ -119,7 +119,7 @@ export function useWebhook(options: { autoSelect?: boolean } = { autoSelect: tru
       });
 
       if (response.ok) {
-        const data = await response.json();
+        const data = await response.json() as any;
         if (data.success) {
           const fetchedRequests = data.requests || [];
           setRequests(prev => {
@@ -154,7 +154,7 @@ export function useWebhook(options: { autoSelect?: boolean } = { autoSelect: tru
       const response = await fetch(`${API_URL}/webhooks/${token}`, { headers });
 
       if (response.ok) {
-        const data = await response.json();
+        const data = await response.json() as any;
         if (data.success && data.webhook) {
           const webhook = data.webhook;
           setSelectedWebhook(webhook);
@@ -188,11 +188,11 @@ export function useWebhook(options: { autoSelect?: boolean } = { autoSelect: tru
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        const errorData = await response.json().catch(() => ({})) as any;
         throw new Error(errorData.error || 'Failed to generate webhook');
       }
 
-      const data = await response.json();
+      const data = await response.json() as any;
       if (data.success) {
         const newWebhook = {
           token: data.token,

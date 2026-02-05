@@ -223,7 +223,7 @@ export default function WebhookDetails() {
                                 )}
                             </h1>
                             <div className="flex items-center gap-2 text-sm text-qimtek-text-secondary mt-1">
-                                <span className="font-mono">{selectedWebhook?.token}</span>
+                                <span className="font-mono hidden sm:block">{selectedWebhook?.token}</span>
                                 <span className="w-1 h-1 rounded-full bg-gray-500"></span>
                                 <span>Created {selectedWebhook?.created_at && format(new Date(selectedWebhook.created_at), 'MMM d, yyyy')}</span>
                                 <span className="w-1 h-1 rounded-full bg-gray-500"></span>
