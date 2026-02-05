@@ -202,7 +202,7 @@ export default function Footer() {
                 )}
                 aria-label="Privacy Policy">
                 <Shield className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                <span>Privacy Policy</span>
+                <span>Privacy & Policy</span>
               </Link>
               <Link
                 to="/docs"
@@ -216,7 +216,7 @@ export default function Footer() {
                 )}
                 aria-label="Documentation">
                 <Book className="w-4 h-4 text-[#82c91e] fill-[#82c91e]" />
-                <span>Documentation</span>
+                <span>Docs</span>
               </Link>
               <a
                 href={import.meta.env.VITE_PAYPAL_URL}
