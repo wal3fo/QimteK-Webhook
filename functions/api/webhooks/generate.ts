@@ -93,7 +93,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       const baseUrl = context.env.BASE_URL || `${parsedUrl.protocol}//${parsedUrl.host}`;
       const webhookUrl = `${baseUrl}/api/webhook/${webhookToken}`;
 
-      const { error: insertError } = await supabase
+      const { data: inserted, error: insertError } = await supabase
         .from('webhooks')
         .insert({
           token: webhookToken,
@@ -101,7 +101,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           name: name || null,
           expires_at: expiresAt.toISOString(),
           is_active: true
-        });
+        })
+        .select('created_at')
+        .single();
 
       if (insertError) {
          console.error('Insert error', insertError);
@@ -113,6 +115,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         token: webhookToken,
         name,
         url: webhookUrl,
+        created_at: inserted?.created_at || new Date().toISOString(),
         expiresAt: expiresAt.toISOString(),
       }), { status: 201, headers: { 'Content-Type': 'application/json' } });
 

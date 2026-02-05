@@ -198,6 +198,7 @@ export function useWebhook(options: { autoSelect?: boolean } = { autoSelect: tru
           token: data.token,
           name: data.name,
           url: data.url,
+          created_at: data.created_at,
           expiresAt: data.expiresAt,
         };
 

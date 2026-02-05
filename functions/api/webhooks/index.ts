@@ -52,7 +52,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
           token: wh.token,
           name: wh.name,
           url: `${baseUrl}/api/webhook/${wh.token}`,
-          createdAt: wh.created_at,
+          created_at: wh.created_at,
           expiresAt: wh.expires_at,
           isActive: wh.is_active,
           requestCount: count || 0,

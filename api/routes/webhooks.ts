@@ -135,7 +135,7 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
     const webhookUrl = `${baseUrl}/api/webhook/${token}`;
 
     // Store webhook in database (linked to user)
-    const { error: insertError } = await supabase
+    const { data: inserted, error: insertError } = await supabase
       .from('webhooks')
       .insert({
         token,
@@ -143,7 +143,9 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
         name: name || null,
         expires_at: expiresAt.toISOString(),
         is_active: true
-      });
+      })
+      .select('created_at')
+      .single();
 
     if (insertError) throw insertError;
 
@@ -152,6 +154,7 @@ router.post('/generate', authenticate, async (req: Request, res: Response): Prom
       token,
       name,
       url: webhookUrl,
+      created_at: inserted?.created_at || new Date().toISOString(),
       expiresAt: expiresAt.toISOString(),
     });
   } catch (error) {
@@ -205,7 +208,7 @@ router.get('/', authenticate, async (req: Request, res: Response): Promise<void>
         token: wh.token,
         name: wh.name,
         url: `${baseUrl}/api/webhook/${wh.token}`,
-        createdAt: wh.created_at,
+        created_at: wh.created_at,
         expiresAt: wh.expires_at,
         isActive: wh.is_active,
         requestCount: count || 0,
@@ -267,7 +270,7 @@ router.get('/:token', async (req: Request, res: Response): Promise<void> => {
         token: webhook.token,
         name: webhook.name,
         created_at: webhook.created_at,
-        expires_at: webhook.expires_at,
+        expiresAt: webhook.expires_at,
         is_active: webhook.is_active,
         requestCount: requestCount || 0,
         lastActive: lastRequest?.timestamp || null,

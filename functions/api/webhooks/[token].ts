@@ -41,7 +41,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
           token: webhook.token,
           name: webhook.name,
           created_at: webhook.created_at,
-          expires_at: webhook.expires_at,
+          expiresAt: webhook.expires_at,
           is_active: webhook.is_active,
           requestCount: requestCount || 0,
           lastActive: lastRequest?.timestamp || null,
