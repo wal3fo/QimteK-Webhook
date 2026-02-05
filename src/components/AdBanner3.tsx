@@ -42,7 +42,7 @@ export const AdBanner: React.FC = () => {
   }, []);
 
   return (
-    <div style={{ minHeight: '0' }} className='grid md:grid-cols-2 gap-4 md:gap-6 w-full mx-auto mt-4 md:mt-6 mb-6 font-mono'>
+    <div style={{ minHeight: '0' }} className='flex justify-center items-center'>
       <div ref={containerRef} className="w-full h-full" />
     </div>
   );
