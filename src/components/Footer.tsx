@@ -29,13 +29,6 @@ export default function Footer() {
     <footer className="bg-qimtek-bg-surface border-t border-qimtek-border mt-auto relative overflow-hidden font-mono">
       {/* Decorative gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#82c91e]/5 via-transparent to-transparent pointer-events-none" />
-
-      <div>
-        <script async data-cfasync="false"
-          src="https://pl28656429.effectivegatecpm.com/2efb738deaa91421bd7f374fdce28061/invoke.js"></script>
-        <div id="container-2efb738deaa91421bd7f374fdce28061"></div>
-      </div>
-
       <div className="w-full px-0 py-2 relative z-10">
         {/* Main Footer Content */}
         <div className="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 mb-10 sm:mb-12 px-2 sm:px-4 lg:px-6">
