@@ -17,7 +17,7 @@ export const AdBanner: React.FC = () => {
     iframe.style.height = '90px';
     iframe.style.overflow = 'hidden';
     iframe.scrolling = 'no';
-    
+
     container.appendChild(iframe);
 
     const doc = iframe.contentWindow?.document;
@@ -52,9 +52,9 @@ export const AdBanner: React.FC = () => {
 
   return (
     <div className="flex justify-center items-center my-6 w-full overflow-hidden">
-        <div ref={containerRef} className="w-[728px] h-[90px]" />
+      <div ref={containerRef} className="w-[728px] h-[90px]" />
     </div>
   );
 };
 
-export default AdBanner;
+// export default AdBanner;

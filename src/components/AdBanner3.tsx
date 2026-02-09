@@ -48,4 +48,4 @@ export const AdBanner: React.FC = () => {
   );
 };
 
-export default AdBanner;
+// export default AdBanner;
