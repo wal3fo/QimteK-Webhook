@@ -1,3 +1,7 @@
+/**
+ * Get requests for a webhook - cursor-based pagination
+ * WHY: Stable pagination under high insert rates; efficient for large datasets
+ */
 
 import { supabase } from '../../../../api/lib/supabase';
 import { envContext } from '../../../../api/lib/context';
@@ -11,9 +15,10 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     try {
       const { token } = context.params;
       const url = new URL(context.request.url);
-      const limit = parseInt(url.searchParams.get('limit') || '100');
-      const offset = parseInt(url.searchParams.get('offset') || '0');
+      const rawLimit = Math.min(parseInt(url.searchParams.get('limit') || '50', 10), 100);
+      const limit = Math.max(1, rawLimit);
       const summary = url.searchParams.get('summary') === 'true';
+      const cursor = url.searchParams.get('cursor');
 
       const { data: webhook, error: webhookError } = await supabase
         .from('webhooks')
@@ -25,21 +30,36 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         return new Response(JSON.stringify({ success: false, error: 'Webhook not found, expired, or access denied' }), { status: 404 });
       }
 
-      const { data: requests, error: requestsError } = await supabase
+      let query = supabase
         .from('requests')
         .select('*')
         .eq('webhook_token', token)
         .order('timestamp', { ascending: false })
-        .range(offset, offset + limit - 1);
+        .order('id', { ascending: false })
+        .limit(limit + 1);
+
+      if (cursor) {
+        try {
+          const decoded = atob(cursor.replace(/-/g, '+').replace(/_/g, '/'));
+          const [ts, id] = decoded.split('|');
+          if (ts && id) {
+            query = query.or(`timestamp.lt.${ts},and(timestamp.eq.${ts},id.lt.${id})`);
+          }
+        } catch {
+          // ignore invalid cursor
+        }
+      }
+
+      const { data: requests, error: requestsError } = await query;
 
       if (requestsError) throw requestsError;
 
-      const { count, error: countError } = await supabase
-        .from('requests')
-        .select('*', { count: 'exact', head: true })
-        .eq('webhook_token', token);
-
-      if (countError) throw countError;
+      const hasMore = (requests?.length ?? 0) > limit;
+      const slice = hasMore ? requests!.slice(0, limit) : (requests ?? []);
+      const last = slice[slice.length - 1] as { timestamp: string; id: string } | undefined;
+      const nextCursor = hasMore && last
+        ? btoa(`${last.timestamp}|${last.id}`).replace(/\+/g, '-').replace(/\//g, '_')
+        : null;
 
       const parseJsonField = (field: string | object | null): any => {
         if (!field) return null;
@@ -54,9 +74,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         return field;
       };
 
-      const parsedRequests = (requests || []).map(req => {
+      const parsedRequests = slice.map((req: any) => {
         const bodySize = req.body ? (typeof req.body === 'string' ? req.body.length : JSON.stringify(req.body).length) : 0;
-
         return {
           id: req.id,
           webhook_token: req.webhook_token,
@@ -74,7 +93,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       return new Response(JSON.stringify({
         success: true,
         requests: parsedRequests,
-        total: count || 0,
+        nextCursor,
+        hasMore: !!nextCursor,
       }), { headers: { 'Content-Type': 'application/json' } });
 
     } catch (error: any) {

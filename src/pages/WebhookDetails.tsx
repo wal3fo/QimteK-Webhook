@@ -26,8 +26,9 @@ export default function WebhookDetails() {
     const { token } = useParams<{ token: string }>();
     const navigate = useNavigate();
     const {
-        webhooks, selectedWebhook, requests, loading, error, isConnected,
-        fetchRequests, deleteWebhook, setSelectedWebhook, fetchWebhooks, fetchWebhook
+        webhooks, selectedWebhook, requests, hasMoreRequests, loadMoreRequests,
+        loading, error, isConnected, fetchRequests, deleteWebhook,
+        setSelectedWebhook, fetchWebhooks, fetchWebhook
     } = useWebhook();
     const { user, isAuthenticated, token: authToken } = useAuth();
 
@@ -424,6 +425,8 @@ export default function WebhookDetails() {
                     <RequestsTable
                         requests={requests}
                         hasAdvancedFeatures={hasAdvancedFeatures}
+                        hasMore={hasMoreRequests}
+                        onLoadMore={loadMoreRequests}
                         webhookToken={selectedWebhook?.token}
                     />
                 )}

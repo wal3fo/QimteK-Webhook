@@ -442,13 +442,21 @@ router.get('/requests/:id', async (req: Request, res: Response): Promise<void> =
 });
 
 /**
- * Get all requests for a webhook
+ * Get all requests for a webhook (cursor-based pagination)
  * GET /api/webhooks/:token/requests
+ *
+ * WHY cursor: offset+limit degrades with large datasets and is unstable under high insert rates.
+ * Cursor uses (timestamp, id) for stable, efficient pagination.
+ *
+ * Query: limit (default 50, max 100), cursor (opaque), summary
  */
 router.get('/:token/requests', async (req: Request, res: Response): Promise<void> => {
   try {
     const { token } = req.params;
-    const { limit = 100, offset = 0, summary = 'false' } = req.query;
+    const rawLimit = Math.min(Number(req.query.limit) || 50, 100);
+    const limit = Math.max(1, rawLimit);
+    const summary = req.query.summary === 'true';
+    const cursor = typeof req.query.cursor === 'string' ? req.query.cursor : null;
 
     // Verify webhook exists
     const { data: webhook, error: webhookError } = await supabase
@@ -465,23 +473,35 @@ router.get('/:token/requests', async (req: Request, res: Response): Promise<void
       return;
     }
 
-    // Get requests, sorted newest first
-    const { data: requests, error: requestsError } = await supabase
+    let query = supabase
       .from('requests')
       .select('*')
       .eq('webhook_token', token)
       .order('timestamp', { ascending: false })
-      .range(Number(offset), Number(offset) + Number(limit) - 1);
+      .order('id', { ascending: false })
+      .limit(limit + 1); // fetch one extra to check hasMore
+
+    if (cursor) {
+      try {
+        const [ts, id] = Buffer.from(cursor, 'base64url').toString('utf8').split('|');
+        if (ts && id) {
+          query = query.or(`timestamp.lt.${ts},and(timestamp.eq.${ts},id.lt.${id})`);
+        }
+      } catch {
+        // ignore invalid cursor
+      }
+    }
+
+    const { data: requests, error: requestsError } = await query;
 
     if (requestsError) throw requestsError;
 
-    // Get total count for pagination
-    const { count, error: countError } = await supabase
-      .from('requests')
-      .select('*', { count: 'exact', head: true })
-      .eq('webhook_token', token);
-
-    if (countError) throw countError;
+    const hasMore = (requests?.length ?? 0) > limit;
+    const slice = hasMore ? requests!.slice(0, limit) : (requests ?? []);
+    const last = slice[slice.length - 1];
+    const nextCursor = hasMore && last
+      ? Buffer.from(`${last.timestamp}|${last.id}`, 'utf8').toString('base64url')
+      : null;
 
     // Parse JSON fields
     const parseJsonField = (field: string | object | null): any => {
@@ -497,8 +517,8 @@ router.get('/:token/requests', async (req: Request, res: Response): Promise<void
       return field;
     };
 
-    const parsedRequests = (requests || []).map(req => {
-      const isSummary = summary === 'true';
+    const parsedRequests = slice.map((req: any) => {
+      const isSummary = summary;
       const bodySize = req.body ? (typeof req.body === 'string' ? req.body.length : JSON.stringify(req.body).length) : 0;
 
       return {
@@ -518,7 +538,8 @@ router.get('/:token/requests', async (req: Request, res: Response): Promise<void
     res.json({
       success: true,
       requests: parsedRequests,
-      total: count || 0,
+      nextCursor,
+      hasMore: !!nextCursor,
     });
   } catch (error) {
     console.error('Error fetching requests:', error);

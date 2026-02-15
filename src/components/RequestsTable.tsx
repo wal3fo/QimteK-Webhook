@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { List } from 'react-window';
 import { Filter, Search, Lock } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn, METHOD_COLORS } from '@/lib/utils';
-import { Webhook } from '@/hooks/useWebhook';
 
 interface Request {
     id: string;
@@ -21,12 +21,16 @@ interface RequestsTableProps {
     requests: Request[];
     hasAdvancedFeatures: boolean;
     webhookToken?: string;
+    hasMore?: boolean;
+    onLoadMore?: () => void;
 }
 
-export default function RequestsTable({ requests, hasAdvancedFeatures, webhookToken }: RequestsTableProps) {
+export default function RequestsTable({ requests, hasAdvancedFeatures, webhookToken, hasMore, onLoadMore }: RequestsTableProps) {
     const navigate = useNavigate();
     const [filterMethod, setFilterMethod] = useState('');
     const [filterSearch, setFilterSearch] = useState('');
+
+        const VIRTUALIZE_THRESHOLD = 100;
 
     const filteredRequests = useMemo(() => {
         if (!requests) return [];
@@ -45,6 +49,29 @@ export default function RequestsTable({ requests, hasAdvancedFeatures, webhookTo
         }
         return res;
     }, [requests, filterMethod, filterSearch]);
+
+    const useVirtualization = filteredRequests.length >= VIRTUALIZE_THRESHOLD;
+    const listHeight = Math.min(400, filteredRequests.length * 56);
+
+    const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
+        const req = filteredRequests[index];
+        return (
+            <div
+                style={style}
+                className="grid grid-cols-[100px_1fr_140px_80px_80px] gap-4 items-center px-6 py-3 hover:bg-qimtek-bg-secondary/50 cursor-pointer border-b border-qimtek-border/50"
+                onClick={() => webhookToken && navigate(`/webhook/${webhookToken}/request/${req.id}`)}
+            >
+                <span className={cn(
+                    "px-2 py-1 rounded text-xs font-bold text-white w-fit",
+                    METHOD_COLORS[req.method.toUpperCase()] || 'bg-gray-600'
+                )}>{req.method}</span>
+                <span className="text-sm font-mono truncate">{req.url}</span>
+                <span className="text-sm text-qimtek-text-secondary">{format(new Date(req.timestamp), 'MMM d, HH:mm:ss')}</span>
+                <span className="text-sm text-qimtek-text-secondary">{req.size !== undefined ? req.size : (req.body ? JSON.stringify(req.body).length : 0)} B</span>
+                <span className="text-sm text-[#82c91e] text-right">Details</span>
+            </div>
+        );
+    };
 
     return (
         <div className="bg-qimtek-bg-surface rounded-xl border border-qimtek-border overflow-hidden">
@@ -94,57 +121,74 @@ export default function RequestsTable({ requests, hasAdvancedFeatures, webhookTo
             </div>
 
             <div className="overflow-x-auto">
-                <table className="w-full">
-                    <thead className="bg-qimtek-bg-secondary border-b border-qimtek-border">
-                        <tr>
-                            <th className="px-6 py-4 text-left text-xs font-semibold text-qimtek-text-secondary uppercase">Method</th>
-                            <th className="px-6 py-4 text-left text-xs font-semibold text-qimtek-text-secondary uppercase">Path</th>
-                            <th className="px-6 py-4 text-left text-xs font-semibold text-qimtek-text-secondary uppercase">Time</th>
-                            <th className="px-6 py-4 text-left text-xs font-semibold text-qimtek-text-secondary uppercase">Size</th>
-                            <th className="px-6 py-4 text-right text-xs font-semibold text-qimtek-text-secondary uppercase">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-qimtek-border">
-                        {filteredRequests.map(req => (
-                            <tr
-                                key={req.id}
-                                onClick={() => navigate(`/webhook/${webhookToken}/request/${req.id}`)}
-                                className="hover:bg-qimtek-bg-secondary/50 transition-colors cursor-pointer group"
-                            >
-                                <td className="px-6 py-4">
-                                    <span className={cn(
-                                        "px-2 py-1 rounded text-xs font-bold text-white",
-                                        METHOD_COLORS[req.method.toUpperCase()] || 'bg-gray-600'
-                                    )}>
-                                        {req.method}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 text-sm font-mono truncate max-w-[200px]">
-                                    {req.url}
-                                </td>
-                                <td className="px-6 py-4 text-sm text-qimtek-text-secondary">
-                                    {format(new Date(req.timestamp), 'MMM d, HH:mm:ss')}
-                                </td>
-                                <td className="px-6 py-4 text-sm text-qimtek-text-secondary">
-                                    {req.size !== undefined ? req.size : (req.body ? JSON.stringify(req.body).length : 0)} B
-                                </td>
-                                <td className="px-6 py-4 text-right">
-                                    <button className="text-[#82c91e] opacity-0 group-hover:opacity-100 transition-opacity text-sm font-medium">
-                                        Details
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                        {requests.length === 0 && (
+                {useVirtualization ? (
+                    <>
+                        <div className="grid grid-cols-[100px_1fr_140px_80px_80px] gap-4 items-center px-6 py-4 bg-qimtek-bg-secondary border-b border-qimtek-border text-xs font-semibold text-qimtek-text-secondary uppercase">
+                            <span>Method</span><span>Path</span><span>Time</span><span>Size</span><span className="text-right">Action</span>
+                        </div>
+                        <List height={listHeight} itemCount={filteredRequests.length} itemSize={56} width="100%" className="overflow-x-auto">
+                            {Row}
+                        </List>
+                    </>
+                ) : (
+                    <table className="w-full">
+                        <thead className="bg-qimtek-bg-secondary border-b border-qimtek-border">
                             <tr>
-                                <td colSpan={5} className="px-6 py-12 text-center text-qimtek-text-secondary">
-                                    No requests captured yet
-                                </td>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-qimtek-text-secondary uppercase">Method</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-qimtek-text-secondary uppercase">Path</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-qimtek-text-secondary uppercase">Time</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-qimtek-text-secondary uppercase">Size</th>
+                                <th className="px-6 py-4 text-right text-xs font-semibold text-qimtek-text-secondary uppercase">Action</th>
                             </tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-qimtek-border">
+                            {filteredRequests.map(req => (
+                                <tr
+                                    key={req.id}
+                                    onClick={() => webhookToken && navigate(`/webhook/${webhookToken}/request/${req.id}`)}
+                                    className="hover:bg-qimtek-bg-secondary/50 transition-colors cursor-pointer group"
+                                >
+                                    <td className="px-6 py-4">
+                                        <span className={cn(
+                                            "px-2 py-1 rounded text-xs font-bold text-white",
+                                            METHOD_COLORS[req.method.toUpperCase()] || 'bg-gray-600'
+                                        )}>
+                                            {req.method}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-sm font-mono truncate max-w-[200px]">{req.url}</td>
+                                    <td className="px-6 py-4 text-sm text-qimtek-text-secondary">
+                                        {format(new Date(req.timestamp), 'MMM d, HH:mm:ss')}
+                                    </td>
+                                    <td className="px-6 py-4 text-sm text-qimtek-text-secondary">
+                                        {req.size !== undefined ? req.size : (req.body ? JSON.stringify(req.body).length : 0)} B
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                        <button className="text-[#82c91e] opacity-0 group-hover:opacity-100 transition-opacity text-sm font-medium">Details</button>
+                                    </td>
+                                </tr>
+                            ))}
+                            {filteredRequests.length === 0 && (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-12 text-center text-qimtek-text-secondary">
+                                        No requests captured yet
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                )}
             </div>
+            {hasMore && onLoadMore && (
+                <div className="p-4 border-t border-qimtek-border text-center">
+                    <button
+                        onClick={onLoadMore}
+                        className="px-4 py-2 rounded-lg bg-qimtek-bg-secondary hover:bg-qimtek-bg-secondary/80 text-qimtek-text text-sm font-medium transition-colors"
+                    >
+                        Load more
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

@@ -75,20 +75,19 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         }
       }
 
-      // Store in Supabase
+      // Store in Supabase - use 'requests' table (webhook_token for consistency with API)
       const { error: insertError } = await supabase
-        .from('webhook_requests')
+        .from('requests')
         .insert({
           id: requestId,
-          webhook_id: webhook.id,
+          webhook_token: token,
           method,
           url,
           headers,
           query,
           body,
-          raw_body: rawBody,
           ip_address: context.request.headers.get('cf-connecting-ip') || context.request.headers.get('x-forwarded-for') || 'unknown',
-          created_at: new Date().toISOString()
+          timestamp: new Date().toISOString()
         });
 
       if (insertError) {
@@ -103,11 +102,11 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         }), { status: 500, headers: { 'Content-Type': 'application/json' } });
       }
 
-      // Update last_active_at
+      // Update last_active_at (webhooks PK is token)
       await supabase
         .from('webhooks')
         .update({ last_active_at: new Date().toISOString() })
-        .eq('id', webhook.id);
+        .eq('token', token);
 
       return new Response(JSON.stringify({
         success: true,

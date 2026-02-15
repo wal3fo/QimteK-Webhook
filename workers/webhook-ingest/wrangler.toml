@@ -1,0 +1,16 @@
+name = "qimtek-webhook-ingest"
+main = "src/index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# Queue bindings - create queues first: wrangler queues create qimtek-webhook-ingest
+[[queues.producers]]
+queue = "qimtek-webhook-ingest"
+binding = "WEBHOOK_QUEUE"
+
+[[queues.consumers]]
+queue = "qimtek-webhook-ingest"
+max_batch_size = 10
+max_batch_timeout = 5
+max_retries = 3
+dead_letter_queue = "qimtek-webhook-ingest-dlq"

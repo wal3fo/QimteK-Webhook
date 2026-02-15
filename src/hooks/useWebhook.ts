@@ -35,6 +35,8 @@ export function useWebhook(options: { autoSelect?: boolean } = { autoSelect: tru
   const [webhooks, setWebhooks] = useState<Webhook[]>([]);
   const [selectedWebhook, setSelectedWebhook] = useState<Webhook | null>(null);
   const [requests, setRequests] = useState<WebhookRequest[]>([]);
+  const [hasMoreRequests, setHasMoreRequests] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -110,11 +112,12 @@ export function useWebhook(options: { autoSelect?: boolean } = { autoSelect: tru
     }
   }, [isAuthenticated, fetchWebhooks]);
 
-  // Fetch requests for the selected webhook
-  const fetchRequests = useCallback(async (webhookToken: string) => {
-    // Public access allowed
+  // Fetch requests for the selected webhook (cursor-based pagination)
+  const fetchRequests = useCallback(async (webhookToken: string, cursor?: string | null) => {
     try {
-      const response = await fetch(`${API_URL}/webhooks/${webhookToken}/requests?summary=true`, {
+      const params = new URLSearchParams({ summary: 'true', limit: '50' });
+      if (cursor) params.set('cursor', cursor);
+      const response = await fetch(`${API_URL}/webhooks/${webhookToken}/requests?${params}`, {
         headers: getAuthHeaders(),
       });
 
@@ -122,11 +125,17 @@ export function useWebhook(options: { autoSelect?: boolean } = { autoSelect: tru
         const data = await response.json() as any;
         if (data.success) {
           const fetchedRequests = data.requests || [];
+          setNextCursor(data.nextCursor ?? null);
+          setHasMoreRequests(!!data.hasMore);
           setRequests(prev => {
-            if (JSON.stringify(prev) === JSON.stringify(fetchedRequests)) {
-              return prev;
-            }
-            return fetchedRequests;
+            if (!cursor) return fetchedRequests;
+            const merged = [...prev, ...fetchedRequests];
+            const seen = new Set<string>();
+            return merged.filter(r => {
+              if (seen.has(r.id)) return false;
+              seen.add(r.id);
+              return true;
+            });
           });
         }
       }
@@ -134,6 +143,12 @@ export function useWebhook(options: { autoSelect?: boolean } = { autoSelect: tru
       console.error('Error fetching requests:', err);
     }
   }, [getAuthHeaders]);
+
+  const loadMoreRequests = useCallback(() => {
+    if (selectedWebhook && nextCursor && hasMoreRequests) {
+      fetchRequests(selectedWebhook.token, nextCursor);
+    }
+  }, [selectedWebhook, nextCursor, hasMoreRequests, fetchRequests]);
 
   // Fetch requests when selected webhook changes
   useEffect(() => {
@@ -267,6 +282,8 @@ export function useWebhook(options: { autoSelect?: boolean } = { autoSelect: tru
     webhooks,
     selectedWebhook,
     requests,
+    hasMoreRequests,
+    loadMoreRequests,
     loading,
     error,
     isConnected,

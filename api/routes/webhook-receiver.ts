@@ -16,6 +16,7 @@ import { Router, type Request, type Response } from 'express';
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../lib/supabase.js';
+import { checkLimit, RATE_LIMIT_PER_IP } from '../utils/rate-limit.js';
 
 const router = Router();
 
@@ -44,6 +45,23 @@ router.use(express.raw({ type: '*/*', limit: MAX_BODY_SIZE }));
 router.all('/:token', async (req: Request, res: Response): Promise<void> => {
   try {
     const { token } = req.params;
+
+    // Rate limit: per IP (global abuse protection)
+    const forwarded = req.headers['x-forwarded-for'];
+    const forwardedStr = Array.isArray(forwarded) ? forwarded[0] : forwarded;
+    let ip: string = (typeof forwardedStr === 'string' ? forwardedStr.split(',')[0].trim() : '') ||
+                    req.socket.remoteAddress || 'unknown';
+    if (ip === '::1') ip = '127.0.0.1';
+    if (!checkLimit('ip', ip, RATE_LIMIT_PER_IP)) {
+      res.status(429).json({ success: false, error: 'Too many requests. Please slow down.' });
+      return;
+    }
+
+    // Rate limit: per webhook token (per-plan limits applied via default)
+    if (!checkLimit('token', token, 60)) {
+      res.status(429).json({ success: false, error: 'Webhook rate limit exceeded.' });
+      return;
+    }
 
     // Validate webhook exists and is active
     const { data: webhook, error: fetchError } = await supabase
@@ -125,24 +143,6 @@ router.all('/:token', async (req: Request, res: Response): Promise<void> => {
         // Text, XML, etc.
         body = rawBody;
       }
-    }
-
-    // Get IP address
-    let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
-    
-    // Handle array case (Express might return array for multiple headers of same name)
-    if (Array.isArray(ip)) {
-      ip = ip[0];
-    }
-    
-    // Handle comma-separated list (X-Forwarded-For standard: client, proxy1, proxy2...)
-    if (typeof ip === 'string' && ip.includes(',')) {
-      ip = ip.split(',')[0].trim();
-    }
-    
-    // Normalize IPv6 localhost
-    if (ip === '::1') {
-      ip = '127.0.0.1';
     }
 
     const ipAddress = ip;

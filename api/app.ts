@@ -80,15 +80,17 @@ app.use((req: Request, res: Response) => {
   });
 });
 
-// Error handler
+// Error handler - always return JSON so clients get parseable responses
 app.use((error: Error, req: Request, res: Response, _next: NextFunction) => {
-  console.error('Error:', error)
-  res.status(500).json({
-    success: false,
-    error: process.env.NODE_ENV === 'production'
-      ? 'Server internal error'
-      : error.message,
-  })
+  console.error('API Error:', error)
+  if (!res.headersSent) {
+    res.status(500).set('Content-Type', 'application/json').json({
+      success: false,
+      error: process.env.NODE_ENV === 'production'
+        ? 'Server internal error'
+        : error.message,
+    })
+  }
 })
 
 export default app

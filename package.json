@@ -7,6 +7,7 @@
     "node": ">=20.0.0"
   },
   "scripts": {
+    "db:migrate": "node scripts/run-migrations.js",
     "client:dev": "vite",
     "build:server": "tsc -p api/tsconfig.json",
     "build": "vite build --mode production",
@@ -25,6 +26,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.91.1",
+    "@types/react-window": "^1.8.8",
     "@vitejs/plugin-react": "^4.4.1",
     "autoprefixer": "^10.4.21",
     "bcryptjs": "^3.0.3",
@@ -38,12 +40,14 @@
     "lucide-react": "^0.511.0",
     "nodemailer": "^7.0.12",
     "otplib": "^13.1.1",
+    "pg": "^8.18.0",
     "postcss": "^8.5.3",
     "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-helmet-async": "^2.0.5",
     "react-router-dom": "^7.3.0",
+    "react-window": "^2.2.7",
     "recharts": "^3.7.0",
     "serverless-http": "^4.0.0",
     "tailwind-merge": "^3.0.2",
