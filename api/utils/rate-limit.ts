@@ -3,25 +3,30 @@
  *
  * WHY: Prevents abuse and ensures Free users cannot overload the system.
  *      Uses in-memory store for single-instance; for multi-instance use KV/Redis.
- *      Cloudflare Workers: consider Durable Objects or Cloudflare Rate Limiting.
+ *      Cloudflare Workers: NO timers/side effects at module scope - all logic
+ *      runs inside checkLimit() when called from request handlers.
  */
 import type { PlanConfig } from './plan-storage.js';
 
 /** Sliding window: key -> { count, windowStart } */
 const store = new Map<string, { count: number; windowStart: number }>();
 const WINDOW_MS = 60 * 1000; // 1 minute
-const CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 min
+const CLEANUP_THRESHOLD = 500; // Run cleanup when store exceeds this size
 
-/** Clean old entries periodically */
-setInterval(() => {
+function getKey(prefix: string, id: string): string {
+  return `${prefix}:${id}`;
+}
+
+/**
+ * Clean old entries from the store. Called inline from checkLimit when store
+ * grows large - avoids setInterval which is disallowed in Cloudflare Workers.
+ */
+function maybeCleanup(): void {
+  if (store.size <= CLEANUP_THRESHOLD) return;
   const cutoff = Date.now() - WINDOW_MS * 2;
   for (const [k, v] of store.entries()) {
     if (v.windowStart < cutoff) store.delete(k);
   }
-}, CLEANUP_INTERVAL);
-
-function getKey(prefix: string, id: string): string {
-  return `${prefix}:${id}`;
 }
 
 /**
@@ -33,6 +38,7 @@ export function checkLimit(
   id: string,
   limit: number
 ): boolean {
+  maybeCleanup();
   const key = getKey(prefix, id);
   const now = Date.now();
   let entry = store.get(key);
@@ -62,7 +68,7 @@ const PLAN_LIMITS: Record<string, number> = {
 
 export function getTokenLimit(plan: PlanConfig[keyof PlanConfig] | null): number {
   if (!plan) return DEFAULT_TOKEN_LIMIT;
-  const role = (plan as any).displayName === 'Professional' ? 'Professional' : 
+  const role = (plan as any).displayName === 'Professional' ? 'Professional' :
                (plan as any).displayName === 'Administrator' ? 'Administrator' : 'user';
   return PLAN_LIMITS[role] ?? DEFAULT_TOKEN_LIMIT;
 }
