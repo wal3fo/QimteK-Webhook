@@ -41,12 +41,12 @@ export const AdBanner: React.FC = () => {
     }
   }, []);
 
-  // return (
-  //   <div style={{ minHeight: '0' }} className='flex justify-center items-center'>
-  //     <div ref={containerRef} className="w-full h-full" />
-  //   </div>
-  // );
-  return null;
+  return (
+    <div style={{ minHeight: '0' }} className='flex justify-center items-center'>
+      <div ref={containerRef} className="w-full h-full" />
+    </div>
+  );
+  // return null;
 };
 
 export default AdBanner;

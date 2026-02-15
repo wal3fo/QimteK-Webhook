@@ -50,12 +50,12 @@ export const AdBanner: React.FC = () => {
     }
   }, []);
 
-  // return (
-  //   <div className="flex justify-center items-center my-6 w-full overflow-hidden">
-  //     <div ref={containerRef} className="w-[728px] h-[90px]" />
-  //   </div>
-  // );
-  return null;
+  return (
+    <div className="flex justify-center items-center my-6 w-full overflow-hidden">
+      <div ref={containerRef} className="w-[728px] h-[90px]" />
+    </div>
+  );
+  // return null;
 };
 
 export default AdBanner;
